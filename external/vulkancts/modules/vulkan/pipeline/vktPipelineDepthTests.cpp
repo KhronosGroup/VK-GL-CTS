@@ -51,6 +51,7 @@
 #include "deMemory.h"
 
 #include <sstream>
+#include <typeinfo>
 #include <vector>
 
 namespace vkt
@@ -3086,6 +3087,293 @@ tcu::TestStatus Instance::iterate()
 
 } // namespace StaleDepth
 
+#ifndef CTS_USES_VULKANSC
+
+struct DepthClampZeroOneParams
+{
+    PipelineConstructionType constructionType;
+    VkFormat depthFormat;
+    bool depthClampEnable;
+};
+
+class DepthClampZeroOneInstance : public vkt::TestInstance
+{
+public:
+    DepthClampZeroOneInstance(Context &context, PipelineConstructionType pipelineConstructionType, VkFormat format)
+        : vkt::TestInstance(context)
+        , m_pipelineConstructionType(pipelineConstructionType)
+        , m_format(format)
+    {
+    }
+    virtual ~DepthClampZeroOneInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const PipelineConstructionType m_pipelineConstructionType;
+    const VkFormat m_format;
+};
+
+tcu::TestStatus DepthClampZeroOneInstance::iterate(void)
+{
+    const auto ctx      = m_context.getContextCommonData();
+    const uint32_t size = 16u;
+    const auto extent   = tcu::IVec3(size, size, 1);
+    const auto extent3D = makeExtent3D(extent);
+
+    const auto colorFormat    = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto depthFormat    = m_format;
+    const auto tcuColorFormat = mapVkFormat(colorFormat);
+    const auto tcuDepthFormat = mapVkFormat(depthFormat);
+
+    VkImageAspectFlags depthAspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+    if (tcu::hasStencilComponent(tcuDepthFormat.order))
+        depthAspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
+
+    // create color buffer
+    const auto imageType  = VK_IMAGE_TYPE_2D;
+    const auto colorUsage = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto csrr       = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extent3D, colorFormat, colorUsage, imageType, csrr);
+
+    // create depth buffer
+    const auto dsrr       = makeImageSubresourceRange(depthAspect, 0u, 1u, 0u, 1u);
+    const auto depthUsage = (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    ImageWithBuffer depthBuffer(ctx.vkd, ctx.device, ctx.allocator, extent3D, depthFormat, depthUsage, imageType, dsrr);
+
+    // create render pass and framebuffer
+    RenderPassWrapper renderPass(m_pipelineConstructionType, ctx.vkd, ctx.device, colorFormat, depthFormat);
+    const VkImage images[]{colorBuffer.getImage(), depthBuffer.getImage()};
+    const VkImageView imageViews[]{colorBuffer.getImageView(), depthBuffer.getImageView()};
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, 2, images, imageViews, size, size);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    // set depthClipEnable to 0
+    VkPipelineRasterizationDepthClipStateCreateInfoEXT depthClipState = initVulkanStructure();
+
+    // set depthClampEnable to 0
+    VkPipelineRasterizationStateCreateInfo rasterizationState = initVulkanStructure(&depthClipState);
+    rasterizationState.lineWidth                              = 1.0f;
+
+    // enable depth test and depth write
+    const auto opKeep                                       = VK_STENCIL_OP_KEEP;
+    VkPipelineDepthStencilStateCreateInfo depthStencilState = initVulkanStructure();
+    depthStencilState.depthTestEnable                       = true;
+    depthStencilState.depthWriteEnable                      = true;
+    depthStencilState.depthCompareOp                        = VK_COMPARE_OP_ALWAYS;
+    depthStencilState.front = makeStencilOpState(opKeep, opKeep, opKeep, VK_COMPARE_OP_NEVER, 0u, 0u, 0u);
+    depthStencilState.back  = depthStencilState.front;
+
+    const std::vector<VkViewport> viewports{makeViewport(0, 0, size, size, 0.25f, 0.75f)};
+    const std::vector<VkRect2D> scissors{makeRect2D(extent)};
+
+    const auto &bc = m_context.getBinaryCollection();
+    const ShaderWrapper vertShader(ctx.vkd, ctx.device, bc.get("vert"));
+    const ShaderWrapper fragShader(ctx.vkd, ctx.device, bc.get("frag"));
+
+    PipelineLayoutWrapper pipelineLayout(m_pipelineConstructionType, ctx.vkd, ctx.device);
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                     m_pipelineConstructionType);
+    pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertShader,
+                                          &rasterizationState)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader, &depthStencilState)
+        .setupFragmentOutputState(*renderPass, 0u)
+        .buildPipeline();
+
+    const auto colorAccess = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    const auto depthAccess = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    const auto copyAccess = VK_ACCESS_TRANSFER_READ_BIT;
+    const auto copyStage  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    const VkImageMemoryBarrier preCopyBarriers[]{
+        makeImageMemoryBarrier(colorAccess, copyAccess, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorBuffer.getImage(), csrr),
+        makeImageMemoryBarrier(depthAccess, copyAccess, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, depthBuffer.getImage(), dsrr),
+    };
+    const auto postCopyBarrier = makeMemoryBarrier(copyAccess, VK_ACCESS_HOST_READ_BIT);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    const auto &vk       = ctx.vkd;
+
+    beginCommandBuffer(vk, cmdBuffer);
+    renderPass.begin(vk, cmdBuffer, scissors.at(0u), tcu::Vec4(0.0f), 0.5f, 0u);
+    pipeline.bind(cmdBuffer);
+
+    // Draw two quads covering the left and right halves of the framebuffer.
+    // Use a viewport depth range of [0.25, 0.75] and clip space Z values 2 and -1.
+    // This results in Zf 1.25 and -0.25, respectively, which are outside both [Zmin,Zmax] and [0,1].
+    vk.cmdDraw(cmdBuffer, 4u, 2u, 0u, 0u);
+    renderPass.end(vk, cmdBuffer);
+
+    // copy depth and color images to host-visible buffers
+    const auto drawStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    cmdPipelineImageMemoryBarrier(vk, cmdBuffer, drawStages, copyStage, preCopyBarriers,
+                                  DE_LENGTH_OF_ARRAY(preCopyBarriers));
+
+    const auto isrl = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    auto copyRegion = makeBufferImageCopy(extent3D, isrl);
+    vk.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                            colorBuffer.getBuffer(), 1u, &copyRegion);
+
+    copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    vk.cmdCopyImageToBuffer(cmdBuffer, depthBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                            depthBuffer.getBuffer(), 1u, &copyRegion);
+
+    cmdPipelineMemoryBarrier(vk, cmdBuffer, copyStage, VK_PIPELINE_STAGE_HOST_BIT, &postCopyBarrier);
+
+    endCommandBuffer(vk, cmdBuffer);
+    submitCommandsAndWait(vk, ctx.device, ctx.queue, cmdBuffer);
+
+    auto &colorAlloc = colorBuffer.getBufferAllocation();
+    auto &depthAlloc = depthBuffer.getBufferAllocation();
+
+    invalidateAlloc(vk, ctx.device, colorAlloc);
+    invalidateAlloc(vk, ctx.device, depthAlloc);
+
+    // depth aspect copy only contains the depth values
+    const auto tcuDepthCopyFormat = getDepthCopyFormat(depthFormat);
+
+    tcu::ConstPixelBufferAccess colorResAccess(tcuColorFormat, extent, colorAlloc.getHostPtr());
+    tcu::ConstPixelBufferAccess depthResAccess(tcuDepthCopyFormat, extent, depthAlloc.getHostPtr());
+
+    tcu::TextureLevel colorRefLevel(tcuColorFormat, extent);
+    tcu::TextureLevel depthRefLevel(tcuDepthCopyFormat, extent);
+
+    auto colorRefAccess = colorRefLevel.getAccess();
+    auto depthRefAccess = depthRefLevel.getAccess();
+
+    // both quads must be fully drawn, since depth clipping is disabled
+    tcu::clear(colorRefAccess, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+
+    const auto half  = size / 2;
+    float leftDepth  = 0.0f;
+    float rightDepth = 1.0f;
+
+    tcu::clearDepth(tcu::getSubregion(depthRefAccess, 0, 0, half, size), leftDepth);
+    tcu::clearDepth(tcu::getSubregion(depthRefAccess, half, 0, half, size), rightDepth);
+
+    auto &log = m_context.getTestContext().getLog();
+    const tcu::Vec4 colorThreshold(0.0f);
+    const float depthThreshold = 0.0f;
+
+    // with depthClampZeroOne enabled and VK_EXT_depth_range_unrestricted not enabled,
+    // Zf must be clamped to [0,1] even if depth clamp and depth clip are both disabled
+    const bool colorOk = tcu::floatThresholdCompare(log, "Color", "", colorRefAccess, colorResAccess, colorThreshold,
+                                                    tcu::COMPARE_LOG_ON_ERROR);
+    const bool depthOk = tcu::dsThresholdCompare(log, "Depth", "", depthRefAccess, depthResAccess, depthThreshold,
+                                                 tcu::COMPARE_LOG_ON_ERROR);
+
+    if (colorOk && depthOk)
+        return tcu::TestStatus::pass("Pass");
+
+    return tcu::TestStatus::fail("Unexpected results in color/depth buffers");
+}
+
+class DepthClampZeroOneCase : public vkt::TestCase
+{
+public:
+    DepthClampZeroOneCase(tcu::TestContext &testCtx, const std::string &name,
+                          PipelineConstructionType pipelineConstructionType, VkFormat format)
+        : vkt::TestCase(testCtx, name)
+        , m_pipelineConstructionType(pipelineConstructionType)
+        , m_format(format)
+    {
+    }
+    virtual ~DepthClampZeroOneCase(void) = default;
+
+    std::string getRequiredCapabilitiesId() const override
+    {
+        return typeid(DepthClampZeroOneCase).name();
+    }
+
+    void initDeviceCapabilities(DevCaps &caps) override;
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DepthClampZeroOneInstance(context, m_pipelineConstructionType, m_format);
+    }
+
+protected:
+    const PipelineConstructionType m_pipelineConstructionType;
+    const VkFormat m_format;
+};
+
+void DepthClampZeroOneCase::initDeviceCapabilities(DevCaps &caps)
+{
+    // we can't use default device because we need a device
+    // where VK_EXT_depth_range_unrestricted is not enabled
+
+    if (!caps.addExtension("VK_KHR_depth_clamp_zero_one"))
+        caps.addExtension("VK_EXT_depth_clamp_zero_one");
+
+    caps.addExtension("VK_EXT_depth_clip_enable");
+    caps.addExtension("VK_EXT_shader_object");
+    caps.addExtension("VK_EXT_graphics_pipeline_library");
+
+    caps.addExtension("VK_KHR_pipeline_library");
+    caps.addExtension("VK_KHR_dynamic_rendering");
+    caps.addExtension("VK_KHR_depth_stencil_resolve");
+    caps.addExtension("VK_KHR_create_renderpass2");
+    caps.addExtension("VK_KHR_multiview");
+    caps.addExtension("VK_KHR_maintenance2");
+
+    caps.addFeature(&VkPhysicalDeviceDepthClampZeroOneFeaturesKHR::depthClampZeroOne);
+    caps.addFeature(&VkPhysicalDeviceDepthClipEnableFeaturesEXT::depthClipEnable);
+    caps.addFeature(&VkPhysicalDeviceFeatures::depthClamp);
+    caps.addFeature(&VkPhysicalDeviceShaderObjectFeaturesEXT::shaderObject);
+    caps.addFeature(&VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT::graphicsPipelineLibrary);
+    caps.addFeature(&VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering);
+}
+
+void DepthClampZeroOneCase::checkSupport(Context &context) const
+{
+    const auto ctx = context.getContextCommonData();
+
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_pipelineConstructionType);
+
+    if (!context.getDepthClampZeroOneFeatures().depthClampZeroOne)
+        TCU_THROW(NotSupportedError, "depthClampZeroOne not supported");
+
+    context.requireDeviceFunctionality("VK_EXT_depth_clip_enable");
+    if (!context.getDepthClipEnableFeaturesEXT().depthClipEnable)
+        TCU_THROW(NotSupportedError, "depthClipEnable not supported");
+
+    if (!isSupportedDepthStencilFormat(ctx.vki, ctx.physicalDevice, m_format))
+        TCU_THROW(NotSupportedError, "Depth format not supported");
+}
+
+void DepthClampZeroOneCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    // we draw two quads: use z=2 for quad on right side and z=-1 for quad on left side
+    programCollection.glslSources.add("vert") << glu::VertexSource(R"(
+        #version 460
+        void main (void) {
+            float x = -gl_InstanceIndex + float(gl_VertexIndex & 1);
+            float y = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;
+            float z = 2.0 - gl_InstanceIndex * 3.0;
+
+            gl_Position = vec4(x, y, z, 1.0);
+        })");
+
+    programCollection.glslSources.add("frag") << glu::FragmentSource(R"(
+         #version 460
+         layout (location=0) out vec4 outColor;
+         void main (void) {
+             outColor = vec4(0.0, 0.0, 1.0, 1.0);
+         })");
+}
+#endif // CTS_USES_VULKANSC
+
 } // namespace
 
 tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineConstructionType)
@@ -3358,6 +3646,19 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
     }
 
 #ifndef CTS_USES_VULKANSC
+    {
+        de::MovePtr<tcu::TestCaseGroup> depthClampZeroOneTests(new tcu::TestCaseGroup(testCtx, "depth_clamp_zero_one"));
+
+        for (auto format : {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT})
+        {
+            const auto testName = getFormatCaseName(format) + "_no_clamp_no_clip";
+            depthClampZeroOneTests->addChild(
+                new DepthClampZeroOneCase(testCtx, testName, pipelineConstructionType, format));
+        }
+
+        depthTests->addChild(depthClampZeroOneTests.release());
+    }
+
     de::MovePtr<tcu::TestCaseGroup> depthClipControlTests(new tcu::TestCaseGroup(testCtx, "depth_clip_control"));
     {
         const VkCompareOp compareOps[] = {VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_LESS};

@@ -1,3 +1,5 @@
+dEQP-VK.pipeline.monolithic.depth.depth_clamp_zero_one.d32_sfloat_no_clamp_no_clip
+dEQP-VK.pipeline.monolithic.depth.depth_clamp_zero_one.d32_sfloat_s8_uint_no_clamp_no_clip
 dEQP-VK.pipeline.monolithic.depth.depth_clip_control.d16_unorm_always
 dEQP-VK.pipeline.monolithic.depth.depth_clip_control.d16_unorm_always_different_w
 dEQP-VK.pipeline.monolithic.depth.depth_clip_control.d16_unorm_always_viewport_after_dynamic
