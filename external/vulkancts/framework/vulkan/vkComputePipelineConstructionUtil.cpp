@@ -277,9 +277,9 @@ void ComputePipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache)
         if (m_internalData->pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY)
         {
             size_t dataSize;
-            vk.getShaderBinaryDataEXT(device, *m_shader, &dataSize, nullptr);
+            VK_CHECK(vk.getShaderBinaryDataEXT(device, *m_shader, &dataSize, nullptr));
             std::vector<uint8_t> data(dataSize);
-            vk.getShaderBinaryDataEXT(device, *m_shader, &dataSize, data.data());
+            VK_CHECK(vk.getShaderBinaryDataEXT(device, *m_shader, &dataSize, data.data()));
 
             createInfo.codeType = vk::VK_SHADER_CODE_TYPE_BINARY_EXT;
             createInfo.codeSize = dataSize;

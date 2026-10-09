@@ -163,9 +163,9 @@ vk::Move<vk::VkShaderEXT> ShaderObjectBindingDrawInstance::createShader(
         const auto shader = vk::createShader(vk, device, shaderCreateInfo);
 
         size_t dataSize;
-        vk.getShaderBinaryDataEXT(device, *shader, &dataSize, nullptr);
+        VK_CHECK(vk.getShaderBinaryDataEXT(device, *shader, &dataSize, nullptr));
         std::vector<uint8_t> data(dataSize);
-        vk.getShaderBinaryDataEXT(device, *shader, &dataSize, data.data());
+        VK_CHECK(vk.getShaderBinaryDataEXT(device, *shader, &dataSize, data.data()));
 
         shaderCreateInfo.codeType = vk::VK_SHADER_CODE_TYPE_BINARY_EXT;
         shaderCreateInfo.codeSize = dataSize;
