@@ -38,6 +38,7 @@
 #include "tcuCommandLine.hpp"
 #include "vktTestCaseUtil.hpp"
 
+#include <atomic>
 #include <cassert>
 #include <future>
 #include <chrono>
@@ -867,8 +868,8 @@ tcu::TestStatus deviceFaultReportAsyncQueryCase(Context &context, TestFlags test
 {
     const ContextWrapper contextWrapper(context, testOptions);
 
-    bool queryForFaults = true;
-    auto asyncQueryFn   = [&contextWrapper, &queryForFaults]() -> tcu::TestStatus
+    std::atomic<bool> queryForFaults(true);
+    auto asyncQueryFn = [&contextWrapper, &queryForFaults]() -> tcu::TestStatus
     {
         while (queryForFaults)
         {
@@ -896,6 +897,16 @@ tcu::TestStatus deviceFaultReportAsyncQueryCase(Context &context, TestFlags test
     };
 
     std::future<tcu::TestStatus> testStatus = std::async(std::launch::async, asyncQueryFn);
+
+    // Stop the query thread on every exit path, including exceptions: the future waits for it on destruction
+    struct StopQuery
+    {
+        std::atomic<bool> &query;
+        ~StopQuery()
+        {
+            query = false;
+        }
+    } stopQuery{queryForFaults};
 
     deSleep(convertNsToMs(2 * LONG_FAULT_REPORT_WAIT));
 
