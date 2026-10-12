@@ -539,6 +539,120 @@ VkResult ResourceInterfaceStandard::createGraphicsPipelines(VkDevice device, VkP
             fillPoolEntrySize(pipelineIDs.back());
     }
 
+    // reset not used pointers, so that JSON generation does not crash
+    std::vector<VkPipelineViewportStateCreateInfo> viewportStateCopies(createInfoCount);
+    if (!normalMode)
+    {
+        for (uint32_t i = 0; i < createInfoCount; ++i)
+        {
+            bool vertexInputStateRequired       = false;
+            bool inputAssemblyStateRequired     = false;
+            bool tessellationStateRequired      = false;
+            bool viewportStateRequired          = false;
+            bool viewportStateViewportsRequired = false;
+            bool viewportStateScissorsRequired  = false;
+            bool multiSampleStateRequired       = false;
+            bool depthStencilStateRequired      = false;
+            bool colorBlendStateRequired        = false;
+
+            if (pCreateInfoCopies[i].pStages != nullptr)
+            {
+                for (uint32_t j = 0; j < pCreateInfoCopies[i].stageCount; ++j)
+                {
+                    if (pCreateInfoCopies[i].pStages[j].stage == VK_SHADER_STAGE_VERTEX_BIT)
+                    {
+                        vertexInputStateRequired   = true;
+                        inputAssemblyStateRequired = true;
+                    }
+                    if (pCreateInfoCopies[i].pStages[j].stage == VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
+                    {
+                        tessellationStateRequired = true;
+                    }
+                }
+            }
+            if (pCreateInfoCopies[i].pDynamicState != nullptr)
+            {
+                if (pCreateInfoCopies[i].pDynamicState->pDynamicStates != nullptr)
+                    for (uint32_t j = 0; j < pCreateInfoCopies[i].pDynamicState->dynamicStateCount; ++j)
+                    {
+                        if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_VIEWPORT ||
+                            pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] ==
+                                VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT)
+                        {
+                            viewportStateRequired          = true;
+                            viewportStateViewportsRequired = true;
+                        }
+                        if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] == VK_DYNAMIC_STATE_SCISSOR ||
+                            pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] ==
+                                VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT)
+                        {
+                            viewportStateRequired         = true;
+                            viewportStateScissorsRequired = true;
+                        }
+                        if (pCreateInfoCopies[i].pDynamicState->pDynamicStates[j] ==
+                            VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT)
+                        {
+                            // Discard can be disabled at draw time, so preserve all rasterization state.
+                            viewportStateRequired          = true;
+                            viewportStateViewportsRequired = true;
+                            viewportStateScissorsRequired  = true;
+                            multiSampleStateRequired       = true;
+                            depthStencilStateRequired      = true;
+                            colorBlendStateRequired        = true;
+                        }
+                    }
+            }
+            if (pCreateInfoCopies[i].pRasterizationState != nullptr)
+            {
+                if (pCreateInfoCopies[i].pRasterizationState->rasterizerDiscardEnable == VK_FALSE)
+                {
+                    viewportStateRequired          = true;
+                    viewportStateViewportsRequired = true;
+                    viewportStateScissorsRequired  = true;
+                    multiSampleStateRequired       = true;
+                    depthStencilStateRequired      = true;
+                    colorBlendStateRequired        = true;
+                }
+            }
+            if (pCreateInfoCopies[i].pVertexInputState != nullptr && !vertexInputStateRequired)
+                pCreateInfoCopies[i].pVertexInputState = nullptr;
+            if (pCreateInfoCopies[i].pInputAssemblyState != nullptr && !inputAssemblyStateRequired)
+                pCreateInfoCopies[i].pInputAssemblyState = nullptr;
+            if (pCreateInfoCopies[i].pTessellationState != nullptr && !tessellationStateRequired)
+                pCreateInfoCopies[i].pTessellationState = nullptr;
+            if (pCreateInfoCopies[i].pViewportState != nullptr)
+            {
+                if (viewportStateRequired)
+                {
+                    viewportStateCopies[i] = *(pCreateInfoCopies[i].pViewportState);
+                    bool exchangeVP        = false;
+                    if (pCreateInfoCopies[i].pViewportState->pViewports != nullptr && !viewportStateViewportsRequired)
+                    {
+                        viewportStateCopies[i].pViewports    = nullptr;
+                        viewportStateCopies[i].viewportCount = 0u;
+                        exchangeVP                           = true;
+                    }
+                    if (pCreateInfoCopies[i].pViewportState->pScissors != nullptr && !viewportStateScissorsRequired)
+                    {
+                        viewportStateCopies[i].pScissors    = nullptr;
+                        viewportStateCopies[i].scissorCount = 0u;
+                        exchangeVP                          = true;
+                    }
+                    if (exchangeVP)
+                        pCreateInfoCopies[i].pViewportState = &(viewportStateCopies[i]);
+                }
+                else
+                    pCreateInfoCopies[i].pViewportState = nullptr;
+            }
+            if (pCreateInfoCopies[i].pMultisampleState != nullptr && !multiSampleStateRequired)
+                pCreateInfoCopies[i].pMultisampleState = nullptr;
+            if (pCreateInfoCopies[i].pDepthStencilState != nullptr && !depthStencilStateRequired)
+                pCreateInfoCopies[i].pDepthStencilState = nullptr;
+            if (pCreateInfoCopies[i].pColorBlendState != nullptr && !colorBlendStateRequired)
+                pCreateInfoCopies[i].pColorBlendState = nullptr;
+        }
+    }
+
     // Include pipelineIdentifiers into pNext chain of pCreateInfoCopies - skip this operation if pipeline identifier was created inside test
     for (uint32_t i = 0; i < createInfoCount; ++i)
     {

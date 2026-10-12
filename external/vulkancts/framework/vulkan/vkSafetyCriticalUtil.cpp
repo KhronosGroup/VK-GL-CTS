@@ -348,7 +348,15 @@ std::size_t calculateGraphicsPipelineHash(const VkGraphicsPipelineCreateInfo &gp
                     viewportStateScissorsRequired = true;
                 }
                 if (gpCI.pDynamicState->pDynamicStates[i] == VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE_EXT)
-                    viewportStateRequired = true;
+                {
+                    // Discard can be disabled at draw time, so include all rasterization state in the hash.
+                    viewportStateRequired          = true;
+                    viewportStateViewportsRequired = true;
+                    viewportStateScissorsRequired  = true;
+                    multiSampleStateRequired       = true;
+                    depthStencilStateRequired      = true;
+                    colorBlendStateRequired        = true;
+                }
             }
     }
     if (gpCI.pRasterizationState != nullptr)
