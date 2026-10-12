@@ -401,6 +401,14 @@ public:
     {
         m_shaderCreateFlags |= flags;
     }
+    void setSetLayouts(const std::vector<VkDescriptorSetLayout> &setLayouts)
+    {
+        m_setLayouts = setLayouts;
+    }
+    const std::vector<VkDescriptorSetLayout> &getSetLayouts(void) const
+    {
+        return m_setLayouts;
+    }
     void getShaderBinary(void);
     size_t getShaderBinaryDataSize(void)
     {
@@ -425,6 +433,7 @@ private:
     VkShaderCreateFlagsEXT m_shaderCreateFlags;
     size_t m_binaryDataSize;
     std::vector<uint8_t> m_binaryData;
+    std::vector<VkDescriptorSetLayout> m_setLayouts;
 #endif
 };
 

@@ -358,12 +358,6 @@ void Case::checkSupport(Context &context) const
     if (isESO && !m_params.avoidMaintenance11)
         context.requireDeviceFunctionality("VK_KHR_maintenance11");
 
-    // This is needed to create the "general" pipeline layout with VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT.
-    // Monolithic cases and ESO cases without maintenance11 will not use the flag.
-    if (!(m_params.constructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
-          (isESO && !m_params.avoidMaintenance11)))
-        context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
-
     const auto ctx = context.getContextCommonData();
     checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
 
@@ -953,7 +947,6 @@ tcu::TestStatus Instance::iterate()
 
     const auto isESO          = isConstructionTypeShaderObject(m_params.constructionType);
     const auto isLib          = isConstructionTypeLibrary(m_params.constructionType);
-    const auto isMonolithic   = (m_params.constructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
     const auto isFastLib      = (m_params.constructionType == PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY);
     const auto setInfos       = m_params.genSetInfos();
     const auto stageIndexMap  = m_params.getSetIndexMap();
@@ -1303,15 +1296,6 @@ tcu::TestStatus Instance::iterate()
     ShaderWrapper taskShader;
     ShaderWrapper fragShader;
 
-    // Pseudo pipeline layouts for each shader.
-    PipelineLayoutWrapper vertPipelineLayout;
-    PipelineLayoutWrapper tescPipelineLayout;
-    PipelineLayoutWrapper tesePipelineLayout;
-    PipelineLayoutWrapper geomPipelineLayout;
-    PipelineLayoutWrapper meshPipelineLayout;
-    PipelineLayoutWrapper taskPipelineLayout;
-    PipelineLayoutWrapper fragPipelineLayout;
-
     // Pipeline layouts for each pipeline piece.
     PipelineLayoutWrapper preRasterPiecePipelineLayout;
     PipelineLayoutWrapper fragPiecePipelineLayout;
@@ -1343,11 +1327,13 @@ tcu::TestStatus Instance::iterate()
             vec.pop_back();
     };
 
+    // Per stage set layouts are only used by shader objects created with independent sets
+    const bool useStageSetLayouts = (isESO && !m_params.avoidMaintenance11);
+
     // Prepare a shader for the given stage. The function will overwrite the wrapper and modify other arguments, as
     // needed, for the given stage.
     const auto maybeMakeShader = [&](ShaderWrapper &shader, VkShaderStageFlagBits stage, const char *shaderName,
-                                     std::vector<VkDescriptorSetLayout> &setLayoutsVec,
-                                     PipelineLayoutWrapper &layoutWrapper)
+                                     std::vector<VkDescriptorSetLayout> &setLayoutsVec)
     {
         if (m_params.hasStage(stage))
         {
@@ -1360,14 +1346,11 @@ tcu::TestStatus Instance::iterate()
             // Trim the list to make the cases more interesting: different descriptor set layout counts per stage.
             trimSetLayoutVec(setLayoutsVec);
 
-            // Create and save a pipeline layout for this shader stage.
-            if (!isMonolithic)
-            {
-                // VUID-VkPipelineLayoutCreateInfo-graphicsPipelineLibrary-06753
-                layoutWrapper = PipelineLayoutWrapper(m_params.constructionType, ctx.vkd, ctx.device,
-                                                      de::sizeU32(setLayoutsVec), de::dataOrNull(setLayoutsVec));
-            }
-            shader.setPipelineLayout(m_params.avoidMaintenance11 ? &unionPipelineLayout : &layoutWrapper);
+            // Pass the set layouts directly as a VkPipelineLayout cannot contain null handles without GPL
+            if (useStageSetLayouts)
+                shader.setSetLayouts(setLayoutsVec);
+            else
+                shader.setPipelineLayout(&unionPipelineLayout);
 
             auto &pieceSetLayouts =
                 ((stage != VK_SHADER_STAGE_FRAGMENT_BIT) ? preRasterPieceSetLayouts : fragPieceSetLayouts);
@@ -1375,34 +1358,26 @@ tcu::TestStatus Instance::iterate()
         }
     };
 
-    maybeMakeShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT, "vert", vertSetLayouts, vertPipelineLayout);
-    maybeMakeShader(tescShader, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "tesc", tescSetLayouts, tescPipelineLayout);
-    maybeMakeShader(teseShader, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "tese", teseSetLayouts,
-                    tesePipelineLayout);
-    maybeMakeShader(geomShader, VK_SHADER_STAGE_GEOMETRY_BIT, "geom", geomSetLayouts, geomPipelineLayout);
-    maybeMakeShader(taskShader, VK_SHADER_STAGE_TASK_BIT_EXT, "task", taskSetLayouts, taskPipelineLayout);
-    maybeMakeShader(meshShader, VK_SHADER_STAGE_MESH_BIT_EXT, "mesh", meshSetLayouts, meshPipelineLayout);
-    maybeMakeShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag", fragSetLayouts, fragPipelineLayout);
+    maybeMakeShader(vertShader, VK_SHADER_STAGE_VERTEX_BIT, "vert", vertSetLayouts);
+    maybeMakeShader(tescShader, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "tesc", tescSetLayouts);
+    maybeMakeShader(teseShader, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "tese", teseSetLayouts);
+    maybeMakeShader(geomShader, VK_SHADER_STAGE_GEOMETRY_BIT, "geom", geomSetLayouts);
+    maybeMakeShader(taskShader, VK_SHADER_STAGE_TASK_BIT_EXT, "task", taskSetLayouts);
+    maybeMakeShader(meshShader, VK_SHADER_STAGE_MESH_BIT_EXT, "mesh", meshSetLayouts);
+    maybeMakeShader(fragShader, VK_SHADER_STAGE_FRAGMENT_BIT, "frag", fragSetLayouts);
 
     trimSetLayoutVec(preRasterPieceSetLayouts);
     trimSetLayoutVec(fragPieceSetLayouts);
 
-    // Avoid using VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT when the driver may not support GPL.
-    // Also, VUID-VkPipelineLayoutCreateInfo-graphicsPipelineLibrary-06753
-    if (!isMonolithic)
+    // Pipeline piece layouts are only used by pipeline libraries, which require GPL.
+    if (isLib)
     {
-        const auto preRasterLayoutFlags = (isLib ? indSetsPipelineLayoutFlags : 0u);
         preRasterPiecePipelineLayout =
             PipelineLayoutWrapper(m_params.constructionType, ctx.vkd, ctx.device, de::sizeU32(preRasterPieceSetLayouts),
-                                  de::dataOrNull(preRasterPieceSetLayouts), 0u, nullptr, preRasterLayoutFlags);
-    }
-
-    if (!isMonolithic)
-    {
-        const auto fragLayoutFlags = (isLib ? indSetsPipelineLayoutFlags : 0u);
+                                  de::dataOrNull(preRasterPieceSetLayouts), 0u, nullptr, indSetsPipelineLayoutFlags);
         fragPiecePipelineLayout =
             PipelineLayoutWrapper(m_params.constructionType, ctx.vkd, ctx.device, de::sizeU32(fragPieceSetLayouts),
-                                  de::dataOrNull(fragPieceSetLayouts), 0u, nullptr, fragLayoutFlags);
+                                  de::dataOrNull(fragPieceSetLayouts), 0u, nullptr, indSetsPipelineLayoutFlags);
     }
 
     GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),

@@ -1897,6 +1897,7 @@ ShaderWrapper::ShaderWrapper(const ShaderWrapper &rhs) noexcept
     , m_shaderCreateFlags(rhs.m_shaderCreateFlags)
     , m_binaryDataSize(rhs.m_binaryDataSize)
     , m_binaryData(rhs.m_binaryData)
+    , m_setLayouts(rhs.m_setLayouts)
 #endif
 {
 }
@@ -1913,6 +1914,7 @@ ShaderWrapper &ShaderWrapper::operator=(const ShaderWrapper &rhs) noexcept
     m_shaderCreateFlags = rhs.m_shaderCreateFlags;
     m_binaryDataSize    = rhs.m_binaryDataSize;
     m_binaryData        = rhs.m_binaryData;
+    m_setLayouts        = rhs.m_setLayouts;
 #endif
 
     return *this;
@@ -3641,6 +3643,11 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo(VkShader
         shaderCreateInfo.pSetLayouts            = shader.getPipelineLayout()->getSetLayouts();
         shaderCreateInfo.pushConstantRangeCount = shader.getPipelineLayout()->getPushConstantRangeCount();
         shaderCreateInfo.pPushConstantRanges    = shader.getPipelineLayout()->getPushConstantRanges();
+    }
+    if (!shader.getSetLayouts().empty())
+    {
+        shaderCreateInfo.setLayoutCount = static_cast<uint32_t>(shader.getSetLayouts().size());
+        shaderCreateInfo.pSetLayouts    = shader.getSetLayouts().data();
     }
     // Pipeline layouts and push constant ranges must match between shaders that are used together
     if (other.isSet() && shaderCreateInfo.setLayoutCount == 0)
