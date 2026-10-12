@@ -660,12 +660,20 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
 
     if (m_testCtx.getCommandLine().getVideoLogPrint())
     {
+        //FIXME: to be removed when the logger system will be fully landed
         args.push_back("--verbose");
+        args.push_back("--logLevel");
+        args.push_back("5");
 
         std::cerr << "TEST ARGS: ";
         for (auto &arg : args)
             std::cerr << arg << " ";
         std::cerr << std::endl;
+    }
+    else
+    {
+        args.push_back("--logLevel");
+        args.push_back("1");
     }
 
     if (!checkClipFileExists(inputClipName))
