@@ -43,7 +43,9 @@ tcu::TestCaseGroup *createNonRobustBufferAccessTests(tcu::TestContext &testCtx)
         {"unexecuted_oob_underflow",
          "Test for correct handling of buffer access index underflow in unexecuted shader code paths"},
         {"unexecuted_oob_overflow",
-         "Test for correct handling of buffer access index overflow in unexecuted shader code paths"}};
+         "Test for correct handling of buffer access index overflow in unexecuted shader code paths"},
+        {"unexecuted_oob_uniform_index",
+         "Test that a dynamically uniform out of bounds buffer load in an unexecuted branch is not performed"}};
 
     de::MovePtr<tcu::TestCaseGroup> group{new tcu::TestCaseGroup{testCtx, kGroupName.c_str()}};
 #ifndef CTS_USES_VULKANSC
