@@ -3111,18 +3111,23 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
         searchForDeviceExt = False
         extVector = 'vIEP'
         othVector = 'vDEP'
+        preprocessDependencies = lambda dep: dep
         if extType == 'device':
             searchForDeviceExt = True
             extVector, othVector = othVector, extVector        # swap
+            # remove instance extensions from device extension dependencies
+            preprocessDependencies = lambda dep: self.removeInstanceDependencies(parseDependsEpression(dep))
         # iterate over all extension that are of specified type and that have requirements
         self.sortedExtensions = sorted(self.vk.extensions.values(), key=lambda item: item.name)
+        self.instanceExtensions = set(e.name for e in self.vk.extensions.values() if e.instance)
         for ext in self.sortedExtensions:
-            if searchForDeviceExt:
-                if not ext.device:
-                    continue
-            elif not ext.instance:
+            if searchForDeviceExt != bool(ext.device):
                 continue
             if ext.depends is None:
+                continue
+            depends = preprocessDependencies(ext.depends)
+            # if dependency was simplified to True, then we don't need to generate a check function
+            if depends is True:
                 continue
             # memorize extension name and dependencies for future vector generation
             extensionList.append(ext.name)
@@ -3144,7 +3149,7 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
             yield f'\n\tif (!isSupported({extVector}, "{ext.name}"))'
             yield '\t\treturn true;\n'
             # replace dependent extensions/versions with proper conditions
-            finalCondition = transformDependsToCondition(ext.depends, self.vk, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")', ext.name)
+            finalCondition = transformDependsToCondition(depends, self.vk, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")', ext.name)
             yield f'\t// depends attribute in xml: {ext.depends}'
             yield f'\treturn {finalCondition};'
             yield '}\n'
@@ -3154,7 +3159,7 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
         for ext in extensionList:
             extTabCount = (maxExtLength - len(ext)) / 4
             eTabs = '\t'*int(round(extTabCount+1.49))
-            yield f'\tstd::make_pair("{ext}",{eTabs}&check_{ext}),'
+            yield f'\t{{"{ext}",{eTabs}&check_{ext}}},'
         yield '};\n'
 
     def genApiVersions(self):
@@ -3164,8 +3169,8 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
             apiVariant = '0' if self.targetApiName == 'vulkan' else '1'
             major, minor = v.name[-3:].split('_')
             version = (int(apiVariant) << 29) | (int(major) << 22) | (int(minor) << 12)
-            yield '\tstd::make_tuple({}, {}, {}, {}),'.format(version, apiVariant, major, minor)
-        yield '\tstd::make_tuple(4194304, 0, 1, 0)'
+            yield '\t{{{}, {}, {}, {}}},'.format(version, apiVariant, major, minor)
+        yield '\t{4194304, 0, 1, 0}'
         yield '};'
 
     def parseExtensionDependencies(self, extDeps, ext):
@@ -3229,8 +3234,38 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
                                         elif newMajor == major and newMinor > minor:
                                             minor = newMinor
                                 break
-            yield '\tstd::make_tuple({}, {}, "{}"),'.format(major, minor, ext.name)
+            yield '\t{{{}, {}, "{}"}},'.format(major, minor, ext.name)
         yield '};'
+
+    def removeInstanceDependencies(self, node):
+        # simplify dependency tree treating each instance extension as true;
+        # returns True when whole (sub)expression is satisfied or a string with remaining condition
+        if isinstance(node, ast.BoolOp):
+            isOrOperation = isinstance(node.op, ast.Or)
+            processedExpressionParts = []
+            for v in node.values:
+                subExpressionOrTrue = self.removeInstanceDependencies(v)
+                if subExpressionOrTrue is True:
+                    # 'or' containing true is always true
+                    if isOrOperation:
+                        return True
+                    # 'and' can skip true operand
+                    continue
+                processedExpressionParts.append(subExpressionOrTrue)
+            numParts = len(processedExpressionParts)
+            if numParts > 1:
+                # wrap nested expressions in parentheses to preserve precedence
+                processedExpressionParts = [f'({p})' if ('+' in p or ',' in p) else p for p in processedExpressionParts]
+                # join remaining parts with proper operator
+                return (',' if isOrOperation else '+').join(processedExpressionParts)
+            # if only one part is left, return it as is or return True if no parts are left
+            return processedExpressionParts[0] if numParts == 1 else True
+        if isinstance(node, ast.Name):
+            # return True if dependency is an instance extension, otherwise return the dependency name
+            return True if node.id in self.instanceExtensions else node.id
+        if isinstance(node, ast.Constant):
+            return True if node.value is True else str(node.value)
+        raise NotImplementedError(f"Unsupported AST node: {node!r}")
 
     def generate(self):
         self.write(INL_HEADER)
@@ -3244,6 +3279,52 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
             self.write(l)
         for l in self.genRequiredCoreVersions():
             self.write(l)
+
+class DeviceExtensionEnumerationGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
+
+    def recursivelyExtractDependenciesFromNode(self, node):
+        if isinstance(node, ast.BoolOp):
+            for v in node.values:
+                yield from self.recursivelyExtractDependenciesFromNode(v)
+        elif isinstance(node, ast.Name):
+            yield node.id
+        elif isinstance(node, ast.Constant):
+            pass
+        else:
+            raise NotImplementedError(f"Unsupported AST node: {node!r}")
+
+    def genRequiredDependencies(self, dependencyType):
+        # iterate over all device extension to find ones with dependencies on instance extensions
+        self.sortedExtensions = sorted(self.vk.extensions.values(), key=lambda item: item.name)
+        extensionSelector = (lambda e: e.instance) if dependencyType == 'instance' else (lambda e: e.device)
+        selectedExtensionSet = set(e.name for e in self.vk.extensions.values() if extensionSelector(e))
+        for ext in self.sortedExtensions:
+            if not ext.device or ext.depends is None:
+                continue
+            # iterate over all dependencies and check if they are instance extensions
+            dependencies = ""
+            for dep in self.recursivelyExtractDependenciesFromNode(parseDependsEpression(ext.depends)):
+                if dep in selectedExtensionSet:
+                    dependencies += f'"{dep}", '
+            if len(dependencies):
+                yield f'\t{{"{ext.name}",\t{{{dependencies}}}}},'
+
+    def generate(self):
+        instDepStream = []
+        for l in self.genRequiredDependencies('instance'):
+            instDepStream.append(l)
+        instDepStream.append('};')
+        devDepStream = []
+        for l in self.genRequiredDependencies('device'):
+            devDepStream.append(l)
+        devDepStream.append('};')
+        self.write(INL_HEADER)
+        self.write('static const std::map<std::string, std::vector<const char*>> deviceInstanceDependencies{')
+        self.write(combineLines(indentLines(instDepStream)))
+        self.write('static const std::map<std::string, std::vector<const char*>> deviceDeviceDependencies{')
+        self.write(combineLines(indentLines(devDepStream)))
 
 class EntryPointValidationGenerator(CTSGenerator):
     def __init__(self, ctsLists, _):
@@ -4177,6 +4258,7 @@ if __name__ == "__main__":
         GenData('vkKnownDriverIds.inl',                       DriverIdsGenerator),
         GenData('vkObjTypeImpl.inl',                          ObjTypeImplGenerator),
         GenData('vkApiExtensionDependencyInfo.inl',           ApiExtensionDependencyInfoGenerator),
+        GenData('vkDeviceExtensionEnumeration.inl',           DeviceExtensionEnumerationGenerator),
         GenData('vkEntryPointValidation.inl',                 EntryPointValidationGenerator),
         GenData('vkGetDeviceProcAddr.inl',                    GetDeviceProcAddrGenerator),
         GenData('vkFormatLists.inl',                          FormatListsGenerator),

@@ -51,6 +51,7 @@
 #include "deMath.h"
 
 #include <vector>
+#include <map>
 #include <set>
 #include <string>
 #include <limits>
@@ -2797,18 +2798,12 @@ tcu::TestStatus validateInstanceExtensionDependencies(Context &context)
     TestLog &log = context.getTestContext().getLog();
     tcu::ResultCollector results(log);
 
-    const vector<VkExtensionProperties> properties =
-        enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
-    const vector<VkExtensionProperties> unused;
-
-    for (const auto &version : releasedApiVersions)
+    const auto instProperties = enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
+    for (const auto &[ignored, apiVariant, vMajor, vMinor] : releasedApiVersions)
     {
-        uint32_t apiVariant, versionMajor, versionMinor;
-        std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
-        if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
+        if (context.contextSupports(vk::ApiVersion(apiVariant, vMajor, vMinor, 0)))
         {
-            checkExtensionDependencies(results, instanceExtensionDependencies, versionMajor, versionMinor, properties,
-                                       unused);
+            checkExtensionDependencies(results, instanceExtensionDependencies, vMajor, vMinor, instProperties, {});
             break;
         }
     }
@@ -2957,22 +2952,17 @@ tcu::TestStatus enumerateDeviceExtensions(Context &context)
 
 tcu::TestStatus validateDeviceExtensionDependencies(Context &context)
 {
-    TestLog &log = context.getTestContext().getLog();
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+    TestLog &log              = context.getTestContext().getLog();
     tcu::ResultCollector results(log);
 
-    const vector<VkExtensionProperties> instanceExtensionProperties =
-        enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
-    const vector<VkExtensionProperties> deviceExtensionProperties =
-        enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), nullptr);
-
-    for (const auto &version : releasedApiVersions)
+    const auto devProperties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+    for (const auto &[ignored, apiVariant, vMajor, vMinor] : releasedApiVersions)
     {
-        uint32_t apiVariant, versionMajor, versionMinor;
-        std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
-        if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
+        if (context.contextSupports(vk::ApiVersion(apiVariant, vMajor, vMinor, 0)))
         {
-            checkExtensionDependencies(results, deviceExtensionDependencies, versionMajor, versionMinor,
-                                       instanceExtensionProperties, deviceExtensionProperties);
+            checkExtensionDependencies(results, deviceExtensionDependencies, vMajor, vMinor, {}, devProperties);
             break;
         }
     }
@@ -4357,6 +4347,187 @@ void checkExtendedFlagsSupport(Context &context)
 #ifndef CTS_USES_VULKANSC
     context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
 #endif
+}
+
+class CustomInstanceWrapper
+{
+public:
+    CustomInstanceWrapper(Context &context, bool enableAllExtensions = false);
+
+    VkPhysicalDevice getMatchingPhysicalDevice();
+    uint32_t getDeviceExtensionCount();
+    std::vector<VkExtensionProperties> getDeviceExtensions();
+    VkResult createDevice(const std::vector<const char *> &extensionNames);
+    VkDevice getDevice() const
+    {
+        return m_device;
+    }
+
+public:
+    const VkDevice cSentinelDevice = reinterpret_cast<VkDevice>(static_cast<uintptr_t>(0xdeadbeefu));
+
+protected:
+    Context &m_context;
+    CustomInstance m_instance;
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    uint32_t m_extensionCount         = 0u;
+    VkDevice m_device                 = VK_NULL_HANDLE;
+    Move<VkDevice> m_deviceInternal;
+};
+
+CustomInstanceWrapper::CustomInstanceWrapper(Context &context, bool enableAllExtensions) : m_context(context)
+{
+    const auto &vkp                         = context.getPlatformInterface();
+    VkApplicationInfo appInfo               = initVulkanStructure();
+    appInfo.apiVersion                      = context.getUsedApiVersion();
+    VkInstanceCreateInfo instanceCreateInfo = initVulkanStructure();
+    instanceCreateInfo.pApplicationInfo     = &appInfo;
+
+    std::vector<const char *> extensionPtrs;
+    std::vector<VkExtensionProperties> instanceExtensionPropertiesVect;
+
+    if (enableAllExtensions)
+    {
+        instanceExtensionPropertiesVect = enumerateInstanceExtensionProperties(vkp, nullptr);
+        for (const auto &ext : instanceExtensionPropertiesVect)
+            extensionPtrs.push_back(ext.extensionName);
+    }
+
+    instanceCreateInfo.enabledExtensionCount   = (uint32_t)extensionPtrs.size();
+    instanceCreateInfo.ppEnabledExtensionNames = de::dataOrNull(extensionPtrs);
+
+#ifndef CTS_USES_VULKANSC
+    std::unique_ptr<DebugReportRecorder> recorder;
+    m_instance = CustomInstance(context, vk::createInstance(vkp, &instanceCreateInfo, nullptr), recorder);
+#else
+    m_instance = CustomInstance(context, vk::createInstance(vkp, &instanceCreateInfo, nullptr));
+#endif
+}
+
+VkPhysicalDevice CustomInstanceWrapper::getMatchingPhysicalDevice()
+{
+    if (m_physicalDevice != VK_NULL_HANDLE)
+        return m_physicalDevice;
+
+    const auto &refProperties = m_context.getDeviceProperties();
+    for (auto pd : enumeratePhysicalDevices(m_instance.getDriver(), m_instance))
+    {
+        // get physical device that coresponds to the device tested by cts
+        auto curProperties = getPhysicalDeviceProperties(m_instance.getDriver(), pd);
+        if ((refProperties.vendorID == curProperties.vendorID) && //
+            (refProperties.deviceID == curProperties.deviceID) && //
+            (strcmp(refProperties.deviceName, curProperties.deviceName) == 0) &&
+            (deMemCmp(refProperties.pipelineCacheUUID, curProperties.pipelineCacheUUID, VK_UUID_SIZE) == 0))
+        {
+            m_physicalDevice = pd;
+            break;
+        }
+    }
+
+    return m_physicalDevice;
+}
+
+uint32_t CustomInstanceWrapper::getDeviceExtensionCount()
+{
+    DE_ASSERT(m_physicalDevice != VK_NULL_HANDLE);
+    const InstanceDriver &vki = m_instance.getDriver();
+
+    VK_CHECK(vki.enumerateDeviceExtensionProperties(m_physicalDevice, nullptr, &m_extensionCount, nullptr));
+    return m_extensionCount;
+}
+
+std::vector<VkExtensionProperties> CustomInstanceWrapper::getDeviceExtensions()
+{
+    DE_ASSERT(m_physicalDevice != VK_NULL_HANDLE);
+    const InstanceDriver &vki = m_instance.getDriver();
+    return enumerateDeviceExtensionProperties(vki, m_physicalDevice, nullptr);
+}
+
+VkResult CustomInstanceWrapper::createDevice(const std::vector<const char *> &extensionNames)
+{
+    auto &vkp                                     = m_context.getPlatformInterface();
+    const float queuePriority                     = 1.0f;
+    VkDeviceQueueCreateInfo deviceQueueCreateInfo = initVulkanStructure();
+    deviceQueueCreateInfo.queueFamilyIndex        = m_context.getUniversalQueueFamilyIndex();
+    deviceQueueCreateInfo.queueCount              = 1u;
+    deviceQueueCreateInfo.pQueuePriorities        = &queuePriority;
+
+    VkDeviceCreateInfo deviceCreateInfo      = initVulkanStructure();
+    deviceCreateInfo.queueCreateInfoCount    = 1;
+    deviceCreateInfo.pQueueCreateInfos       = &deviceQueueCreateInfo;
+    deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(extensionNames.size());
+    deviceCreateInfo.ppEnabledExtensionNames = extensionNames.data();
+
+#ifdef CTS_USES_VULKANSC
+    // add structures required by Vulkan SC
+    VkFaultCallbackInfo faultCallbackInfo = initVulkanStructure();
+    faultCallbackInfo.pfnFaultCallback    = Context::faultCallbackFunction;
+    auto objectReservationInfo  = m_context.getResourceInterface()->getDefaultDeviceObjectReservationCreateInfo();
+    auto sc10Features           = createDefaultSC10Features();
+    objectReservationInfo.pNext = &faultCallbackInfo;
+    sc10Features.pNext          = &objectReservationInfo;
+    deviceCreateInfo.pNext      = &sc10Features;
+#endif // CTS_USES_VULKANSC
+
+    // destroying the previous device - SC supports only a single device per instance
+    m_deviceInternal = Move<VkDevice>();
+    m_device         = cSentinelDevice;
+
+    const VkResult result =
+        m_instance.getDriver().createDevice(m_physicalDevice, &deviceCreateInfo, nullptr, &m_device);
+    if (result == VK_SUCCESS)
+        m_deviceInternal =
+            Move<VkDevice>(check<VkDevice>(m_device), Deleter<VkDevice>(vkp, m_instance, m_device, nullptr));
+
+    return result;
+}
+
+tcu::TestStatus probeAndFullInstanceConsistency(Context &context)
+{
+    // create probe instance with no extensions
+    CustomInstanceWrapper probeInstance(context);
+
+    // create full instance with all available extensions
+    CustomInstanceWrapper fullInstance(context, true);
+
+    if (probeInstance.getMatchingPhysicalDevice() == VK_NULL_HANDLE)
+        return tcu::TestStatus::fail("Physical device not found in probe instance");
+
+    if (fullInstance.getMatchingPhysicalDevice() == VK_NULL_HANDLE)
+        return tcu::TestStatus::fail("Physical device not found in full instance");
+
+    uint32_t probeDeviceExtensionCount = probeInstance.getDeviceExtensionCount();
+    uint32_t fullDeviceExtensionCount  = fullInstance.getDeviceExtensionCount();
+
+    if (probeDeviceExtensionCount != fullDeviceExtensionCount)
+        return tcu::TestStatus::fail("Extension count mismatch");
+
+    const auto probeExtensions = probeInstance.getDeviceExtensions();
+    const auto fullExtensions  = fullInstance.getDeviceExtensions();
+
+    for (const auto &probeExt : probeExtensions)
+    {
+        bool found = false;
+        for (const auto &fullExt : fullExtensions)
+        {
+            found = (strcmp(probeExt.extensionName, fullExt.extensionName) == 0);
+            if (found)
+            {
+                if (probeExt.specVersion == fullExt.specVersion)
+                    break;
+                return tcu::TestStatus::fail(std::string(probeExt.extensionName) + " specVersion mismatch");
+            }
+        }
+        if (!found)
+            return tcu::TestStatus::fail(std::string(probeExt.extensionName) + " not found in full instance");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void createDeviceExtensionEnumerationTests(tcu::TestCaseGroup *testGroup)
+{
+    addFunctionCase(testGroup, "probe_and_full_instance_consistency", probeAndFullInstanceConsistency);
 }
 
 void checkYcbcrApiSupport(Context &context)
@@ -9023,6 +9194,8 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> infoTests(new tcu::TestCaseGroup(testCtx, "info"));
 
+    infoTests->addChild(
+        createTestGroup(testCtx, "device_extension_enumeration", createDeviceExtensionEnumerationTests));
     infoTests->addChild(createTestGroup(testCtx, "format_properties", createFormatTests));
     infoTests->addChild(
         createTestGroup(testCtx, "image_format_properties", createImageFormatTests, imageFormatProperties));

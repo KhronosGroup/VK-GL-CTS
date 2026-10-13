@@ -27711,6 +27711,7 @@ dEQP-VK.api.image_compression_control.swapchain.direct.default
 dEQP-VK.api.image_compression_control.swapchain.direct.disabled
 dEQP-VK.api.image_compression_control.swapchain.direct.explicit
 dEQP-VK.api.image_compression_control.swapchain.direct.fixed_rate_default
+dEQP-VK.api.info.device_extension_enumeration.probe_and_full_instance_consistency
 dEQP-VK.api.info.extended_flags_image_format_properties2.1d.linear.a1r5g5b5_unorm_pack16
 dEQP-VK.api.info.extended_flags_image_format_properties2.1d.linear.a2b10g10r10_sint_pack32
 dEQP-VK.api.info.extended_flags_image_format_properties2.1d.linear.a2b10g10r10_snorm_pack32

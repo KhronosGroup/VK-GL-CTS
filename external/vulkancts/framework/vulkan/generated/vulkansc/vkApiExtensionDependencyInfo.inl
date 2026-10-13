@@ -108,13 +108,13 @@ bool check_VK_KHR_get_surface_capabilities2(const tcu::UVec2& v, const ExtPropVe
 
 static const DependencyCheckVect instanceExtensionDependencies
 {
-	std::make_pair("VK_EXT_direct_mode_display",			&check_VK_EXT_direct_mode_display),
-	std::make_pair("VK_EXT_display_surface_counter",		&check_VK_EXT_display_surface_counter),
-	std::make_pair("VK_EXT_headless_surface",				&check_VK_EXT_headless_surface),
-	std::make_pair("VK_EXT_swapchain_colorspace",			&check_VK_EXT_swapchain_colorspace),
-	std::make_pair("VK_KHR_display",						&check_VK_KHR_display),
-	std::make_pair("VK_KHR_get_display_properties2",		&check_VK_KHR_get_display_properties2),
-	std::make_pair("VK_KHR_get_surface_capabilities2",	&check_VK_KHR_get_surface_capabilities2),
+	{"VK_EXT_direct_mode_display",			&check_VK_EXT_direct_mode_display},
+	{"VK_EXT_display_surface_counter",		&check_VK_EXT_display_surface_counter},
+	{"VK_EXT_headless_surface",				&check_VK_EXT_headless_surface},
+	{"VK_EXT_swapchain_colorspace",			&check_VK_EXT_swapchain_colorspace},
+	{"VK_KHR_display",						&check_VK_KHR_display},
+	{"VK_KHR_get_display_properties2",		&check_VK_KHR_get_display_properties2},
+	{"VK_KHR_get_surface_capabilities2",	&check_VK_KHR_get_surface_capabilities2},
 };
 
 bool check_VK_EXT_4444_formats(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -224,7 +224,7 @@ bool check_VK_EXT_display_control(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_EXT_display_surface_counter+VK_KHR_swapchain
-	return (isSupported(vIEP, "VK_EXT_display_surface_counter") && isSupported(vDEP, "VK_KHR_swapchain"));
+	return isSupported(vDEP, "VK_KHR_swapchain");
 }
 
 bool check_VK_EXT_extended_dynamic_state(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -566,7 +566,7 @@ bool check_VK_KHR_display_swapchain(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_display
-	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_KHR_display"));
+	return isSupported(vDEP, "VK_KHR_swapchain");
 }
 
 bool check_VK_KHR_external_fence_fd(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -718,19 +718,7 @@ bool check_VK_KHR_shared_presentable_image(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_get_surface_capabilities2+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && (true || true));
-}
-
-bool check_VK_KHR_swapchain(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
-{
-	DE_UNREF(v);
-	DE_UNREF(vIEP);
-
-	if (!isSupported(vDEP, "VK_KHR_swapchain"))
-		return true;
-
-	// depends attribute in xml: VK_KHR_surface
-	return isSupported(vIEP, "VK_KHR_surface");
+	return (isSupported(vDEP, "VK_KHR_swapchain") && (true || true));
 }
 
 bool check_VK_KHR_swapchain_mutable_format(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -771,18 +759,6 @@ bool check_VK_KHR_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVec
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
 	return (true || true);
-}
-
-bool check_VK_NV_acquire_winrt_display(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
-{
-	DE_UNREF(v);
-	DE_UNREF(vIEP);
-
-	if (!isSupported(vDEP, "VK_NV_acquire_winrt_display"))
-		return true;
-
-	// depends attribute in xml: VK_EXT_direct_mode_display
-	return isSupported(vIEP, "VK_EXT_direct_mode_display");
 }
 
 bool check_VK_NV_external_memory_sci_buf(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -835,148 +811,146 @@ bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPr
 
 static const DependencyCheckVect deviceExtensionDependencies
 {
-	std::make_pair("VK_EXT_4444_formats",							&check_VK_EXT_4444_formats),
-	std::make_pair("VK_EXT_astc_decode_mode",						&check_VK_EXT_astc_decode_mode),
-	std::make_pair("VK_EXT_blend_operation_advanced",				&check_VK_EXT_blend_operation_advanced),
-	std::make_pair("VK_EXT_color_write_enable",					&check_VK_EXT_color_write_enable),
-	std::make_pair("VK_EXT_conservative_rasterization",			&check_VK_EXT_conservative_rasterization),
-	std::make_pair("VK_EXT_custom_border_color",					&check_VK_EXT_custom_border_color),
-	std::make_pair("VK_EXT_depth_clip_enable",						&check_VK_EXT_depth_clip_enable),
-	std::make_pair("VK_EXT_discard_rectangles",					&check_VK_EXT_discard_rectangles),
-	std::make_pair("VK_EXT_display_control",						&check_VK_EXT_display_control),
-	std::make_pair("VK_EXT_extended_dynamic_state",				&check_VK_EXT_extended_dynamic_state),
-	std::make_pair("VK_EXT_extended_dynamic_state2",				&check_VK_EXT_extended_dynamic_state2),
-	std::make_pair("VK_EXT_external_memory_dma_buf",				&check_VK_EXT_external_memory_dma_buf),
-	std::make_pair("VK_EXT_external_memory_host",					&check_VK_EXT_external_memory_host),
-	std::make_pair("VK_EXT_fragment_shader_interlock",				&check_VK_EXT_fragment_shader_interlock),
-	std::make_pair("VK_EXT_hdr_metadata",							&check_VK_EXT_hdr_metadata),
-	std::make_pair("VK_EXT_image_drm_format_modifier",				&check_VK_EXT_image_drm_format_modifier),
-	std::make_pair("VK_EXT_image_robustness",						&check_VK_EXT_image_robustness),
-	std::make_pair("VK_EXT_index_type_uint8",						&check_VK_EXT_index_type_uint8),
-	std::make_pair("VK_EXT_line_rasterization",					&check_VK_EXT_line_rasterization),
-	std::make_pair("VK_EXT_memory_budget",							&check_VK_EXT_memory_budget),
-	std::make_pair("VK_EXT_pci_bus_info",							&check_VK_EXT_pci_bus_info),
-	std::make_pair("VK_EXT_queue_family_foreign",					&check_VK_EXT_queue_family_foreign),
-	std::make_pair("VK_EXT_robustness2",							&check_VK_EXT_robustness2),
-	std::make_pair("VK_EXT_sample_locations",						&check_VK_EXT_sample_locations),
-	std::make_pair("VK_EXT_shader_atomic_float",					&check_VK_EXT_shader_atomic_float),
-	std::make_pair("VK_EXT_shader_demote_to_helper_invocation",	&check_VK_EXT_shader_demote_to_helper_invocation),
-	std::make_pair("VK_EXT_shader_image_atomic_int64",				&check_VK_EXT_shader_image_atomic_int64),
-	std::make_pair("VK_EXT_subgroup_size_control",					&check_VK_EXT_subgroup_size_control),
-	std::make_pair("VK_EXT_texel_buffer_alignment",				&check_VK_EXT_texel_buffer_alignment),
-	std::make_pair("VK_EXT_texture_compression_astc_hdr",			&check_VK_EXT_texture_compression_astc_hdr),
-	std::make_pair("VK_EXT_vertex_input_dynamic_state",			&check_VK_EXT_vertex_input_dynamic_state),
-	std::make_pair("VK_EXT_ycbcr_2plane_444_formats",				&check_VK_EXT_ycbcr_2plane_444_formats),
-	std::make_pair("VK_EXT_ycbcr_image_arrays",					&check_VK_EXT_ycbcr_image_arrays),
-	std::make_pair("VK_KHR_calibrated_timestamps",					&check_VK_KHR_calibrated_timestamps),
-	std::make_pair("VK_KHR_copy_commands2",						&check_VK_KHR_copy_commands2),
-	std::make_pair("VK_KHR_display_swapchain",						&check_VK_KHR_display_swapchain),
-	std::make_pair("VK_KHR_external_fence_fd",						&check_VK_KHR_external_fence_fd),
-	std::make_pair("VK_KHR_external_memory_fd",					&check_VK_KHR_external_memory_fd),
-	std::make_pair("VK_KHR_external_semaphore_fd",					&check_VK_KHR_external_semaphore_fd),
-	std::make_pair("VK_KHR_fragment_shading_rate",					&check_VK_KHR_fragment_shading_rate),
-	std::make_pair("VK_KHR_global_priority",						&check_VK_KHR_global_priority),
-	std::make_pair("VK_KHR_incremental_present",					&check_VK_KHR_incremental_present),
-	std::make_pair("VK_KHR_index_type_uint8",						&check_VK_KHR_index_type_uint8),
-	std::make_pair("VK_KHR_line_rasterization",					&check_VK_KHR_line_rasterization),
-	std::make_pair("VK_KHR_performance_query",						&check_VK_KHR_performance_query),
-	std::make_pair("VK_KHR_shader_clock",							&check_VK_KHR_shader_clock),
-	std::make_pair("VK_KHR_shader_terminate_invocation",			&check_VK_KHR_shader_terminate_invocation),
-	std::make_pair("VK_KHR_shared_presentable_image",				&check_VK_KHR_shared_presentable_image),
-	std::make_pair("VK_KHR_swapchain",								&check_VK_KHR_swapchain),
-	std::make_pair("VK_KHR_swapchain_mutable_format",				&check_VK_KHR_swapchain_mutable_format),
-	std::make_pair("VK_KHR_synchronization2",						&check_VK_KHR_synchronization2),
-	std::make_pair("VK_KHR_vertex_attribute_divisor",				&check_VK_KHR_vertex_attribute_divisor),
-	std::make_pair("VK_NV_acquire_winrt_display",					&check_VK_NV_acquire_winrt_display),
-	std::make_pair("VK_NV_external_memory_sci_buf",				&check_VK_NV_external_memory_sci_buf),
-	std::make_pair("VK_NV_external_sci_sync",						&check_VK_NV_external_sci_sync),
-	std::make_pair("VK_NV_external_sci_sync2",						&check_VK_NV_external_sci_sync2),
-	std::make_pair("VK_QNX_external_memory_screen_buffer",			&check_VK_QNX_external_memory_screen_buffer),
+	{"VK_EXT_4444_formats",							&check_VK_EXT_4444_formats},
+	{"VK_EXT_astc_decode_mode",						&check_VK_EXT_astc_decode_mode},
+	{"VK_EXT_blend_operation_advanced",				&check_VK_EXT_blend_operation_advanced},
+	{"VK_EXT_color_write_enable",					&check_VK_EXT_color_write_enable},
+	{"VK_EXT_conservative_rasterization",			&check_VK_EXT_conservative_rasterization},
+	{"VK_EXT_custom_border_color",					&check_VK_EXT_custom_border_color},
+	{"VK_EXT_depth_clip_enable",						&check_VK_EXT_depth_clip_enable},
+	{"VK_EXT_discard_rectangles",					&check_VK_EXT_discard_rectangles},
+	{"VK_EXT_display_control",						&check_VK_EXT_display_control},
+	{"VK_EXT_extended_dynamic_state",				&check_VK_EXT_extended_dynamic_state},
+	{"VK_EXT_extended_dynamic_state2",				&check_VK_EXT_extended_dynamic_state2},
+	{"VK_EXT_external_memory_dma_buf",				&check_VK_EXT_external_memory_dma_buf},
+	{"VK_EXT_external_memory_host",					&check_VK_EXT_external_memory_host},
+	{"VK_EXT_fragment_shader_interlock",				&check_VK_EXT_fragment_shader_interlock},
+	{"VK_EXT_hdr_metadata",							&check_VK_EXT_hdr_metadata},
+	{"VK_EXT_image_drm_format_modifier",				&check_VK_EXT_image_drm_format_modifier},
+	{"VK_EXT_image_robustness",						&check_VK_EXT_image_robustness},
+	{"VK_EXT_index_type_uint8",						&check_VK_EXT_index_type_uint8},
+	{"VK_EXT_line_rasterization",					&check_VK_EXT_line_rasterization},
+	{"VK_EXT_memory_budget",							&check_VK_EXT_memory_budget},
+	{"VK_EXT_pci_bus_info",							&check_VK_EXT_pci_bus_info},
+	{"VK_EXT_queue_family_foreign",					&check_VK_EXT_queue_family_foreign},
+	{"VK_EXT_robustness2",							&check_VK_EXT_robustness2},
+	{"VK_EXT_sample_locations",						&check_VK_EXT_sample_locations},
+	{"VK_EXT_shader_atomic_float",					&check_VK_EXT_shader_atomic_float},
+	{"VK_EXT_shader_demote_to_helper_invocation",	&check_VK_EXT_shader_demote_to_helper_invocation},
+	{"VK_EXT_shader_image_atomic_int64",				&check_VK_EXT_shader_image_atomic_int64},
+	{"VK_EXT_subgroup_size_control",					&check_VK_EXT_subgroup_size_control},
+	{"VK_EXT_texel_buffer_alignment",				&check_VK_EXT_texel_buffer_alignment},
+	{"VK_EXT_texture_compression_astc_hdr",			&check_VK_EXT_texture_compression_astc_hdr},
+	{"VK_EXT_vertex_input_dynamic_state",			&check_VK_EXT_vertex_input_dynamic_state},
+	{"VK_EXT_ycbcr_2plane_444_formats",				&check_VK_EXT_ycbcr_2plane_444_formats},
+	{"VK_EXT_ycbcr_image_arrays",					&check_VK_EXT_ycbcr_image_arrays},
+	{"VK_KHR_calibrated_timestamps",					&check_VK_KHR_calibrated_timestamps},
+	{"VK_KHR_copy_commands2",						&check_VK_KHR_copy_commands2},
+	{"VK_KHR_display_swapchain",						&check_VK_KHR_display_swapchain},
+	{"VK_KHR_external_fence_fd",						&check_VK_KHR_external_fence_fd},
+	{"VK_KHR_external_memory_fd",					&check_VK_KHR_external_memory_fd},
+	{"VK_KHR_external_semaphore_fd",					&check_VK_KHR_external_semaphore_fd},
+	{"VK_KHR_fragment_shading_rate",					&check_VK_KHR_fragment_shading_rate},
+	{"VK_KHR_global_priority",						&check_VK_KHR_global_priority},
+	{"VK_KHR_incremental_present",					&check_VK_KHR_incremental_present},
+	{"VK_KHR_index_type_uint8",						&check_VK_KHR_index_type_uint8},
+	{"VK_KHR_line_rasterization",					&check_VK_KHR_line_rasterization},
+	{"VK_KHR_performance_query",						&check_VK_KHR_performance_query},
+	{"VK_KHR_shader_clock",							&check_VK_KHR_shader_clock},
+	{"VK_KHR_shader_terminate_invocation",			&check_VK_KHR_shader_terminate_invocation},
+	{"VK_KHR_shared_presentable_image",				&check_VK_KHR_shared_presentable_image},
+	{"VK_KHR_swapchain_mutable_format",				&check_VK_KHR_swapchain_mutable_format},
+	{"VK_KHR_synchronization2",						&check_VK_KHR_synchronization2},
+	{"VK_KHR_vertex_attribute_divisor",				&check_VK_KHR_vertex_attribute_divisor},
+	{"VK_NV_external_memory_sci_buf",				&check_VK_NV_external_memory_sci_buf},
+	{"VK_NV_external_sci_sync",						&check_VK_NV_external_sci_sync},
+	{"VK_NV_external_sci_sync2",						&check_VK_NV_external_sci_sync2},
+	{"VK_QNX_external_memory_screen_buffer",			&check_VK_QNX_external_memory_screen_buffer},
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
 {
-	std::make_tuple(541081600, 1, 1, 4),
-	std::make_tuple(541077504, 1, 1, 3),
-	std::make_tuple(541073408, 1, 1, 2),
-	std::make_tuple(541069312, 1, 1, 1),
-	std::make_tuple(4194304, 0, 1, 0)
+	{541081600, 1, 1, 4},
+	{541077504, 1, 1, 3},
+	{541073408, 1, 1, 2},
+	{541069312, 1, 1, 1},
+	{4194304, 0, 1, 0}
 };
 static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVersion[]	 =
 {
-	std::make_tuple(1, 0, "VK_EXT_4444_formats"),
-	std::make_tuple(1, 0, "VK_EXT_application_parameters"),
-	std::make_tuple(1, 0, "VK_EXT_astc_decode_mode"),
-	std::make_tuple(1, 0, "VK_EXT_blend_operation_advanced"),
-	std::make_tuple(1, 0, "VK_EXT_color_write_enable"),
-	std::make_tuple(1, 0, "VK_EXT_conservative_rasterization"),
-	std::make_tuple(1, 0, "VK_EXT_custom_border_color"),
-	std::make_tuple(1, 0, "VK_EXT_debug_utils"),
-	std::make_tuple(1, 0, "VK_EXT_depth_clip_enable"),
-	std::make_tuple(1, 0, "VK_EXT_depth_range_unrestricted"),
-	std::make_tuple(1, 0, "VK_EXT_direct_mode_display"),
-	std::make_tuple(1, 0, "VK_EXT_discard_rectangles"),
-	std::make_tuple(1, 0, "VK_EXT_display_control"),
-	std::make_tuple(1, 0, "VK_EXT_display_surface_counter"),
-	std::make_tuple(1, 0, "VK_EXT_extended_dynamic_state"),
-	std::make_tuple(1, 0, "VK_EXT_extended_dynamic_state2"),
-	std::make_tuple(1, 0, "VK_EXT_external_memory_dma_buf"),
-	std::make_tuple(1, 0, "VK_EXT_external_memory_host"),
-	std::make_tuple(1, 0, "VK_EXT_filter_cubic"),
-	std::make_tuple(1, 0, "VK_EXT_fragment_shader_interlock"),
-	std::make_tuple(1, 0, "VK_EXT_hdr_metadata"),
-	std::make_tuple(1, 0, "VK_EXT_headless_surface"),
-	std::make_tuple(1, 0, "VK_EXT_image_drm_format_modifier"),
-	std::make_tuple(1, 0, "VK_EXT_image_robustness"),
-	std::make_tuple(1, 0, "VK_EXT_index_type_uint8"),
-	std::make_tuple(1, 0, "VK_EXT_layer_settings"),
-	std::make_tuple(1, 0, "VK_EXT_line_rasterization"),
-	std::make_tuple(1, 0, "VK_EXT_memory_budget"),
-	std::make_tuple(1, 0, "VK_EXT_pci_bus_info"),
-	std::make_tuple(1, 0, "VK_EXT_post_depth_coverage"),
-	std::make_tuple(1, 0, "VK_EXT_queue_family_foreign"),
-	std::make_tuple(1, 0, "VK_EXT_robustness2"),
-	std::make_tuple(1, 0, "VK_EXT_sample_locations"),
-	std::make_tuple(1, 0, "VK_EXT_shader_atomic_float"),
-	std::make_tuple(1, 0, "VK_EXT_shader_demote_to_helper_invocation"),
-	std::make_tuple(1, 0, "VK_EXT_shader_image_atomic_int64"),
-	std::make_tuple(1, 0, "VK_EXT_shader_stencil_export"),
-	std::make_tuple(1, 1, "VK_EXT_subgroup_size_control"),
-	std::make_tuple(1, 0, "VK_EXT_swapchain_colorspace"),
-	std::make_tuple(1, 0, "VK_EXT_texel_buffer_alignment"),
-	std::make_tuple(1, 0, "VK_EXT_texture_compression_astc_hdr"),
-	std::make_tuple(1, 0, "VK_EXT_validation_features"),
-	std::make_tuple(1, 0, "VK_EXT_vertex_input_dynamic_state"),
-	std::make_tuple(1, 0, "VK_EXT_ycbcr_2plane_444_formats"),
-	std::make_tuple(1, 0, "VK_EXT_ycbcr_image_arrays"),
-	std::make_tuple(1, 0, "VK_KHR_calibrated_timestamps"),
-	std::make_tuple(1, 0, "VK_KHR_copy_commands2"),
-	std::make_tuple(1, 0, "VK_KHR_display"),
-	std::make_tuple(1, 0, "VK_KHR_display_swapchain"),
-	std::make_tuple(1, 0, "VK_KHR_external_fence_fd"),
-	std::make_tuple(1, 0, "VK_KHR_external_memory_fd"),
-	std::make_tuple(1, 0, "VK_KHR_external_semaphore_fd"),
-	std::make_tuple(1, 0, "VK_KHR_fragment_shading_rate"),
-	std::make_tuple(1, 0, "VK_KHR_get_display_properties2"),
-	std::make_tuple(1, 0, "VK_KHR_get_surface_capabilities2"),
-	std::make_tuple(1, 0, "VK_KHR_global_priority"),
-	std::make_tuple(1, 0, "VK_KHR_incremental_present"),
-	std::make_tuple(1, 0, "VK_KHR_index_type_uint8"),
-	std::make_tuple(1, 0, "VK_KHR_line_rasterization"),
-	std::make_tuple(1, 0, "VK_KHR_object_refresh"),
-	std::make_tuple(1, 0, "VK_KHR_performance_query"),
-	std::make_tuple(1, 0, "VK_KHR_shader_clock"),
-	std::make_tuple(1, 0, "VK_KHR_shader_terminate_invocation"),
-	std::make_tuple(1, 0, "VK_KHR_shared_presentable_image"),
-	std::make_tuple(1, 0, "VK_KHR_surface"),
-	std::make_tuple(1, 0, "VK_KHR_swapchain"),
-	std::make_tuple(1, 0, "VK_KHR_swapchain_mutable_format"),
-	std::make_tuple(1, 0, "VK_KHR_synchronization2"),
-	std::make_tuple(1, 0, "VK_KHR_vertex_attribute_divisor"),
-	std::make_tuple(1, 0, "VK_NV_acquire_winrt_display"),
-	std::make_tuple(1, 1, "VK_NV_external_memory_sci_buf"),
-	std::make_tuple(1, 1, "VK_NV_external_sci_sync"),
-	std::make_tuple(1, 1, "VK_NV_external_sci_sync2"),
-	std::make_tuple(1, 0, "VK_NV_private_vendor_info"),
-	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
+	{1, 0, "VK_EXT_4444_formats"},
+	{1, 0, "VK_EXT_application_parameters"},
+	{1, 0, "VK_EXT_astc_decode_mode"},
+	{1, 0, "VK_EXT_blend_operation_advanced"},
+	{1, 0, "VK_EXT_color_write_enable"},
+	{1, 0, "VK_EXT_conservative_rasterization"},
+	{1, 0, "VK_EXT_custom_border_color"},
+	{1, 0, "VK_EXT_debug_utils"},
+	{1, 0, "VK_EXT_depth_clip_enable"},
+	{1, 0, "VK_EXT_depth_range_unrestricted"},
+	{1, 0, "VK_EXT_direct_mode_display"},
+	{1, 0, "VK_EXT_discard_rectangles"},
+	{1, 0, "VK_EXT_display_control"},
+	{1, 0, "VK_EXT_display_surface_counter"},
+	{1, 0, "VK_EXT_extended_dynamic_state"},
+	{1, 0, "VK_EXT_extended_dynamic_state2"},
+	{1, 0, "VK_EXT_external_memory_dma_buf"},
+	{1, 0, "VK_EXT_external_memory_host"},
+	{1, 0, "VK_EXT_filter_cubic"},
+	{1, 0, "VK_EXT_fragment_shader_interlock"},
+	{1, 0, "VK_EXT_hdr_metadata"},
+	{1, 0, "VK_EXT_headless_surface"},
+	{1, 0, "VK_EXT_image_drm_format_modifier"},
+	{1, 0, "VK_EXT_image_robustness"},
+	{1, 0, "VK_EXT_index_type_uint8"},
+	{1, 0, "VK_EXT_layer_settings"},
+	{1, 0, "VK_EXT_line_rasterization"},
+	{1, 0, "VK_EXT_memory_budget"},
+	{1, 0, "VK_EXT_pci_bus_info"},
+	{1, 0, "VK_EXT_post_depth_coverage"},
+	{1, 0, "VK_EXT_queue_family_foreign"},
+	{1, 0, "VK_EXT_robustness2"},
+	{1, 0, "VK_EXT_sample_locations"},
+	{1, 0, "VK_EXT_shader_atomic_float"},
+	{1, 0, "VK_EXT_shader_demote_to_helper_invocation"},
+	{1, 0, "VK_EXT_shader_image_atomic_int64"},
+	{1, 0, "VK_EXT_shader_stencil_export"},
+	{1, 1, "VK_EXT_subgroup_size_control"},
+	{1, 0, "VK_EXT_swapchain_colorspace"},
+	{1, 0, "VK_EXT_texel_buffer_alignment"},
+	{1, 0, "VK_EXT_texture_compression_astc_hdr"},
+	{1, 0, "VK_EXT_validation_features"},
+	{1, 0, "VK_EXT_vertex_input_dynamic_state"},
+	{1, 0, "VK_EXT_ycbcr_2plane_444_formats"},
+	{1, 0, "VK_EXT_ycbcr_image_arrays"},
+	{1, 0, "VK_KHR_calibrated_timestamps"},
+	{1, 0, "VK_KHR_copy_commands2"},
+	{1, 0, "VK_KHR_display"},
+	{1, 0, "VK_KHR_display_swapchain"},
+	{1, 0, "VK_KHR_external_fence_fd"},
+	{1, 0, "VK_KHR_external_memory_fd"},
+	{1, 0, "VK_KHR_external_semaphore_fd"},
+	{1, 0, "VK_KHR_fragment_shading_rate"},
+	{1, 0, "VK_KHR_get_display_properties2"},
+	{1, 0, "VK_KHR_get_surface_capabilities2"},
+	{1, 0, "VK_KHR_global_priority"},
+	{1, 0, "VK_KHR_incremental_present"},
+	{1, 0, "VK_KHR_index_type_uint8"},
+	{1, 0, "VK_KHR_line_rasterization"},
+	{1, 0, "VK_KHR_object_refresh"},
+	{1, 0, "VK_KHR_performance_query"},
+	{1, 0, "VK_KHR_shader_clock"},
+	{1, 0, "VK_KHR_shader_terminate_invocation"},
+	{1, 0, "VK_KHR_shared_presentable_image"},
+	{1, 0, "VK_KHR_surface"},
+	{1, 0, "VK_KHR_swapchain"},
+	{1, 0, "VK_KHR_swapchain_mutable_format"},
+	{1, 0, "VK_KHR_synchronization2"},
+	{1, 0, "VK_KHR_vertex_attribute_divisor"},
+	{1, 0, "VK_NV_acquire_winrt_display"},
+	{1, 1, "VK_NV_external_memory_sci_buf"},
+	{1, 1, "VK_NV_external_sci_sync"},
+	{1, 1, "VK_NV_external_sci_sync2"},
+	{1, 0, "VK_NV_private_vendor_info"},
+	{1, 0, "VK_QNX_external_memory_screen_buffer"},
 };
