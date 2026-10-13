@@ -9236,6 +9236,7 @@ dEQP-VK.spirv_assembly.instruction.compute.mul_extended.unsigned_64bit
 dEQP-VK.spirv_assembly.instruction.compute.mul_extended.unsigned_8bit
 dEQP-VK.spirv_assembly.instruction.compute.multiple_shaders.shader1
 dEQP-VK.spirv_assembly.instruction.compute.multiple_shaders.shader2
+dEQP-VK.spirv_assembly.instruction.compute.multiple_shaders_extended.four_entry_points_large_shared_memory_spirv1p4
 dEQP-VK.spirv_assembly.instruction.compute.multiple_shaders_extended.two_entry_points_different_interfaces
 dEQP-VK.spirv_assembly.instruction.compute.multiple_shaders_extended.two_entry_points_execution_mode_id
 dEQP-VK.spirv_assembly.instruction.compute.nocontraction.addition

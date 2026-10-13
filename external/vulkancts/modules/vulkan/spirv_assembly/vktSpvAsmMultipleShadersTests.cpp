@@ -32,6 +32,7 @@
 #include "vkBarrierUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkCmdUtil.hpp"
+#include "tcuTestLog.hpp"
 
 namespace vkt
 {
@@ -52,6 +53,9 @@ enum class TestType
 
     // two entry points where each has different interfaces
     TWO_ENTRY_POINTS_DIFFERENT_INTERFACES,
+
+    // Four entry points each using shared memory, combined over maxComputeSharedMemorySize
+    FOUR_ENTRY_POINTS_LARGE_SHARED_MEMORY_SPIRV_1_4,
 };
 
 struct TestConfig
@@ -226,6 +230,120 @@ tcu::TestStatus EntryPointsTest::iterate(void)
             if ((bufferAPtr[12 + i] != (dataASrc[i] + dataASrc[6 + i])) ||
                 (bufferBPtr[12 + i] != (dataBSrc[5 - i] * dataBSrc[11 - i])))
                 return tcu::TestStatus::fail("Fail");
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class LargeSharedMemoryTestInstance : public TestInstance
+{
+public:
+    LargeSharedMemoryTestInstance(Context &context, const TestConfig &) : TestInstance(context)
+    {
+    }
+    virtual ~LargeSharedMemoryTestInstance() = default;
+
+    virtual tcu::TestStatus iterate() override;
+};
+
+tcu::TestStatus LargeSharedMemoryTestInstance::iterate()
+{
+    const auto &vk              = m_context.getDeviceInterface();
+    const VkDevice device       = m_context.getDevice();
+    const auto queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto queue            = m_context.getUniversalQueue();
+    auto &alloc                 = m_context.getDefaultAllocator();
+    tcu::TestLog &log           = m_context.getTestContext().getLog();
+
+    constexpr uint32_t entryPointCount                 = 4u;
+    const char *const entryPointNames[entryPointCount] = {"main_a", "main_b", "main_c", "main_d"};
+
+    const uint32_t maxComputeSharedMemorySize = m_context.getDeviceProperties().limits.maxComputeSharedMemorySize;
+    const uint32_t uint_size                  = static_cast<uint32_t>(sizeof(uint32_t));
+    uint32_t arraySizes[entryPointCount];
+    for (uint32_t i = 0u; i < entryPointCount; ++i)
+        arraySizes[i] = maxComputeSharedMemorySize / uint_size - entryPointCount + i;
+
+    const VkDeviceSize outputBufferSize = static_cast<VkDeviceSize>(2u * entryPointCount * sizeof(uint32_t));
+    BufferWithMemory outputBuffer(vk, device, alloc,
+                                  makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                  MemoryRequirement::HostVisible);
+    const auto bufferData = static_cast<uint32_t *>(outputBuffer.getAllocation().getHostPtr());
+    for (uint32_t i = 0u; i < entryPointCount; ++i)
+    {
+        bufferData[i]                   = 0u;
+        bufferData[entryPointCount + i] = arraySizes[i] - 1u;
+    }
+    flushAlloc(vk, device, outputBuffer.getAllocation());
+
+    const auto descriptorSetLayout =
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device);
+    const auto pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
+    const auto descriptorPool = DescriptorPoolBuilder()
+                                    .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                                    .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+
+    const VkDescriptorBufferInfo bufferInfo = makeDescriptorBufferInfo(*outputBuffer, 0u, outputBufferSize);
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo)
+        .update(vk, device);
+
+    VkSpecializationMapEntry specializationMapEntries[entryPointCount];
+    for (uint32_t i = 0u; i < entryPointCount; ++i)
+        specializationMapEntries[i] = makeSpecializationMapEntry(i, i * uint_size, sizeof(uint32_t));
+
+    VkSpecializationInfo specializationInfo;
+    specializationInfo.mapEntryCount = entryPointCount;
+    specializationInfo.pMapEntries   = specializationMapEntries;
+    specializationInfo.dataSize      = entryPointCount * sizeof(uint32_t);
+    specializationInfo.pData         = arraySizes;
+
+    auto shaderModule = createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"));
+
+    Move<VkPipeline> pipelines[entryPointCount];
+    for (uint32_t i = 0u; i < entryPointCount; ++i)
+    {
+        VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure();
+        pipelineCreateInfo.stage                       = initVulkanStructure();
+        pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+        pipelineCreateInfo.stage.module                = *shaderModule;
+        pipelineCreateInfo.stage.pName                 = entryPointNames[i];
+        pipelineCreateInfo.stage.pSpecializationInfo   = &specializationInfo;
+        pipelineCreateInfo.layout                      = *pipelineLayout;
+        pipelines[i] = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+    }
+
+    const auto cmdPool   = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    const auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u,
+                             nullptr);
+    for (uint32_t i = 0u; i < entryPointCount; ++i)
+    {
+        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelines[i]);
+        vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+    }
+    auto bufferBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u,
+                          &bufferBarrier, 0u, nullptr, 0u, nullptr);
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    invalidateAlloc(vk, device, outputBuffer.getAllocation());
+
+    for (uint32_t i = 0u; i < entryPointCount; ++i)
+    {
+        if (bufferData[i] != arraySizes[i])
+        {
+            log << tcu::TestLog::Message << "Entry point " << entryPointNames[i] << " expected " << arraySizes[i]
+                << " but was " << bufferData[i] << tcu::TestLog::EndMessage;
+            return tcu::TestStatus::fail("Fail");
         }
     }
 
@@ -435,6 +553,234 @@ struct Programs
 
             dst.spirvAsmSources.add("comp") << compSrc;
         }
+        else if (config.type == TestType::FOUR_ENTRY_POINTS_LARGE_SHARED_MEMORY_SPIRV_1_4)
+        {
+            // #version 450
+            // layout(local_size_x = 1) in;
+            //
+            // layout(set = 0, binding = 0) buffer SSBO {
+            //     uint result[4];
+            //     uint lastIndex[4];
+            // };
+            //
+            // layout(constant_id = IDX) const uint SIZE = 1u;
+            // shared uint arr[SIZE];
+            //
+            // void main()
+            // {
+            //     uint last = lastIndex[IDX];
+            //     arr[0] = 1u;
+            //     arr[last] = last;
+            //     result[IDX] = arr[0] + arr[last];
+            // }
+            //
+            // Compiled once per entry point and linked into a single module
+            const std::string comp = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main_a "main_a" %_ %arr
+               OpEntryPoint GLCompute %main_b "main_b" %__0 %arr_0
+               OpEntryPoint GLCompute %main_c "main_c" %__1 %arr_1
+               OpEntryPoint GLCompute %main_d "main_d" %__2 %arr_2
+               OpExecutionMode %main_a LocalSize 1 1 1
+               OpExecutionMode %main_b LocalSize 1 1 1
+               OpExecutionMode %main_c LocalSize 1 1 1
+               OpExecutionMode %main_d LocalSize 1 1 1
+               OpSource GLSL 450
+               OpSource GLSL 450
+               OpSource GLSL 450
+               OpSource GLSL 450
+               OpName %main_a "main_a"
+               OpName %last "last"
+               OpName %SSBO "SSBO"
+               OpMemberName %SSBO 0 "result"
+               OpMemberName %SSBO 1 "lastIndex"
+               OpName %_ ""
+               OpName %SIZE "SIZE"
+               OpName %arr "arr"
+               OpName %main_b "main_b"
+               OpName %last_0 "last"
+               OpName %__0 ""
+               OpName %SIZE_0 "SIZE"
+               OpName %arr_0 "arr"
+               OpName %main_c "main_c"
+               OpName %last_1 "last"
+               OpName %__1 ""
+               OpName %SIZE_1 "SIZE"
+               OpName %arr_1 "arr"
+               OpName %main_d "main_d"
+               OpName %last_2 "last"
+               OpName %__2 ""
+               OpName %SIZE_2 "SIZE"
+               OpName %arr_2 "arr"
+               OpModuleProcessed "Linked by SPIR-V Tools Linker"
+               OpDecorate %_arr_uint_uint_4 ArrayStride 4
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpMemberDecorate %SSBO 1 Offset 16
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %SIZE SpecId 0
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %__0 Binding 0
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %SIZE_0 SpecId 1
+               OpDecorate %gl_WorkGroupSize_0 BuiltIn WorkgroupSize
+               OpDecorate %__1 Binding 0
+               OpDecorate %__1 DescriptorSet 0
+               OpDecorate %SIZE_1 SpecId 2
+               OpDecorate %gl_WorkGroupSize_1 BuiltIn WorkgroupSize
+               OpDecorate %__2 Binding 0
+               OpDecorate %__2 DescriptorSet 0
+               OpDecorate %SIZE_2 SpecId 3
+               OpDecorate %gl_WorkGroupSize_2 BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+         %29 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %uint_4 = OpConstant %uint 4
+%_arr_uint_uint_4 = OpTypeArray %uint %uint_4
+       %SSBO = OpTypeStruct %_arr_uint_uint_4 %_arr_uint_uint_4
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_1 = OpConstant %int 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+       %SIZE = OpSpecConstant %uint 1
+%_arr_uint_SIZE = OpTypeArray %uint %SIZE
+%_ptr_Workgroup__arr_uint_SIZE = OpTypePointer Workgroup %_arr_uint_SIZE
+        %arr = OpVariable %_ptr_Workgroup__arr_uint_SIZE Workgroup
+     %uint_1 = OpConstant %uint 1
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+     %v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1
+   %uint_4_0 = OpConstant %uint 4
+        %__0 = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+    %int_1_0 = OpConstant %int 1
+     %SIZE_0 = OpSpecConstant %uint 1
+%_arr_uint_SIZE_0 = OpTypeArray %uint %SIZE_0
+%_ptr_Workgroup__arr_uint_SIZE_0 = OpTypePointer Workgroup %_arr_uint_SIZE_0
+      %arr_0 = OpVariable %_ptr_Workgroup__arr_uint_SIZE_0 Workgroup
+    %int_0_0 = OpConstant %int 0
+   %uint_1_0 = OpConstant %uint 1
+%gl_WorkGroupSize_0 = OpConstantComposite %v3uint %uint_1_0 %uint_1_0 %uint_1_0
+   %uint_4_1 = OpConstant %uint 4
+        %__1 = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+    %int_1_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+     %SIZE_1 = OpSpecConstant %uint 1
+%_arr_uint_SIZE_1 = OpTypeArray %uint %SIZE_1
+%_ptr_Workgroup__arr_uint_SIZE_1 = OpTypePointer Workgroup %_arr_uint_SIZE_1
+      %arr_1 = OpVariable %_ptr_Workgroup__arr_uint_SIZE_1 Workgroup
+    %int_0_1 = OpConstant %int 0
+   %uint_1_1 = OpConstant %uint 1
+%gl_WorkGroupSize_1 = OpConstantComposite %v3uint %uint_1_1 %uint_1_1 %uint_1_1
+   %uint_4_2 = OpConstant %uint 4
+        %__2 = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+    %int_1_2 = OpConstant %int 1
+      %int_3 = OpConstant %int 3
+     %SIZE_2 = OpSpecConstant %uint 1
+%_arr_uint_SIZE_2 = OpTypeArray %uint %SIZE_2
+%_ptr_Workgroup__arr_uint_SIZE_2 = OpTypePointer Workgroup %_arr_uint_SIZE_2
+      %arr_2 = OpVariable %_ptr_Workgroup__arr_uint_SIZE_2 Workgroup
+    %int_0_2 = OpConstant %int 0
+   %uint_1_2 = OpConstant %uint 1
+%gl_WorkGroupSize_2 = OpConstantComposite %v3uint %uint_1_2 %uint_1_2 %uint_1_2
+     %main_a = OpFunction %void None %29
+         %63 = OpLabel
+       %last = OpVariable %_ptr_Function_uint Function
+         %64 = OpAccessChain %_ptr_StorageBuffer_uint %_ %int_1 %int_0
+         %65 = OpLoad %uint %64
+               OpStore %last %65
+         %66 = OpAccessChain %_ptr_Workgroup_uint %arr %int_0
+               OpStore %66 %uint_1
+         %67 = OpLoad %uint %last
+         %68 = OpLoad %uint %last
+         %69 = OpAccessChain %_ptr_Workgroup_uint %arr %67
+               OpStore %69 %68
+         %70 = OpAccessChain %_ptr_Workgroup_uint %arr %int_0
+         %71 = OpLoad %uint %70
+         %72 = OpLoad %uint %last
+         %73 = OpAccessChain %_ptr_Workgroup_uint %arr %72
+         %74 = OpLoad %uint %73
+         %75 = OpIAdd %uint %71 %74
+         %76 = OpAccessChain %_ptr_StorageBuffer_uint %_ %int_0 %int_0
+               OpStore %76 %75
+               OpReturn
+               OpFunctionEnd
+     %main_b = OpFunction %void None %29
+         %77 = OpLabel
+     %last_0 = OpVariable %_ptr_Function_uint Function
+         %78 = OpAccessChain %_ptr_StorageBuffer_uint %__0 %int_1_0 %int_1_0
+         %79 = OpLoad %uint %78
+               OpStore %last_0 %79
+         %80 = OpAccessChain %_ptr_Workgroup_uint %arr_0 %int_0_0
+               OpStore %80 %uint_1_0
+         %81 = OpLoad %uint %last_0
+         %82 = OpLoad %uint %last_0
+         %83 = OpAccessChain %_ptr_Workgroup_uint %arr_0 %81
+               OpStore %83 %82
+         %84 = OpAccessChain %_ptr_Workgroup_uint %arr_0 %int_0_0
+         %85 = OpLoad %uint %84
+         %86 = OpLoad %uint %last_0
+         %87 = OpAccessChain %_ptr_Workgroup_uint %arr_0 %86
+         %88 = OpLoad %uint %87
+         %89 = OpIAdd %uint %85 %88
+         %90 = OpAccessChain %_ptr_StorageBuffer_uint %__0 %int_0_0 %int_1_0
+               OpStore %90 %89
+               OpReturn
+               OpFunctionEnd
+     %main_c = OpFunction %void None %29
+         %91 = OpLabel
+     %last_1 = OpVariable %_ptr_Function_uint Function
+         %92 = OpAccessChain %_ptr_StorageBuffer_uint %__1 %int_1_1 %int_2
+         %93 = OpLoad %uint %92
+               OpStore %last_1 %93
+         %94 = OpAccessChain %_ptr_Workgroup_uint %arr_1 %int_0_1
+               OpStore %94 %uint_1_1
+         %95 = OpLoad %uint %last_1
+         %96 = OpLoad %uint %last_1
+         %97 = OpAccessChain %_ptr_Workgroup_uint %arr_1 %95
+               OpStore %97 %96
+         %98 = OpAccessChain %_ptr_Workgroup_uint %arr_1 %int_0_1
+         %99 = OpLoad %uint %98
+        %100 = OpLoad %uint %last_1
+        %101 = OpAccessChain %_ptr_Workgroup_uint %arr_1 %100
+        %102 = OpLoad %uint %101
+        %103 = OpIAdd %uint %99 %102
+        %104 = OpAccessChain %_ptr_StorageBuffer_uint %__1 %int_0_1 %int_2
+               OpStore %104 %103
+               OpReturn
+               OpFunctionEnd
+     %main_d = OpFunction %void None %29
+        %105 = OpLabel
+     %last_2 = OpVariable %_ptr_Function_uint Function
+        %106 = OpAccessChain %_ptr_StorageBuffer_uint %__2 %int_1_2 %int_3
+        %107 = OpLoad %uint %106
+               OpStore %last_2 %107
+        %108 = OpAccessChain %_ptr_Workgroup_uint %arr_2 %int_0_2
+               OpStore %108 %uint_1_2
+        %109 = OpLoad %uint %last_2
+        %110 = OpLoad %uint %last_2
+        %111 = OpAccessChain %_ptr_Workgroup_uint %arr_2 %109
+               OpStore %111 %110
+        %112 = OpAccessChain %_ptr_Workgroup_uint %arr_2 %int_0_2
+        %113 = OpLoad %uint %112
+        %114 = OpLoad %uint %last_2
+        %115 = OpAccessChain %_ptr_Workgroup_uint %arr_2 %114
+        %116 = OpLoad %uint %115
+        %117 = OpIAdd %uint %113 %116
+        %118 = OpAccessChain %_ptr_StorageBuffer_uint %__2 %int_0_2 %int_3
+               OpStore %118 %117
+               OpReturn
+               OpFunctionEnd
+)";
+
+            dst.spirvAsmSources.add("comp")
+                << comp << SpirVAsmBuildOptions(dst.usedVulkanVersion, SPIRV_VERSION_1_4, true);
+        }
     }
 };
 
@@ -442,6 +788,8 @@ void checkSupport(vkt::Context &context, TestConfig testConfig)
 {
     if (testConfig.type == TestType::TWO_ENTRY_POINTS_EXECUTION_MODE_ID)
         context.requireDeviceFunctionality("VK_KHR_maintenance4");
+    else if (testConfig.type == TestType::FOUR_ENTRY_POINTS_LARGE_SHARED_MEMORY_SPIRV_1_4)
+        context.requireDeviceFunctionality("VK_KHR_spirv_1_4");
 }
 
 } // namespace
@@ -458,6 +806,14 @@ tcu::TestCaseGroup *createMultipleShaderExtendedGroup(tcu::TestContext &testCtx)
     testConfig = {TestType::TWO_ENTRY_POINTS_DIFFERENT_INTERFACES};
     mainGroup->addChild(new EntryPointsTestCase(testCtx, "two_entry_points_different_interfaces", testConfig,
                                                 typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
+
+    typedef InstanceFactory1WithSupport<LargeSharedMemoryTestInstance, TestConfig, FunctionSupport1<TestConfig>,
+                                        Programs>
+        LargeSharedMemoryTestCase;
+    testConfig = {TestType::FOUR_ENTRY_POINTS_LARGE_SHARED_MEMORY_SPIRV_1_4};
+    mainGroup->addChild(
+        new LargeSharedMemoryTestCase(testCtx, "four_entry_points_large_shared_memory_spirv1p4", testConfig,
+                                      typename FunctionSupport1<TestConfig>::Args(checkSupport, testConfig)));
 
     return mainGroup.release();
 }
