@@ -765,6 +765,23 @@ bool hasVaryingEffectiveSubgroupSize(Context &context, SubgroupSizeMode subgroup
            context.getSubgroupSizeControlFeatures().subgroupSizeControl;
 }
 
+// The local workgroup sizes valid with workgroup scope matrices: power of two multiples of the subgroup size the shader
+// runs with (the largest one when it varies), up to cooperativeMatrixWorkgroupScopeMaxWorkgroupSize
+std::vector<uint32_t> getWorkgroupScopeSizes(Context &context, SubgroupSizeMode subgroupSizeMode, TestType testType)
+{
+    const uint32_t subgroupSize = hasVaryingEffectiveSubgroupSize(context, subgroupSizeMode, testType) ?
+                                      context.getSubgroupSizeControlProperties().maxSubgroupSize :
+                                      getSubgroupSizeFromMode(context, subgroupSizeMode);
+    const uint32_t maxSize =
+        context.getCooperativeMatrix2PropertiesNV().cooperativeMatrixWorkgroupScopeMaxWorkgroupSize;
+    std::vector<uint32_t> sizes;
+
+    for (uint32_t size = subgroupSize; size <= maxSize; size *= 2)
+        sizes.push_back(size);
+
+    return sizes;
+}
+
 class CooperativeMatrixTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
@@ -1116,8 +1133,12 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
 
     if (isKhr(m_data.useType) && context.getCooperativeMatrixMaintenance1FeaturesEXT().cooperativeMatrixProperties2)
     {
-        // arbitrary lower/upper limits
-        for (uint32_t workgroupSize = 8; workgroupSize <= 256; workgroupSize *= 2)
+        const std::vector<uint32_t> invocationCounts =
+            (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                getWorkgroupScopeSizes(context, m_data.subgroupSizeMode, m_data.testType) :
+                std::vector<uint32_t>{0};
+
+        for (const uint32_t workgroupSize : invocationCounts)
         {
             uint32_t propertyCount = 0;
             std::vector<VkCooperativeMatrixProperties2EXT> properties2;
@@ -3546,10 +3567,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
             std::vector<uint32_t> invocationCounts;
             if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
             {
-                for (uint32_t workgroupSize = 8; workgroupSize <= 256; workgroupSize *= 2)
-                {
-                    invocationCounts.push_back(workgroupSize);
-                }
+                invocationCounts = getWorkgroupScopeSizes(m_context, m_data.subgroupSizeMode, m_data.testType);
             }
             else
             {
