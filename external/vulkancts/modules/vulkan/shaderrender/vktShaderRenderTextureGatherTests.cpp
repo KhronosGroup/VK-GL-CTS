@@ -2884,6 +2884,10 @@ void TextureGatherTests::init(void)
                     for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
                     {
                         const tcu::TextureFormat &format = formats[formatNdx].format;
+
+                        if (useCompute && isDepthFormat(format))
+                            continue; // Depth needs a graphics queue
+
                         TestCaseGroup *const formatGroup = new TestCaseGroup(m_testCtx, formats[formatNdx].name);
                         textureTypeGroup->addChild(formatGroup);
 
