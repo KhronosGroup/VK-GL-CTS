@@ -1938,7 +1938,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
             uint32_t numColumns = ((i == 1) ^ m_data.transpose) ? N : K;
 
             // Matrix size for matmul test types
-            int matrixElementSize = getComponentTypeInfo(dataTypes[1]).bits / 8;
+            int matrixElementSize = getComponentTypeInfo(m_data.matrixType).bits / 8;
             uint32_t matrixSize, matrixSizeRaw;
             if (m_data.matrixLayout[i] == VK_COOPERATIVE_VECTOR_MATRIX_LAYOUT_ROW_MAJOR_NV)
             {
@@ -2872,7 +2872,7 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                     VkConvertCooperativeVectorMatrixInfoNV info = {
                         VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV, // VkStructureType                       sType;
                         nullptr,                // void const*                           pNext;
-                        (size_t)bufferSizes[3], // size_t                                srcSize;
+                        outerProductSize,       // size_t                                srcSize;
                         {0},                    // VkDeviceOrHostAddressConstKHR         srcData;
                         &dstSize,               // size_t*                               pDstSize;
                         {0},                    // VkDeviceOrHostAddressKHR              dstData;
