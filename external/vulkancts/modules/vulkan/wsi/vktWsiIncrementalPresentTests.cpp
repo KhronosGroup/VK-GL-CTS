@@ -214,14 +214,26 @@ vk::VkRect2D getRenderFrameRect(size_t frameNdx, uint32_t imageWidth, uint32_t i
     return rect;
 }
 
-vector<vk::VkRectLayerKHR> getUpdatedRects(size_t firstFrameNdx, size_t lastFrameNdx, uint32_t width, uint32_t height)
+vector<vk::VkRectLayerKHR> getUpdatedRects(size_t firstFrameNdx, size_t lastFrameNdx, uint32_t width, uint32_t height,
+                                           vk::VkSurfaceTransformFlagBitsKHR preTransform)
 {
+    // The rectangles are given before preTransform is applied, so a 90 or 270 degree rotation swaps their axes
+    const bool swapAxes =
+        (preTransform & (vk::VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | vk::VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR |
+                         vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR |
+                         vk::VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR)) != 0;
     vector<vk::VkRectLayerKHR> rects;
 
     for (size_t frameNdx = firstFrameNdx; frameNdx <= lastFrameNdx; frameNdx++)
     {
-        const vk::VkRect2D rect            = getRenderFrameRect(frameNdx, width, height);
-        const vk::VkRectLayerKHR rectLayer = {rect.offset, rect.extent, 0};
+        const vk::VkRect2D rect      = getRenderFrameRect(frameNdx, width, height);
+        vk::VkRectLayerKHR rectLayer = {rect.offset, rect.extent, 0};
+
+        if (swapAxes)
+        {
+            std::swap(rectLayer.offset.x, rectLayer.offset.y);
+            std::swap(rectLayer.extent.width, rectLayer.extent.height);
+        }
 
         rects.push_back(rectLayer);
     }
@@ -881,7 +893,8 @@ void IncrementalPresentTestInstance::render(void)
     if (m_useIncrementalPresent)
     {
         vk::VkResult result;
-        const vector<vk::VkRectLayerKHR> rects   = getUpdatedRects(imageNextFrame, m_frameNdx, width, height);
+        const vector<vk::VkRectLayerKHR> rects   = getUpdatedRects(imageNextFrame, m_frameNdx, width, height,
+                                                                   m_swapchainConfigs[m_swapchainConfigNdx].preTransform);
         const vk::VkPresentRegionKHR region      = {(uint32_t)rects.size(), rects.empty() ? nullptr : &rects[0]};
         const vk::VkPresentRegionsKHR regionInfo = {vk::VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR, nullptr, 1u, &region};
         const vk::VkPresentInfoKHR presentInfo   = {vk::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
