@@ -2817,6 +2817,52 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
     return tcu::TestStatus::pass("OK");
 }
 
+// Select the lowest codec profile that can represent the given chroma subsampling and bit depth.
+uint32_t getProfileIdc(VkVideoCodecOperationFlagBitsKHR codec, VkVideoChromaSubsamplingFlagsKHR subsampling,
+                       uint32_t bitdepth)
+{
+    const bool is420  = subsampling == VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
+    const bool is422  = subsampling == VK_VIDEO_CHROMA_SUBSAMPLING_422_BIT_KHR;
+    const bool is444  = subsampling == VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR;
+    const bool isMono = subsampling == VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR;
+
+    switch (codec)
+    {
+    case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
+        if (bitdepth == 8 && is420)
+            return STD_VIDEO_H264_PROFILE_IDC_MAIN;
+        if (bitdepth == 8 && isMono)
+            return STD_VIDEO_H264_PROFILE_IDC_HIGH;
+        if (bitdepth <= 10 && (is420 || isMono))
+            return STD_VIDEO_H264_PROFILE_IDC_HIGH_10;
+        if (bitdepth <= 10 && is422)
+            return STD_VIDEO_H264_PROFILE_IDC_HIGH_422;
+        return STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE;
+    case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
+        if (bitdepth == 8 && is420)
+            return STD_VIDEO_H265_PROFILE_IDC_MAIN;
+        if (bitdepth == 10 && is420)
+            return STD_VIDEO_H265_PROFILE_IDC_MAIN_10;
+        return STD_VIDEO_H265_PROFILE_IDC_FORMAT_RANGE_EXTENSIONS;
+    case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
+    case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
+        if (bitdepth == 12 || is422)
+            return STD_VIDEO_AV1_PROFILE_PROFESSIONAL;
+        if (is444)
+            return STD_VIDEO_AV1_PROFILE_HIGH;
+        return STD_VIDEO_AV1_PROFILE_MAIN;
+    case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+        // VP9 has no monochrome profile; treat it like 4:2:0 so the profile at least matches the bit depth.
+        if (bitdepth == 8)
+            return (is422 || is444) ? STD_VIDEO_VP9_PROFILE_1 : STD_VIDEO_VP9_PROFILE_0;
+        return (is422 || is444) ? STD_VIDEO_VP9_PROFILE_3 : STD_VIDEO_VP9_PROFILE_2;
+    default:
+        TCU_THROW(InternalError, "unsupported codec");
+    }
+}
+
 } // namespace formats
 
 } // namespace
@@ -2989,28 +3035,6 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
                                 continue;
                         }
 
-                        uint32_t profileIdc = 0;
-                        switch (codec)
-                        {
-                        case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
-                        case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
-                            profileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
-                            break;
-                        case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
-                        case VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR:
-                            profileIdc = STD_VIDEO_H265_PROFILE_IDC_MAIN;
-                            break;
-                        case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
-                        case VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR:
-                            profileIdc = STD_VIDEO_AV1_PROFILE_MAIN;
-                            break;
-                        case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
-                            profileIdc = STD_VIDEO_VP9_PROFILE_0;
-                            break;
-                        default:
-                            TCU_THROW(InternalError, "unsupported codec");
-                        }
-
                         const tcu::UVec4 formatBitdepth(ycbcr::getYCbCrBitDepth(format));
                         unsigned bitdepthAsInt = getComponentBitdepth(bitdepth);
                         if (bitdepthAsInt != formatBitdepth.x())
@@ -3023,6 +3047,8 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
                             (subsampling == VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR &&
                              (ycbcr::isXChromaSubsampled(format) || ycbcr::isYChromaSubsampled(format))))
                             continue;
+
+                        const uint32_t profileIdc = formats::getProfileIdc(codec, subsampling, bitdepthAsInt);
 
                         // Create VkVideoCoreProfile with all parameters
                         params->coreProfile =
