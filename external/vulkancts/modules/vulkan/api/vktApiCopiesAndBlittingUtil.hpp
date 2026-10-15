@@ -195,6 +195,10 @@ VkDeviceMemoryImageCopyKHR convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
 
 VkCopyMemoryToImageIndirectCommandKHR convertvkBufferImageCopyTovkMemoryImageCopyKHR(VkDeviceAddress srcBufferAddress,
                                                                                      VkBufferImageCopy bufferImageCopy);
+
+// Size of the memory a buffer image copy region accesses, as defined in Buffer and Image Addressing
+VkDeviceSize getMemoryRequiredForImageCopy(const VkBufferImageCopy &region, uint32_t layerCount,
+                                           VkDeviceSize texelSize);
 #endif
 
 VkImageBlit2KHR convertvkImageBlitTovkImageBlit2KHR(VkImageBlit imageBlit);

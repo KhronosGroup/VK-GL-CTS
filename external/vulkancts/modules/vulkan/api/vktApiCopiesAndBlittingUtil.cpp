@@ -88,6 +88,17 @@ VkDeviceMemoryImageCopyKHR convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
             bufferImageCopy.imageExtent};
 }
 
+VkDeviceSize getMemoryRequiredForImageCopy(const VkBufferImageCopy &region, uint32_t layerCount, VkDeviceSize texelSize)
+{
+    const VkDeviceSize rowExtent   = std::max(region.bufferRowLength, region.imageExtent.width) * texelSize;
+    const VkDeviceSize sliceExtent = std::max(region.bufferImageHeight, region.imageExtent.height) * rowExtent;
+    const VkDeviceSize layerExtent = region.imageExtent.depth * sliceExtent;
+
+    // The range ends at the last texel; row and image height padding after it is not accessed
+    return (layerCount - 1u) * layerExtent + (region.imageExtent.depth - 1u) * sliceExtent +
+           (region.imageExtent.height - 1u) * rowExtent + region.imageExtent.width * texelSize;
+}
+
 VkCopyMemoryToImageIndirectCommandKHR convertvkBufferImageCopyTovkMemoryImageCopyKHR(VkDeviceAddress srcBufferAddress,
                                                                                      VkBufferImageCopy bufferImageCopy)
 {
