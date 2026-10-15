@@ -51,6 +51,7 @@ TextureBufferErrors::TextureBufferErrors(Context &context, const ExtParameters &
                                          const char *description)
     : TestCaseBase(context, extParams, name, description)
     , m_bo_id(0)
+    , m_bo_unexist_id(0)
     , m_tex_id(0)
 {
 }
@@ -108,6 +109,12 @@ void TextureBufferErrors::initTest(void)
 
     gl.bufferData(m_glExtTokens.TEXTURE_BUFFER, m_bo_size, nullptr, GL_STATIC_READ);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Could not allocate buffer object's data store");
+
+    gl.genBuffers(1, &m_bo_unexist_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Could not generate non-existent buffer object ID!");
+
+    gl.deleteBuffers(1, &m_bo_unexist_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Could not delete non-existent buffer object ID!");
 
     m_texture_targets.push_back(GL_TEXTURE_2D);
     m_texture_targets.push_back(GL_TEXTURE_2D_ARRAY);
@@ -205,12 +212,12 @@ tcu::TestNode::IterateResult TextureBufferErrors::iterate(void)
 
     /* An INVALID_OPERATION error should be generated if buffer parameter
      * is non-zero, but is not the name of an existing buffer object. */
-    gl.texBuffer(m_glExtTokens.TEXTURE_BUFFER, GL_RGBA32I, m_bo_id + 1);
+    gl.texBuffer(m_glExtTokens.TEXTURE_BUFFER, GL_RGBA32I, m_bo_unexist_id);
     test_passed = verifyError(GL_INVALID_OPERATION, "Expected GL_INVALID_OPERATION was not returned "
                                                     "when non-existing buffer object was used in glTexBufferEXT.") &&
                   test_passed;
 
-    gl.texBufferRange(m_glExtTokens.TEXTURE_BUFFER, GL_RGBA32I, m_bo_id + 1, 0, m_bo_size);
+    gl.texBufferRange(m_glExtTokens.TEXTURE_BUFFER, GL_RGBA32I, m_bo_unexist_id, 0, m_bo_size);
     test_passed =
         verifyError(GL_INVALID_OPERATION, "Expected GL_INVALID_OPERATION was not returned "
                                           "when non-existing buffer object was used in glTexBufferRangeEXT.") &&
