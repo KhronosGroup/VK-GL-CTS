@@ -29,6 +29,8 @@
 #include "egluConfigFilter.hpp"
 #include "eglwEnums.hpp"
 
+#include <initializer_list>
+
 #include <vector>
 
 namespace deqp
@@ -52,6 +54,7 @@ protected:
 
     void expectError(eglw::EGLenum error);
     void expectEitherError(eglw::EGLenum errorA, eglw::EGLenum errorB);
+    void expectAnyError(std::initializer_list<eglw::EGLenum> errors);
     void expectBoolean(eglw::EGLBoolean expected, eglw::EGLBoolean got);
 
     void expectNoContext(eglw::EGLContext got);
