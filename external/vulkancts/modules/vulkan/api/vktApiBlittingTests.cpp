@@ -1217,10 +1217,16 @@ void BlittingImages::uploadCompressedImage(const VkImage &image, const ImageParm
 
     const VkExtent3D copyExtent{imageExtent.width, imageExtent.height, imageExtent.depth};
 
+    // The buffer holds whole texel blocks
+    uint32_t blockWidth, blockHeight;
+    std::tie(blockWidth, blockHeight) = parms.texelBlockDimensions();
+    const uint32_t rowLength          = ((copyExtent.width + blockWidth - 1) / blockWidth) * blockWidth;
+    const uint32_t imageHeight        = ((copyExtent.height + blockHeight - 1) / blockHeight) * blockHeight;
+
     VkBufferImageCopy copyRegion{
-        0u,                // VkDeviceSize bufferOffset;
-        copyExtent.width,  // uint32_t bufferRowLength;
-        copyExtent.height, // uint32_t bufferImageHeight;
+        0u,          // VkDeviceSize bufferOffset;
+        rowLength,   // uint32_t bufferRowLength;
+        imageHeight, // uint32_t bufferImageHeight;
         {
             VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspect;
             0u,                        // uint32_t mipLevel;
