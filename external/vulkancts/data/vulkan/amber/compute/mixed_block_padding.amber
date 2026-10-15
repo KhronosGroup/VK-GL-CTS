@@ -1,0 +1,66 @@
+#!amber
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SHADER compute compute_shader GLSL
+#version 310 es
+precision highp float;
+layout(local_size_x = 1) in;
+
+struct S
+{
+    mat3x2 m;
+};
+
+layout(std140, column_major, binding = 0) uniform Ubo
+{
+    layout(row_major) S s;
+} uboIn;
+
+layout(std430, column_major, binding = 1) buffer Ssbo
+{
+    S s;
+} ssboOut;
+
+void main()
+{
+    ssboOut.s = uboIn.s;
+}
+END
+
+# Buffer layout:
+# Binding 0 (Ubo): std140, row_major mat3x2 inside struct S.
+#   2 rows of vec3, each aligned to 16 bytes (vec4) -> 32 bytes (8 floats).
+# Binding 1 (Ssbo): std430, column_major mat3x2 inside struct S.
+#   3 columns of vec2, each 8 bytes -> 24 bytes (6 floats).
+
+BUFFER buf0 DATA_TYPE float DATA
+  1.0 2.0 3.0 0.0
+  4.0 5.0 6.0 0.0
+END
+
+BUFFER buf1 DATA_TYPE float SIZE 6 FILL 0.0
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER buf0 AS uniform DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER buf1 AS storage DESCRIPTOR_SET 0 BINDING 1
+END
+
+RUN pipeline 1 1 1
+
+# Transposed column-major output:
+# col 0 = (1.0, 4.0), col 1 = (2.0, 5.0), col 2 = (3.0, 6.0)
+EXPECT buf1 IDX 0 EQ 1.0 4.0 2.0 5.0 3.0 6.0
