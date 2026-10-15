@@ -285,7 +285,8 @@ public:
     AlphaToCoverageTest(tcu::TestContext &testContext, const std::string &name,
                         const PipelineConstructionType pipelineConstructionType,
                         VkSampleCountFlagBits rasterizationSamples, GeometryType geometryType,
-                        ImageBackingMode backingMode, const bool useFragmentShadingRate, const bool checkDepthBuffer);
+                        ImageBackingMode backingMode, const bool useFragmentShadingRate, const bool checkDepthBuffer,
+                        const bool constantAlpha = false);
 
     virtual ~AlphaToCoverageTest(void) = default;
     void checkSupport(Context &context) const override;
@@ -303,6 +304,7 @@ protected:
     GeometryType m_geometryType;
     const ImageBackingMode m_backingMode;
     const bool m_checkDepthBuffer;
+    const bool m_constantAlpha;
 };
 
 class AlphaToCoverageNoColorAttachmentTest : public MultisampleTest
@@ -1636,16 +1638,20 @@ AlphaToCoverageTest::AlphaToCoverageTest(tcu::TestContext &testContext, const st
                                          const PipelineConstructionType pipelineConstructionType,
                                          VkSampleCountFlagBits rasterizationSamples, GeometryType geometryType,
                                          ImageBackingMode backingMode, const bool useFragmentShadingRate,
-                                         const bool checkDepthBuffer)
+                                         const bool checkDepthBuffer, const bool constantAlpha)
     : MultisampleTest(testContext, name, pipelineConstructionType, getAlphaToCoverageStateParams(rasterizationSamples),
                       getAlphaToCoverageBlendState(checkDepthBuffer), geometryType, 1.0f, backingMode,
                       useFragmentShadingRate)
     , m_geometryType(geometryType)
     , m_backingMode(backingMode)
     , m_checkDepthBuffer(checkDepthBuffer)
+    , m_constantAlpha(constantAlpha)
 {
     if (checkDepthBuffer)
         DE_ASSERT(geometryType == GEOMETRY_TYPE_INVISIBLE_QUAD);
+    if (constantAlpha)
+        DE_ASSERT(geometryType == GEOMETRY_TYPE_OPAQUE_QUAD || geometryType == GEOMETRY_TYPE_TRANSLUCENT_QUAD ||
+                  geometryType == GEOMETRY_TYPE_INVISIBLE_QUAD);
 }
 
 void AlphaToCoverageTest::checkSupport(Context &context) const
@@ -1657,7 +1663,51 @@ void AlphaToCoverageTest::checkSupport(Context &context) const
 
 void AlphaToCoverageTest::initPrograms(SourceCollections &programCollection) const
 {
-    MultisampleTest::initPrograms(programCollection);
+    if (m_constantAlpha)
+    {
+        const char *alphaStr = nullptr;
+        switch (m_geometryType)
+        {
+        case GEOMETRY_TYPE_OPAQUE_QUAD:
+            alphaStr = "1.0";
+            break;
+        case GEOMETRY_TYPE_TRANSLUCENT_QUAD:
+            alphaStr = "0.25";
+            break;
+        case GEOMETRY_TYPE_INVISIBLE_QUAD:
+            alphaStr = "0.0";
+            break;
+        default:
+            DE_ASSERT(false);
+            break;
+        }
+
+        static const char *vertexSource = "#version 310 es\n"
+                                          "layout(location = 0) in vec4 position;\n"
+                                          "layout(location = 1) in vec4 color;\n"
+                                          "layout(location = 0) out highp vec4 vtxColor;\n"
+                                          "void main (void)\n"
+                                          "{\n"
+                                          "    gl_Position = position;\n"
+                                          "    vtxColor = color;\n"
+                                          "}\n";
+
+        std::ostringstream fragmentSource;
+        fragmentSource << "#version 310 es\n"
+                       << "layout(location = 0) in highp vec4 vtxColor;\n"
+                       << "layout(location = 0) out highp vec4 fragColor;\n"
+                       << "void main (void)\n"
+                       << "{\n"
+                       << "    fragColor = vec4(vtxColor.rgb, " << alphaStr << ");\n"
+                       << "}\n";
+
+        programCollection.glslSources.add("color_vert") << glu::VertexSource(vertexSource);
+        programCollection.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource.str());
+    }
+    else
+    {
+        MultisampleTest::initPrograms(programCollection);
+    }
 
     if (m_checkDepthBuffer)
     {
@@ -1675,6 +1725,15 @@ void AlphaToCoverageTest::initPrograms(SourceCollections &programCollection) con
              << "    vtxColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
              << "}\n";
         programCollection.glslSources.add("checkDepth-vert") << glu::VertexSource(vert.str());
+
+        std::ostringstream frag;
+        frag << "#version 460\n"
+             << "layout (location=0) in vec4 vtxColor;\n"
+             << "layout (location=0) out vec4 fragColor;\n"
+             << "void main (void) {\n"
+             << "    fragColor = vtxColor;\n"
+             << "}\n";
+        programCollection.glslSources.add("checkDepth-frag") << glu::FragmentSource(frag.str());
     }
 }
 
@@ -3082,9 +3141,20 @@ tcu::TestStatus AlphaToCoverageInstance::iterate(void)
 {
     DE_ASSERT(m_multisampleStateParams.alphaToCoverageEnable);
 
+    const bool useOpaqueDepthOcclusion = (m_geometryType == GEOMETRY_TYPE_OPAQUE_QUAD);
+    const bool useDepth                = m_checkDepthBuffer || useOpaqueDepthOcclusion;
+
+    std::vector<Vertex4RGBA> occludedVertices = generateVertices(GEOMETRY_TYPE_OPAQUE_QUAD_NONZERO_DEPTH);
+    for (auto &vertex : occludedVertices)
+        vertex.color = tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+
+    const uint32_t numTopologies               = useOpaqueDepthOcclusion ? 2u : 1u;
+    const VkPrimitiveTopology topologies[2]    = {m_primitiveTopology, m_primitiveTopology};
+    const std::vector<Vertex4RGBA> vertices[2] = {m_vertices, occludedVertices};
+
     de::MovePtr<tcu::TextureLevel> result;
     MultisampleRenderer renderer(m_context, m_pipelineConstructionType, m_colorFormat, m_depthStencilFormat,
-                                 m_renderSize, m_checkDepthBuffer, false, 1u, &m_primitiveTopology, &m_vertices,
+                                 m_renderSize, useDepth, false, numTopologies, topologies, vertices,
                                  m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode,
                                  m_useFragmentShadingRate);
 
@@ -5596,7 +5666,7 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::renderReusingDepth()
 
     const auto &binaries  = m_context.getBinaryCollection();
     const auto vertModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("checkDepth-vert"));
-    const auto fragModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("color_frag"));
+    const auto fragModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("checkDepth-frag"));
     const auto pipeline   = makeGraphicsPipeline(
         ctx.vkd, ctx.device, pipelineLayout.get(), vertModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
         fragModule.get(), renderPass.get(), viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
@@ -7799,28 +7869,52 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
             samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque", pipelineConstructionType,
                                                            samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD,
                                                            IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, false));
+            samplesTests->addChild(new AlphaToCoverageTest(
+                testCtx, "alpha_opaque_constant", pipelineConstructionType, samples[samplesNdx],
+                GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, false, true));
             samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent", pipelineConstructionType,
                                                            samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD,
                                                            IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, false));
+            samplesTests->addChild(new AlphaToCoverageTest(
+                testCtx, "alpha_translucent_constant", pipelineConstructionType, samples[samplesNdx],
+                GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, false, true));
             samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible", pipelineConstructionType,
                                                            samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD,
                                                            IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, false));
             samplesTests->addChild(new AlphaToCoverageTest(
+                testCtx, "alpha_invisible_constant", pipelineConstructionType, samples[samplesNdx],
+                GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, false, true));
+            samplesTests->addChild(new AlphaToCoverageTest(
                 testCtx, "alpha_invisible_check_depth", pipelineConstructionType, samples[samplesNdx],
                 GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, true));
+            samplesTests->addChild(new AlphaToCoverageTest(
+                testCtx, "alpha_invisible_constant_check_depth", pipelineConstructionType, samples[samplesNdx],
+                GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR, useFragmentShadingRate, true, true));
 #ifndef CTS_USES_VULKANSC
             samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque_sparse", pipelineConstructionType,
                                                            samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD,
                                                            IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, false));
             samplesTests->addChild(new AlphaToCoverageTest(
+                testCtx, "alpha_opaque_constant_sparse", pipelineConstructionType, samples[samplesNdx],
+                GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, false, true));
+            samplesTests->addChild(new AlphaToCoverageTest(
                 testCtx, "alpha_translucent_sparse", pipelineConstructionType, samples[samplesNdx],
                 GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, false));
+            samplesTests->addChild(new AlphaToCoverageTest(
+                testCtx, "alpha_translucent_constant_sparse", pipelineConstructionType, samples[samplesNdx],
+                GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, false, true));
             samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible_sparse", pipelineConstructionType,
                                                            samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD,
                                                            IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, false));
             samplesTests->addChild(new AlphaToCoverageTest(
+                testCtx, "alpha_invisible_constant_sparse", pipelineConstructionType, samples[samplesNdx],
+                GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, false, true));
+            samplesTests->addChild(new AlphaToCoverageTest(
                 testCtx, "alpha_invisible_sparse_check_depth", pipelineConstructionType, samples[samplesNdx],
                 GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, true));
+            samplesTests->addChild(new AlphaToCoverageTest(
+                testCtx, "alpha_invisible_constant_sparse_check_depth", pipelineConstructionType, samples[samplesNdx],
+                GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE, useFragmentShadingRate, true, true));
 #endif // CTS_USES_VULKANSC
 
             alphaToCoverageTests->addChild(samplesTests.release());
