@@ -5754,6 +5754,111 @@ tcu::TestStatus createTest(Context &context, vk::ComputePipelineConstructionType
 
 } // namespace UndefinedValues
 
+namespace UnboundDynamicBufferDescriptorSet
+{
+
+void checkSupport(Context &context, vk::ComputePipelineConstructionType constructionType)
+{
+    checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), constructionType);
+}
+
+void createProgram(SourceCollections &dst, vk::ComputePipelineConstructionType)
+{
+    dst.glslSources.add("comp") << glu::ComputeSource(
+        "#version 450\n"
+        "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+        "layout(set = 0, binding = 0, std430) buffer Buf0 { uint data0; };\n"
+        "layout(set = 2, binding = 0, std430) readonly buffer Buf2 { uint data2; };\n"
+        "void main()\n"
+        "{\n"
+        "    data0 = data0 + data2;\n"
+        "}\n");
+}
+
+tcu::TestStatus createTest(Context &context, vk::ComputePipelineConstructionType constructionType)
+{
+    const auto ctx        = context.getContextCommonData();
+    const auto descType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+    const auto stages     = VK_SHADER_STAGE_COMPUTE_BIT;
+    const auto bufferSize = static_cast<VkDeviceSize>(sizeof(uint32_t));
+    const auto bufferInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+
+    BufferWithMemory buffer0(ctx.vkd, ctx.device, ctx.allocator, bufferInfo, MemoryRequirement::HostVisible);
+    BufferWithMemory buffer2(ctx.vkd, ctx.device, ctx.allocator, bufferInfo, MemoryRequirement::HostVisible);
+
+    auto &alloc0 = buffer0.getAllocation();
+    auto &alloc2 = buffer2.getAllocation();
+
+    *static_cast<uint32_t *>(alloc0.getHostPtr()) = 10u;
+    *static_cast<uint32_t *>(alloc2.getHostPtr()) = 20u;
+    flushAlloc(ctx.vkd, ctx.device, alloc0);
+    flushAlloc(ctx.vkd, ctx.device, alloc2);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, stages);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, 2u);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
+    const auto descriptorSet0 = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+    const auto descriptorSet2 = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto buffer0DescInfo = makeDescriptorBufferInfo(*buffer0, 0u, bufferSize);
+    const auto buffer2DescInfo = makeDescriptorBufferInfo(*buffer2, 0u, bufferSize);
+    setUpdateBuilder.writeSingle(*descriptorSet0, DescriptorSetUpdateBuilder::Location::binding(0u), descType,
+                                 &buffer0DescInfo);
+    setUpdateBuilder.writeSingle(*descriptorSet2, DescriptorSetUpdateBuilder::Location::binding(0u), descType,
+                                 &buffer2DescInfo);
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    const VkDescriptorSetLayout setLayouts[] = {*setLayout, *setLayout, *setLayout};
+    ComputePipelineWrapper pipeline(ctx.vkd, ctx.device, constructionType, context.getBinaryCollection().get("comp"));
+    pipeline.setDescriptorSetLayouts(DE_LENGTH_OF_ARRAY(setLayouts), setLayouts);
+    pipeline.buildPipeline();
+    const auto pipelineLayout = pipeline.getPipelineLayout();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    {
+        const auto hostWriteBarrier =
+            makeMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 &hostWriteBarrier);
+    }
+    const uint32_t dynamicOffset = 0u;
+    pipeline.bind(cmdBuffer);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u,
+                                  &descriptorSet0.get(), 1u, &dynamicOffset);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 2u, 1u,
+                                  &descriptorSet2.get(), 1u, &dynamicOffset);
+    ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    {
+        const auto shaderWriteBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &shaderWriteBarrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, alloc0);
+    const uint32_t result = *static_cast<const uint32_t *>(alloc0.getHostPtr());
+    if (result != 30u)
+    {
+        std::ostringstream msg;
+        msg << "Expected 30, got " << result;
+        return tcu::TestStatus::fail(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace UnboundDynamicBufferDescriptorSet
+
 } // namespace
 
 tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
@@ -6018,6 +6123,11 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
     addFunctionCaseWithPrograms(basicComputeTests.get(), "undefined_values", UndefinedValues::checkSupport,
                                 UndefinedValues::createProgram, UndefinedValues::createTest,
                                 computePipelineConstructionType);
+
+    addFunctionCaseWithPrograms(basicComputeTests.get(), "unbound_dynamic_buffer_descriptor_set",
+                                UnboundDynamicBufferDescriptorSet::checkSupport,
+                                UnboundDynamicBufferDescriptorSet::createProgram,
+                                UnboundDynamicBufferDescriptorSet::createTest, computePipelineConstructionType);
 
     basicComputeTests->addChild(
         new SequentialDispatchTest(testCtx, "indirect_after_base_dispatch", computePipelineConstructionType));

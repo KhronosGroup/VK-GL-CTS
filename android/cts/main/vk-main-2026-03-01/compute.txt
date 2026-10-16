@@ -12,6 +12,7 @@ dEQP-VK.compute.pipeline.basic.mixed_block_padding
 dEQP-VK.compute.pipeline.basic.private_memory_in_loop
 dEQP-VK.compute.pipeline.basic.read_unbound_ssbo
 dEQP-VK.compute.pipeline.basic.remove_global_load_pass
+dEQP-VK.compute.pipeline.basic.unbound_dynamic_buffer_descriptor_set
 dEQP-VK.compute.pipeline.basic.undefined_values
 dEQP-VK.compute.pipeline.basic.vec2_nclamp_nan_component
 dEQP-VK.compute.pipeline.cooperative_matrix.64b_indexing.coopmat_64b_rowmajor
@@ -9306,6 +9307,7 @@ dEQP-VK.compute.shader_object_binary.64b_indexing.untyped_pointers
 dEQP-VK.compute.shader_object_binary.basic.copy_ssbo_bounds
 dEQP-VK.compute.shader_object_binary.basic.indirect_after_base_dispatch
 dEQP-VK.compute.shader_object_binary.basic.read_unbound_ssbo
+dEQP-VK.compute.shader_object_binary.basic.unbound_dynamic_buffer_descriptor_set
 dEQP-VK.compute.shader_object_binary.basic.undefined_values
 dEQP-VK.compute.shader_object_binary.cooperative_matrix.64b_indexing.coopmat_64b_rowmajor
 dEQP-VK.compute.shader_object_binary.cooperative_matrix.64b_indexing.coopmat_64b_rowmajor_largeoffset
@@ -18599,6 +18601,7 @@ dEQP-VK.compute.shader_object_spirv.64b_indexing.untyped_pointers
 dEQP-VK.compute.shader_object_spirv.basic.copy_ssbo_bounds
 dEQP-VK.compute.shader_object_spirv.basic.indirect_after_base_dispatch
 dEQP-VK.compute.shader_object_spirv.basic.read_unbound_ssbo
+dEQP-VK.compute.shader_object_spirv.basic.unbound_dynamic_buffer_descriptor_set
 dEQP-VK.compute.shader_object_spirv.basic.undefined_values
 dEQP-VK.compute.shader_object_spirv.cooperative_matrix.64b_indexing.coopmat_64b_rowmajor
 dEQP-VK.compute.shader_object_spirv.cooperative_matrix.64b_indexing.coopmat_64b_rowmajor_largeoffset
