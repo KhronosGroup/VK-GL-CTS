@@ -1,7 +1,8 @@
 Vulkan CTS README
 =================
 
-This document describes how to build and run Vulkan Conformance Test suite.
+This document describes how to build and run Vulkan Conformance Test suite. For
+details on how to contribute, see `CONTRIBUTING.md`.
 
 Vulkan CTS is built on the dEQP framework.
 Up-to-date documentation for dEQP is available at:

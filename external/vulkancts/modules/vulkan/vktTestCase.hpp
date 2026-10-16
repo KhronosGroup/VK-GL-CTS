@@ -240,6 +240,43 @@ public:
     TestCase(tcu::TestContext &testCtx, const std::string &name);
     virtual ~TestCase(void) = default;
 
+    // ### MAIN METHODS
+
+    // Override checkSupport to include any checks for features that the test
+    // needs to be able to run. This includes:
+    //
+    // * Core Features (see context.requireDeviceCoreFeature).
+    // * Extensions (see context.requireDeviceFunctionality).
+    // * Optional Features (see context.getFooFeatures plus the value of a field
+    //   in the returned struct reference).
+    // * Properties (see context.getFooProperties plus the value of a field in
+    //   the returned struct reference).
+    // * Others, like formats and non-mandatory image format feature checks.
+    //
+    // checkSupport is one of the first methods called when running a test case.
+    // Adding the proper checks in checkSupport helps make tree traversal much
+    // faster. Some functions like context.requireDeviceCoreFeature throw an
+    // exception when the feature is not supported. For manual checks,
+    // TCU_THROW(NotSupportedError, ...) can be used with the same effect.
+    virtual void checkSupport(Context &context) const;
+
+    // Override initPrograms to generate shaders needed to run the test. These
+    // shaders can be written in a variety of languages, like GLSL or SPIR-V
+    // assembly. Each of them is stored in the program collection using a name
+    // that needs to be unique for each test case. It does not need to be
+    // globally unique. When the test case is run using a test instance, the
+    // instance context will have a binary collection with the binary SPIR-V.
+    // The binary can be retrieved using the same name that was used for
+    // initPrograms (see context.getBinaryCollection).
+    virtual void initPrograms(vk::SourceCollections &programCollection) const;
+
+    // Return a pointer to a newly-created test instance object to run the test.
+    // The instance will be deleted after its iterate method returns a complete
+    // result.
+    virtual TestInstance *createInstance(Context &context) const;
+
+    // ### OTHER METHODS
+
     // Override this function if the test requires a custom device. The framework
     // invokes this function to determine whether one of the recently created
     // devices can be reused or if a new custom device needs to be created with
@@ -276,9 +313,6 @@ public:
                                                       const tcu::CommandLine &);
 
     virtual void delayedInit(void); // non-const init called after checkSupport but before initPrograms
-    virtual void initPrograms(vk::SourceCollections &programCollection) const;
-    virtual TestInstance *createInstance(Context &context) const;
-    virtual void checkSupport(Context &context) const;
     virtual bool needsRebuildPrograms(TestCase const *testCase, Context &context) const;
 
     IterateResult iterate(void)
@@ -298,6 +332,18 @@ public:
     {
     }
 
+    // Override iterate when subclassing TestInstance to implement the test
+    // logic and mechanism. The returned status is typically built with
+    // tcu::TestStatus::pass or tcu::TestStatus::fail, but there are a few other
+    // options. For example, the test status can also be thrown as an exception,
+    // which is useful to fail a test from a function that's deep in the call
+    // stack.
+    //
+    // If failing, using the TCU_FAIL(...) macro is also useful because it will
+    // print the line and file where the exception was thrown from.
+    //
+    // Please avoid doing feature checks inside this method. Feature checks
+    // should be done at checkSupport time in the vkt::TestCase object.
     virtual tcu::TestStatus iterate(void) = 0;
 
 protected:
