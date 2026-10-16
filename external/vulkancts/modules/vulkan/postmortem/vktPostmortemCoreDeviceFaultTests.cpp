@@ -238,14 +238,20 @@ void ContextWrapper::createDeviceFaultDevice(TestFlags testOptions)
         VK_KHR_DEVICE_FAULT_EXTENSION_NAME,
     };
 
-    VkPhysicalDeviceShaderAbortFeaturesKHR shaderAbortFeatures;
-    shaderAbortFeatures.sType       = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ABORT_FEATURES_KHR;
-    shaderAbortFeatures.pNext       = nullptr;
-    shaderAbortFeatures.shaderAbort = VK_TRUE;
+    // glslang compiles abortEXT to SPIR-V that also declares the ConstantDataKHR and Int8 capabilities
+    VkPhysicalDeviceVulkan12Features vulkan12Features = initVulkanStructure();
+    vulkan12Features.shaderInt8                       = VK_TRUE;
+
+    VkPhysicalDeviceShaderConstantDataFeaturesKHR shaderConstantDataFeatures = initVulkanStructure(&vulkan12Features);
+    shaderConstantDataFeatures.shaderConstantData                            = VK_TRUE;
+
+    VkPhysicalDeviceShaderAbortFeaturesKHR shaderAbortFeatures = initVulkanStructure(&shaderConstantDataFeatures);
+    shaderAbortFeatures.shaderAbort                            = VK_TRUE;
 
     if (testOptions & USE_SHADER_ABORT)
     {
         deviceExtensions.push_back(VK_KHR_SHADER_ABORT_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_KHR_SHADER_CONSTANT_DATA_EXTENSION_NAME);
         deviceFaultFeatures.pNext = &shaderAbortFeatures;
     }
 
@@ -405,12 +411,12 @@ VkResult ContextWrapper::submitShaderAbortDeviceFault() const
 
     const auto fence = createFence(m_customDevice.getDriver(), *m_customDevice);
     VK_CHECK(m_customDevice.getDriver().queueSubmit(queue, 1u, &submitInfo, *fence));
-    m_customDevice.getDriver().waitForFences(*m_customDevice, 1, &*fence, VK_TRUE, (~0ull));
+    const VkResult waitResult = m_customDevice.getDriver().waitForFences(*m_customDevice, 1, &*fence, VK_TRUE, (~0ull));
 
     if ((m_testOptions & USE_DEVICE_WAIT_IDLE) != 0)
         return m_customDevice.getDriver().deviceWaitIdle(*m_customDevice);
     else
-        return VK_ERROR_DEVICE_LOST;
+        return waitResult;
 }
 
 void checkDeviceFaultReportSupport(Context &context, TestFlags testOptions)
@@ -443,6 +449,14 @@ void checkDeviceFaultReportSupport(Context &context, TestFlags testOptions)
             TCU_THROW(NotSupportedError,
                       "VK_KHR_shader_abort extension exists but shader abort feature is not available");
         }
+
+        context.requireDeviceFunctionality(VK_KHR_SHADER_CONSTANT_DATA_EXTENSION_NAME);
+
+        if (!context.getShaderConstantDataFeatures().shaderConstantData)
+            TCU_THROW(NotSupportedError, "shaderConstantData feature not supported");
+
+        if (!context.getShaderFloat16Int8Features().shaderInt8)
+            TCU_THROW(NotSupportedError, "shaderInt8 feature not supported");
     }
 }
 
@@ -926,19 +940,14 @@ tcu::TestStatus deviceFaultReportAsyncQueryCase(Context &context, TestFlags test
 
 tcu::TestStatus deviceFaultVendorBinarySizeQueryCase(Context &context, TestFlags testOptions)
 {
+    assert((testOptions & (USE_FAULT_BINARY | USE_SHADER_ABORT)) == (USE_FAULT_BINARY | USE_SHADER_ABORT));
     const ContextWrapper contextWrapper(context, testOptions);
-    const bool inFaultMode = testOptions & USE_SHADER_ABORT;
 
     assert(contextWrapper.faultFeatures().deviceFaultVendorBinary && "Vendor binary support must be enabled");
 
-    // TODO: should this be allowed without device abort/lost?
-    if (inFaultMode)
-    {
-        const VkResult faultForceResult = contextWrapper.submitShaderAbortDeviceFault();
-
-        if (faultForceResult != VK_ERROR_DEVICE_LOST)
-            return tcu::TestStatus::fail("Unable to trigger VK_ERROR_DEVICE_LOST");
-    }
+    const VkResult faultForceResult = contextWrapper.submitShaderAbortDeviceFault();
+    if (faultForceResult != VK_ERROR_DEVICE_LOST)
+        return tcu::TestStatus::fail("Unable to trigger VK_ERROR_DEVICE_LOST");
 
     VkDeviceFaultDebugInfoKHR debugInfo = initVulkanStructure();
     debugInfo.vendorBinarySize          = DUMMY_VALUE;
@@ -948,13 +957,7 @@ tcu::TestStatus deviceFaultVendorBinarySizeQueryCase(Context &context, TestFlags
         return tcu::TestStatus::fail("vkGetDeviceFaultDebugInfoKHR should return VK_SUCCESS");
 
     if (debugInfo.vendorBinarySize == DUMMY_VALUE)
-    {
-        const std::string msg =
-            inFaultMode ? "vkGetDeviceFaultDebugInfoKHR should correctly set vendorBinarySize" :
-                          "vkGetDeviceFaultDebugInfoKHR should set vendorBinarySize to zero if there is no device lost";
-
-        return tcu::TestStatus::fail(msg);
-    }
+        return tcu::TestStatus::fail("vkGetDeviceFaultDebugInfoKHR should correctly set vendorBinarySize");
 
     return tcu::TestStatus::pass("vkGetDeviceFaultDebugInfoKHR correctly updated vendorBinarySize");
 }
@@ -1115,9 +1118,6 @@ tcu::TestCaseGroup *createDeviceFaultTestsKHR(tcu::TestContext &testCtx)
                         deviceFaultReportCountQueryCase, static_cast<TestFlags>(USE_NONE));
         addFunctionCase(noDeviceLostGroup, "very_short_timeout", checkDeviceFaultReportSupport,
                         deviceFaultReportQueryVeryShortTimeoutCase, static_cast<TestFlags>(USE_NONE));
-
-        addFunctionCase(noDeviceLostGroup, "vendor_binary_size_query", checkDeviceFaultReportSupport,
-                        deviceFaultVendorBinarySizeQueryCase, static_cast<TestFlags>(USE_FAULT_BINARY));
         rootGroup->addChild(noDeviceLostGroup);
     }
 
