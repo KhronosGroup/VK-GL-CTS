@@ -545,11 +545,15 @@ tcu::TestStatus ShaderObjectIncompatibleBinaryInstance::iterate(void)
             nullptr,                                          // const VkSpecializationInfo* pSpecializationInfo;
         };
 
-        vk::VkShaderEXT dstShader;
-        vk::VkResult result = vk.createShadersEXT(device, 1u, &invalidShaderCreateInfo, nullptr, &dstShader);
+        vk::VkShaderEXT dstShader = VK_NULL_HANDLE;
+        vk::VkResult result       = vk.createShadersEXT(device, 1u, &invalidShaderCreateInfo, nullptr, &dstShader);
 
         if (result != vk::VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT)
+        {
+            if (dstShader != VK_NULL_HANDLE)
+                vk.destroyShaderEXT(device, dstShader, nullptr);
             return tcu::TestStatus::fail("Fail");
+        }
     }
 
     return tcu::TestStatus::pass("Pass");
