@@ -1577,8 +1577,11 @@ tcu::TestStatus DescriptorHeapTestInstanceCustomBorderColor::iterate()
 
     const VkDeviceSize resourceHeapReservedOffset = VkDeviceSize{5U * resourceStride};
     const VkDeviceSize resourceHeapSize           = resourceHeapReservedOffset + dhProps.minResourceHeapReservedRange;
-    const VkDeviceSize samplerHeapSize =
-        std::max(dhProps.samplerDescriptorSize, dhProps.minSamplerHeapReservedRangeWithEmbedded);
+    // Embedded samplers cannot use custom border colors
+    // (VUID-VkDescriptorMappingSourceConstantOffsetEXT-pEmbeddedSampler-11445), so the sampler is a descriptor at the
+    // start of the sampler heap, before the reserved range
+    const VkDeviceSize samplerHeapReservedOffset = getSamplerDescriptorStride(dhProps);
+    const VkDeviceSize samplerHeapSize           = samplerHeapReservedOffset + dhProps.minSamplerHeapReservedRange;
 
     const auto heapFlags = VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
 
@@ -1601,8 +1604,8 @@ tcu::TestStatus DescriptorHeapTestInstanceCustomBorderColor::iterate()
     VkBindHeapInfoEXT samplerHeapBindInfo   = initVulkanStructure();
     samplerHeapBindInfo.heapRange.address   = samplerHeap->address;
     samplerHeapBindInfo.heapRange.size      = samplerHeapSize;
-    samplerHeapBindInfo.reservedRangeOffset = 0;
-    samplerHeapBindInfo.reservedRangeSize   = dhProps.minSamplerHeapReservedRangeWithEmbedded;
+    samplerHeapBindInfo.reservedRangeOffset = samplerHeapReservedOffset;
+    samplerHeapBindInfo.reservedRangeSize   = dhProps.minSamplerHeapReservedRange;
 
     const VkFormat format    = VK_FORMAT_R32G32B32A32_SFLOAT;
     const uint32_t imageSize = 2U;
@@ -1680,6 +1683,11 @@ tcu::TestStatus DescriptorHeapTestInstanceCustomBorderColor::iterate()
     samplerCreateInfo.borderColor             = VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
     samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
+    VkHostAddressRangeEXT samplerDescriptor{};
+    samplerDescriptor.address = samplerHeap->memory->getHostPtr();
+    samplerDescriptor.size    = static_cast<size_t>(samplerHeapReservedOffset);
+    VK_CHECK(vkd.writeSamplerDescriptorsEXT(device, 1, &samplerCreateInfo, &samplerDescriptor));
+
     const auto computeModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("compute"));
 
     VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
@@ -1694,7 +1702,7 @@ tcu::TestStatus DescriptorHeapTestInstanceCustomBorderColor::iterate()
     mappings[0].source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
     mappings[0].sourceData.constantOffset.heapOffset       = 0U * resourceStride;
     mappings[0].sourceData.constantOffset.heapArrayStride  = resourceStride;
-    mappings[0].sourceData.constantOffset.pEmbeddedSampler = &samplerCreateInfo;
+    mappings[0].sourceData.constantOffset.pEmbeddedSampler = nullptr;
     mappings[0].sourceData.constantOffset.samplerHeapOffset      = 0;
     mappings[0].sourceData.constantOffset.samplerHeapArrayStride = 0;
 
