@@ -189,6 +189,15 @@ CustomDevice makeProtectedMemDevice(const InstanceWrapper &instance, vk::VkPhysi
 #ifndef CTS_USES_VULKANSC
     vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT protectedAccessFeature = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT, nullptr, VK_FALSE};
+
+    // Enabled with the extension, which the swapchain present mode tests ask for
+    vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR fifoLatestReadyFeature = initVulkanStructure();
+    for (const auto &extension : requiredExtensions)
+    {
+        if (extension == "VK_KHR_present_mode_fifo_latest_ready" ||
+            extension == "VK_EXT_present_mode_fifo_latest_ready")
+            protectedAccessFeature.pNext = &fifoLatestReadyFeature;
+    }
 #endif
 
     vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures ycbcrFeature = {
