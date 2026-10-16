@@ -238532,6 +238532,7 @@ dEQP-VKSC.api.info.get_physical_device_properties2.pnext_format_properties.x8_d2
 dEQP-VKSC.api.info.get_physical_device_properties2.pnext_format_properties.x8_d24_unorm_pack32.format_props_3
 dEQP-VKSC.api.info.get_physical_device_properties2.properties.basic
 dEQP-VKSC.api.info.get_physical_device_properties2.queue_family_properties.basic
+dEQP-VKSC.api.info.get_physical_device_properties2.queue_family_properties_zero_count.basic
 dEQP-VKSC.api.info.image_format_properties.1d.linear.a1r5g5b5_unorm_pack16
 dEQP-VKSC.api.info.image_format_properties.1d.linear.a2b10g10r10_sint_pack32
 dEQP-VKSC.api.info.image_format_properties.1d.linear.a2b10g10r10_snorm_pack32

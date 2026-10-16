@@ -32079,6 +32079,7 @@ dEQP-VK.api.info.get_physical_device_properties2.pnext_format_properties.x8_d24_
 dEQP-VK.api.info.get_physical_device_properties2.pnext_format_properties.x8_d24_unorm_pack32.format_props_3
 dEQP-VK.api.info.get_physical_device_properties2.pnext_format_properties.x8_d24_unorm_pack32.format_props_3_and_subpass_resolve_query
 dEQP-VK.api.info.get_physical_device_properties2.pnext_format_properties.x8_d24_unorm_pack32.subpass_resolve_query
+dEQP-VK.api.info.get_physical_device_properties2.queue_family_properties_zero_count.basic
 dEQP-VK.api.info.profiles.roadmap_2026
 dEQP-VK.api.info.subgroup_features.flags
 dEQP-VK.api.invariance.memory_dedicated_requirements_matching

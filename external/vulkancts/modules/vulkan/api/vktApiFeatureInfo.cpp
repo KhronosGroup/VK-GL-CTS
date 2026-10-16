@@ -6428,6 +6428,30 @@ tcu::TestStatus deviceQueueFamilyProperties2(Context &context)
     return tcu::TestStatus::pass("Querying device queue family properties succeeded");
 }
 
+tcu::TestStatus deviceQueueFamilyProperties2ZeroCount(Context &context)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const uint32_t arraySize              = 4u;
+
+    std::vector<VkQueueFamilyProperties2> properties2(arraySize);
+    memset(properties2.data(), 0xFF, sizeof(VkQueueFamilyProperties2) * arraySize);
+
+    for (auto &props : properties2)
+        props = initVulkanStructure();
+
+    const std::vector<VkQueueFamilyProperties2> properties2Ref = properties2;
+
+    uint32_t count = 0u;
+    vki.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &count, properties2.data());
+    if (count != 0u)
+        return tcu::TestStatus::fail("Count was modified");
+    if (deMemCmp(properties2.data(), properties2Ref.data(), sizeof(VkQueueFamilyProperties2) * arraySize) != 0)
+        return tcu::TestStatus::fail("Data was modified when count was 0");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestStatus deviceMemoryProperties2(Context &context)
 {
     const InstanceInterface &vki          = context.getInstanceInterface(); // "VK_KHR_get_physical_device_properties2"
@@ -9034,6 +9058,8 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
                                      deviceFormatProperties2);
         addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "queue_family_properties",
                                      deviceQueueFamilyProperties2);
+        addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "queue_family_properties_zero_count",
+                                     deviceQueueFamilyProperties2ZeroCount);
         addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "memory_properties",
                                      deviceMemoryProperties2);
 
