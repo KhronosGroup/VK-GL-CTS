@@ -317,7 +317,7 @@ tcu::TestCaseGroup *createDGCComputePushIndexHeapTestsExt(tcu::TestContext &test
 
     GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "push_index_heap"));
 
-    mainGroup->addChild(new PushIndexHeapCase(testCtx, "stage_compute", TestParams{VK_SHADER_STAGE_COMPUTE_BIT}));
+    // Push data tokens must use VK_SHADER_STAGE_ALL (VUID-VkIndirectCommandsLayoutTokenEXT-type-11333)
     mainGroup->addChild(
         new PushIndexHeapCase(testCtx, "stage_all", TestParams{static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_ALL)}));
 
