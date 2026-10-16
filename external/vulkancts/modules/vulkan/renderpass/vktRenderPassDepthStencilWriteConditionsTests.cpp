@@ -463,6 +463,8 @@ void DepthStencilWriteConditionsTest::initPrograms(SourceCollections &programCol
 
     if (m_bufferType == BufferType::DEPTH)
         fragmentSrc << "OpExecutionMode %4 DepthReplacing\n";
+    else
+        fragmentSrc << "OpExecutionMode %4 StencilRefReplacingEXT\n";
 
     fragmentSrc << "OpDecorate %9 BuiltIn FragCoord\n"
                 << "OpDecorate %26 Location 0\n";
