@@ -4630,6 +4630,12 @@ bool ErrorsTest::TestErrorsOfNamedBufferStorage()
                 valid_bits |= GL_EXTERNAL_STORAGE_BIT_NVX;
             }
 
+            if (m_context.getContextInfo().isExtensionSupported("GL_MESA_map_buffer_client_pointer"))
+            {
+                valid_bits |=
+                GL_MAP_CLIENT_POINTER_BIT_MESA;
+            }
+
             glw::GLuint invalid_bits = ~valid_bits;
 
             glw::GLuint bits_count = CHAR_BIT * sizeof(invalid_bits);
