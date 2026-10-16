@@ -259,7 +259,7 @@ private:
     const uint32_t m_seed;
     uint32_t m_requiredNumerOfPasses;
     std::map<uint64_t, uint32_t> m_enabledCountersCountMap; // number of counters that were enabled per query pool
-    PerformanceCounterVec m_counters;                       // counters provided by the device
+    std::vector<uint32_t> m_counterIndices;                 // device indices of the counters these tests can use
 };
 
 QueryTestBase::QueryTestBase(vkt::Context &context, bool copyResults, uint32_t seed)
@@ -284,21 +284,21 @@ void QueryTestBase::setupCounters()
 
     // Get supported counters.
     const VkPerformanceCounterKHR defaultCounterVal = initVulkanStructure();
-    m_counters.resize(counterCount, defaultCounterVal);
+    PerformanceCounterVec counters(counterCount, defaultCounterVal);
     VK_CHECK(vki.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR(
-        physicalDevice, queueFamilyIndex, &counterCount, de::dataOrNull(m_counters), nullptr));
+        physicalDevice, queueFamilyIndex, &counterCount, de::dataOrNull(counters), nullptr));
 
-    // Filter out all counters with scope
+    // Skip all counters with scope
     // VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR. For these counters, the
     // begin and end command must be at the beginning/end of the command buffer,
-    // which does not match what these tests do.
-    const auto scopeIsNotCmdBuffer = [](const VkPerformanceCounterKHR &c)
-    { return (c.scope != VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR); };
-    PerformanceCounterVec filteredCounters;
-
-    filteredCounters.reserve(m_counters.size());
-    std::copy_if(begin(m_counters), end(m_counters), std::back_inserter(filteredCounters), scopeIsNotCmdBuffer);
-    m_counters.swap(filteredCounters);
+    // which does not match what these tests do. Keep the device indices of the
+    // others, because VkQueryPoolPerformanceCreateInfoKHR::pCounterIndices
+    // index the full list of counters.
+    for (uint32_t i = 0; i < counterCount; ++i)
+    {
+        if (counters[i].scope != VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_BUFFER_KHR)
+            m_counterIndices.push_back(i);
+    }
 }
 
 Move<VkQueryPool> QueryTestBase::createQueryPool(uint32_t enabledCounterOffset, uint32_t enabledCounterStride)
@@ -308,7 +308,7 @@ Move<VkQueryPool> QueryTestBase::createQueryPool(uint32_t enabledCounterOffset, 
     const VkPhysicalDevice physicalDevice     = m_context.getPhysicalDevice();
     const VkDevice device                     = m_context.getDevice();
     const CmdPoolCreateInfo cmdPoolCreateInfo = m_context.getUniversalQueueFamilyIndex();
-    const uint32_t counterCount               = (uint32_t)m_counters.size();
+    const uint32_t counterCount               = de::sizeU32(m_counterIndices);
     uint32_t enabledIndex                     = enabledCounterOffset ? 0 : enabledCounterStride;
     std::vector<uint32_t> enabledCounters;
 
@@ -336,7 +336,7 @@ Move<VkQueryPool> QueryTestBase::createQueryPool(uint32_t enabledCounterOffset, 
         // handle stride
         if (enabledIndex == enabledCounterStride)
         {
-            enabledCounters.push_back(i);
+            enabledCounters.push_back(m_counterIndices[i]);
             enabledIndex = 0;
         }
         else
