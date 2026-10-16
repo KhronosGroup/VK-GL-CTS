@@ -1523,7 +1523,14 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
     if (m_params.hasPerformanceConfigurationTest())
         extensions.push_back("VK_INTEL_performance_query");
     if (m_params.hasOutOfBandTest())
+    {
+        // VK_NV_low_latency2 requires VK_KHR_present_id or VK_KHR_present_id2, which require VK_KHR_swapchain
         extensions.push_back("VK_NV_low_latency2");
+        extensions.push_back(m_context.isDeviceFunctionalitySupported("VK_KHR_present_id") ? "VK_KHR_present_id" :
+                                                                                             "VK_KHR_present_id2");
+        if (!m_params.hasWsiTest())
+            extensions.push_back("VK_KHR_swapchain");
+    }
 
     VkPhysicalDeviceSynchronization2Features sync2Features = initVulkanStructure();
     sync2Features.synchronization2                         = VK_TRUE;
