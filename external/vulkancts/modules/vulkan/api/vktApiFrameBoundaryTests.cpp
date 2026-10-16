@@ -91,7 +91,7 @@ void checkWsiSupport(Context &context, vk::wsi::Type wsiType)
     context.requireDeviceFunctionality("VK_KHR_swapchain");
 }
 
-void recordCommands(Context &context, VkCommandBuffer cmdBuffer, VkImage image)
+void recordCommands(Context &context, VkCommandBuffer cmdBuffer, VkImage image, bool present = false)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
 
@@ -117,13 +117,27 @@ void recordCommands(Context &context, VkCommandBuffer cmdBuffer, VkImage image)
         },                             // VkImageSubresourceRange    subresourceRange
     };
 
-    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
-                          0, nullptr, 1, &imageBarrier);
+    // The source stage is the stage the wsi test waits for the acquire semaphore at
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
+                          nullptr, 1, &imageBarrier);
 
     const VkClearColorValue clearColor{{1.0f, 1.0f, 1.0f, 1.0f}};
     const VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
 
     vk.cmdClearColorImage(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1u, &range);
+
+    if (present)
+    {
+        VkImageMemoryBarrier presentBarrier = imageBarrier;
+        presentBarrier.srcAccessMask        = VK_ACCESS_TRANSFER_WRITE_BIT;
+        presentBarrier.dstAccessMask        = 0;
+        presentBarrier.oldLayout            = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        presentBarrier.newLayout            = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0,
+                              nullptr, 0, nullptr, 1, &presentBarrier);
+    }
+
     endCommandBuffer(vk, cmdBuffer);
 }
 
@@ -423,13 +437,13 @@ tcu::TestStatus testCaseWsi(Context &context, vk::wsi::Type wsiType)
     const Move<VkSemaphore> acquireSemaphore = createSemaphore(vk, vkDevice, &semaphoreCreateInfo);
 
     VkSemaphore acquireSemaphores[]      = {*acquireSemaphore};
-    VkPipelineStageFlags waitStageMask[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkPipelineStageFlags waitStageMask[] = {VK_PIPELINE_STAGE_TRANSFER_BIT};
 
     uint32_t currentBuffer = 0;
     VK_CHECK_WSI(
         vk.acquireNextImageKHR(vkDevice, *swapchain, ~0ull, *acquireSemaphore, VK_NULL_HANDLE, &currentBuffer));
 
-    recordCommands(context, *cmdBuffer, swapchainImages[currentBuffer]);
+    recordCommands(context, *cmdBuffer, swapchainImages[currentBuffer], true);
 
     submitCommandsAndWait(vk, vkDevice, context.getUniversalQueue(), *cmdBuffer, false, 0U, 1U, acquireSemaphores,
                           waitStageMask);
@@ -463,6 +477,9 @@ tcu::TestStatus testCaseWsi(Context &context, vk::wsi::Type wsiType)
     };
 
     VK_CHECK(vk.queuePresentKHR(context.getUniversalQueue(), &presentInfo));
+
+    // VUID-vkDestroySwapchainKHR-swapchain-01282
+    VK_CHECK(vk.queueWaitIdle(context.getUniversalQueue()));
 
     return tcu::TestStatus::pass("Pass");
 }
