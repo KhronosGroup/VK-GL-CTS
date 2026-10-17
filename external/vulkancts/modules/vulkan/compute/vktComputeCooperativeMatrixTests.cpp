@@ -6116,6 +6116,16 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                                     uint32_t bits = componentTypeInfo.at(dataTypes[3]).bits;
                                     uint32_t mask = (bits == 32) ? 0xFFFFFFFFU : ((1U << bits) - 1U);
                                     ref &= mask;
+                                    // For signed types, sign-extend the truncated value so it matches
+                                    // getDataInt()'s sign-extension of the actual output buffer contents
+                                    // (e.g. (uint32_t)(int8_t)value), rather than comparing a zero-extended
+                                    // unsigned bit pattern against a sign-extended one.
+                                    if (componentTypeInfo.at(dataTypes[3]).isSigned && bits < 32)
+                                    {
+                                        uint32_t signBit = 1U << (bits - 1);
+                                        if (ref & signBit)
+                                            ref |= ~mask;
+                                    }
                                 }
 
                                 // When loading with stride 0, ij for matrix D is different from matrix C
