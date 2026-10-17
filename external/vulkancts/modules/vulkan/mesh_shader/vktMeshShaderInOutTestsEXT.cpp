@@ -113,6 +113,35 @@ enum class Direction
     OUT,
 };
 
+struct Std430Vec3
+{
+    tcu::Vec3 value;
+    float padding;
+
+    Std430Vec3 &operator=(const tcu::Vec3 &other)
+    {
+        value   = other;
+        padding = 0.0f;
+        return *this;
+    }
+};
+
+struct Std430IVec3
+{
+    tcu::IVec3 value;
+    int32_t padding;
+
+    Std430IVec3 &operator=(const tcu::IVec3 &other)
+    {
+        value   = other;
+        padding = 0;
+        return *this;
+    }
+};
+
+static_assert(sizeof(Std430Vec3) == 4u * sizeof(float), "Unexpected std430 vec3 size");
+static_assert(sizeof(Std430IVec3) == 4u * sizeof(int32_t), "Unexpected std430 ivec3 size");
+
 // Interface variable.
 struct IfaceVar
 {
@@ -365,8 +394,8 @@ public:
         tcu::Vec4 vert_f64d4_inter_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f64d4_inter_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f64d3_inter_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f64d3_inter_1[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f64d3_inter_0[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f64d3_inter_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f64d2_inter_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f64d2_inter_1[IfaceVar::kNumVertices];
@@ -377,8 +406,8 @@ public:
         tcu::Vec4 vert_f32d4_inter_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f32d4_inter_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f32d3_inter_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f32d3_inter_1[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f32d3_inter_0[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f32d3_inter_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f32d2_inter_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f32d2_inter_1[IfaceVar::kNumVertices];
@@ -389,8 +418,8 @@ public:
         tcu::Vec4 vert_f16d4_inter_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f16d4_inter_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f16d3_inter_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f16d3_inter_1[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f16d3_inter_0[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f16d3_inter_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f16d2_inter_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f16d2_inter_1[IfaceVar::kNumVertices];
@@ -403,8 +432,8 @@ public:
         tcu::Vec4 vert_f64d4_flat_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f64d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f64d3_flat_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f64d3_flat_1[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f64d3_flat_0[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f64d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f64d2_flat_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f64d2_flat_1[IfaceVar::kNumVertices];
@@ -415,8 +444,8 @@ public:
         tcu::Vec4 vert_f32d4_flat_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f32d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f32d3_flat_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f32d3_flat_1[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f32d3_flat_0[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f32d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f32d2_flat_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f32d2_flat_1[IfaceVar::kNumVertices];
@@ -427,8 +456,8 @@ public:
         tcu::Vec4 vert_f16d4_flat_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f16d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f16d3_flat_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f16d3_flat_1[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f16d3_flat_0[IfaceVar::kNumVertices];
+        Std430Vec3 vert_f16d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f16d2_flat_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f16d2_flat_1[IfaceVar::kNumVertices];
@@ -441,8 +470,8 @@ public:
         tcu::IVec4 vert_i64d4_flat_0[IfaceVar::kNumVertices];
         tcu::IVec4 vert_i64d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::IVec3 vert_i64d3_flat_0[IfaceVar::kNumVertices];
-        tcu::IVec3 vert_i64d3_flat_1[IfaceVar::kNumVertices];
+        Std430IVec3 vert_i64d3_flat_0[IfaceVar::kNumVertices];
+        Std430IVec3 vert_i64d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::IVec2 vert_i64d2_flat_0[IfaceVar::kNumVertices];
         tcu::IVec2 vert_i64d2_flat_1[IfaceVar::kNumVertices];
@@ -453,8 +482,8 @@ public:
         tcu::IVec4 vert_i32d4_flat_0[IfaceVar::kNumVertices];
         tcu::IVec4 vert_i32d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::IVec3 vert_i32d3_flat_0[IfaceVar::kNumVertices];
-        tcu::IVec3 vert_i32d3_flat_1[IfaceVar::kNumVertices];
+        Std430IVec3 vert_i32d3_flat_0[IfaceVar::kNumVertices];
+        Std430IVec3 vert_i32d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::IVec2 vert_i32d2_flat_0[IfaceVar::kNumVertices];
         tcu::IVec2 vert_i32d2_flat_1[IfaceVar::kNumVertices];
@@ -465,8 +494,8 @@ public:
         tcu::IVec4 vert_i16d4_flat_0[IfaceVar::kNumVertices];
         tcu::IVec4 vert_i16d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::IVec3 vert_i16d3_flat_0[IfaceVar::kNumVertices];
-        tcu::IVec3 vert_i16d3_flat_1[IfaceVar::kNumVertices];
+        Std430IVec3 vert_i16d3_flat_0[IfaceVar::kNumVertices];
+        Std430IVec3 vert_i16d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::IVec2 vert_i16d2_flat_0[IfaceVar::kNumVertices];
         tcu::IVec2 vert_i16d2_flat_1[IfaceVar::kNumVertices];
@@ -482,8 +511,8 @@ public:
         tcu::Vec4 prim_f64d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec4 prim_f64d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::Vec3 prim_f64d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::Vec3 prim_f64d3_flat_1[IfaceVar::kNumPrimitives];
+        Std430Vec3 prim_f64d3_flat_0[IfaceVar::kNumPrimitives];
+        Std430Vec3 prim_f64d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::Vec2 prim_f64d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec2 prim_f64d2_flat_1[IfaceVar::kNumPrimitives];
@@ -494,8 +523,8 @@ public:
         tcu::Vec4 prim_f32d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec4 prim_f32d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::Vec3 prim_f32d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::Vec3 prim_f32d3_flat_1[IfaceVar::kNumPrimitives];
+        Std430Vec3 prim_f32d3_flat_0[IfaceVar::kNumPrimitives];
+        Std430Vec3 prim_f32d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::Vec2 prim_f32d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec2 prim_f32d2_flat_1[IfaceVar::kNumPrimitives];
@@ -506,8 +535,8 @@ public:
         tcu::Vec4 prim_f16d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec4 prim_f16d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::Vec3 prim_f16d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::Vec3 prim_f16d3_flat_1[IfaceVar::kNumPrimitives];
+        Std430Vec3 prim_f16d3_flat_0[IfaceVar::kNumPrimitives];
+        Std430Vec3 prim_f16d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::Vec2 prim_f16d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec2 prim_f16d2_flat_1[IfaceVar::kNumPrimitives];
@@ -520,8 +549,8 @@ public:
         tcu::IVec4 prim_i64d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec4 prim_i64d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::IVec3 prim_i64d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::IVec3 prim_i64d3_flat_1[IfaceVar::kNumPrimitives];
+        Std430IVec3 prim_i64d3_flat_0[IfaceVar::kNumPrimitives];
+        Std430IVec3 prim_i64d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::IVec2 prim_i64d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec2 prim_i64d2_flat_1[IfaceVar::kNumPrimitives];
@@ -532,8 +561,8 @@ public:
         tcu::IVec4 prim_i32d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec4 prim_i32d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::IVec3 prim_i32d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::IVec3 prim_i32d3_flat_1[IfaceVar::kNumPrimitives];
+        Std430IVec3 prim_i32d3_flat_0[IfaceVar::kNumPrimitives];
+        Std430IVec3 prim_i32d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::IVec2 prim_i32d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec2 prim_i32d2_flat_1[IfaceVar::kNumPrimitives];
@@ -544,8 +573,8 @@ public:
         tcu::IVec4 prim_i16d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec4 prim_i16d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::IVec3 prim_i16d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::IVec3 prim_i16d3_flat_1[IfaceVar::kNumPrimitives];
+        Std430IVec3 prim_i16d3_flat_0[IfaceVar::kNumPrimitives];
+        Std430IVec3 prim_i16d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::IVec2 prim_i16d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec2 prim_i16d2_flat_1[IfaceVar::kNumPrimitives];
