@@ -1190,6 +1190,7 @@ dEQP-VK.glsl.builtin_var.frontfacing.none.point_list.simple
 dEQP-VK.glsl.builtin_var.frontfacing.none.triangle_fan.simple
 dEQP-VK.glsl.builtin_var.frontfacing.none.triangle_list.simple
 dEQP-VK.glsl.builtin_var.frontfacing.none.triangle_strip.simple
+dEQP-VK.glsl.builtin_var.simple.pointcoord_large_interface
 dEQP-VK.glsl.conditionals.if.complex_condition_compute
 dEQP-VK.glsl.conditionals.if.compound_statement_compute
 dEQP-VK.glsl.conditionals.if.if_else_compute

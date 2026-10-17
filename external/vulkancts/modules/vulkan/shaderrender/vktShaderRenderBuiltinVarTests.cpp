@@ -2062,7 +2062,8 @@ enum
 {
     POINTCOORD_VARIANT_DEFAULT,
     POINTCOORD_VARIANT_UNIFORM_VERTEX,
-    POINTCOORD_VARIANT_UNIFORM_FRAGMENT
+    POINTCOORD_VARIANT_UNIFORM_FRAGMENT,
+    POINTCOORD_VARIANT_LARGE_INTERFACE,
 };
 
 class BuiltinGlPointCoordCaseInstance : public ShaderRenderCaseInstance
@@ -2130,6 +2131,14 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate(void)
 
     for (vector<Vec3>::const_iterator pointIter = coords.begin(); pointIter != coords.end(); ++pointIter)
     {
+        Vec4 varyingSum(0.0f);
+        if (variant == POINTCOORD_VARIANT_LARGE_INTERFACE)
+        {
+            const int vertexIndex = int(pointIter - coords.begin());
+            for (int i = 0; i < 16; i++)
+                varyingSum += Vec4(float(vertexIndex + i)) / Vec4(1440.0f, 1440.0f, 360.0f, 360.0f);
+        }
+
         float x = pointIter->x();
         float y = pointIter->y();
         if (variant == POINTCOORD_VARIANT_UNIFORM_VERTEX)
@@ -2165,6 +2174,8 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate(void)
                     color.m_data[1] *= scale.m_data[1];
                     color.m_data[2] *= scale.m_data[2];
                 }
+                else if (variant == POINTCOORD_VARIANT_LARGE_INTERFACE)
+                    color = Vec4(s, t, 0.0f, 0.0f) + varyingSum;
 
                 if (de::inBounds(dx, 0, refImage.getWidth()) && de::inBounds(dy, 0, refImage.getHeight()))
                     refImage.setPixel(dx, dy, RGBA(color));
@@ -2192,6 +2203,7 @@ public:
     virtual ~BuiltinGlPointCoordCase(void);
 
     void initPrograms(SourceCollections &dst) const;
+    void checkSupport(Context &context) const;
     TestInstance *createInstance(Context &context) const;
 
 private:
@@ -2250,6 +2262,31 @@ void BuiltinGlPointCoordCase::initPrograms(SourceCollections &dst) const
                                                            "    o_color = vec4(gl_PointCoord, 0.0, 1.0);\n"
                                                            "}\n");
         break;
+    case POINTCOORD_VARIANT_LARGE_INTERFACE:
+        dst.glslSources.add("vert") << glu::VertexSource(
+            "#version 450\n"
+            "layout(location = 0) in highp vec3 a_position;\n"
+            "layout(location = 0) out vec4 v[16];\n"
+            "void main () {\n"
+            "    for (int i = 0; i < 16; i++) {\n"
+            "        v[i] = vec4(float(gl_VertexIndex + i)) / vec4(1440.0, 1440.0, 360.0, 360.0);\n"
+            "    }\n"
+            "    gl_Position = vec4(a_position.xy, 0.0, 1.0);\n"
+            "    gl_PointSize = a_position.z;\n"
+            "}\n");
+
+        dst.glslSources.add("frag") << glu::FragmentSource("#version 450\n"
+                                                           "layout(location = 0) in vec4 v[16];\n"
+                                                           "layout(location = 0) out vec4 color;\n"
+                                                           "void main (void)\n"
+                                                           "{\n"
+                                                           "    vec4 sum = vec4(gl_PointCoord, 0.0, 0.0);\n"
+                                                           "    for (int i = 0; i < 16; i++) {\n"
+                                                           "        sum += v[i];\n"
+                                                           "    }\n"
+                                                           "    color = sum;\n"
+                                                           "}\n");
+        break;
     default: // POINTCOORD_VARIANT_DEFAULT
         dst.glslSources.add("vert") << glu::VertexSource("#version 310 es\n"
                                                          "layout(location = 0) in highp vec3 a_position;\n"
@@ -2265,6 +2302,19 @@ void BuiltinGlPointCoordCase::initPrograms(SourceCollections &dst) const
                                                            "{\n"
                                                            "    o_color = vec4(gl_PointCoord, 0.0, 1.0);\n"
                                                            "}\n");
+    }
+}
+
+void BuiltinGlPointCoordCase::checkSupport(Context &context) const
+{
+    if (variant == POINTCOORD_VARIANT_LARGE_INTERFACE)
+    {
+        const VkPhysicalDeviceLimits &limits = context.getDeviceProperties().limits;
+        if (limits.maxVertexOutputComponents < 16u * 4u + 7u)
+            TCU_THROW(NotSupportedError, "maxVertexOutputComponents too small");
+
+        if (limits.maxFragmentInputComponents < 16u * 4u + 2u)
+            TCU_THROW(NotSupportedError, "maxFragmentInputComponents too small");
     }
 }
 
@@ -2519,6 +2569,9 @@ TestCaseGroup *createBuiltinVarTests(TestContext &testCtx)
     // PointCoord test with vertex uniform
     simpleGroup->addChild(
         new BuiltinGlPointCoordCase(testCtx, "pointcoord_uniform_vert", POINTCOORD_VARIANT_UNIFORM_VERTEX));
+    // PointCoord test with 16 vec4 varyings
+    simpleGroup->addChild(
+        new BuiltinGlPointCoordCase(testCtx, "pointcoord_large_interface", POINTCOORD_VARIANT_LARGE_INTERFACE));
 
     // FragCoord_msaa
     {

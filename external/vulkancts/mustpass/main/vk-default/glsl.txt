@@ -4619,6 +4619,7 @@ dEQP-VK.glsl.builtin_var.input_variations.input_varying_constant
 dEQP-VK.glsl.builtin_var.simple.fragcoord_w
 dEQP-VK.glsl.builtin_var.simple.fragcoord_xyz
 dEQP-VK.glsl.builtin_var.simple.pointcoord
+dEQP-VK.glsl.builtin_var.simple.pointcoord_large_interface
 dEQP-VK.glsl.builtin_var.simple.pointcoord_uniform_frag
 dEQP-VK.glsl.builtin_var.simple.pointcoord_uniform_vert
 dEQP-VK.glsl.combined_operations.negintdivand
