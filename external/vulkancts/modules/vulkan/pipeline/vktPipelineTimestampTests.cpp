@@ -2911,20 +2911,27 @@ void TimestampPipelineStageTest::checkSupport(Context &context) const
 class ResetTimestampQueryBeforeCopyTest : public vkt::TestCase
 {
 public:
-    ResetTimestampQueryBeforeCopyTest(tcu::TestContext &testContext, const std::string &name)
+    ResetTimestampQueryBeforeCopyTest(tcu::TestContext &testContext, const std::string &name, bool largeStride,
+                                      bool nonZeroFirstQuery)
         : vkt::TestCase(testContext, name)
+        , m_largeStride(largeStride)
+        , m_nonZeroFirstQuery(nonZeroFirstQuery)
     {
     }
     virtual ~ResetTimestampQueryBeforeCopyTest(void) = default;
     virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
+
+private:
+    bool m_largeStride;
+    bool m_nonZeroFirstQuery;
 };
 
 class ResetTimestampQueryBeforeCopyTestInstance : public vkt::TestInstance
 {
 public:
-    ResetTimestampQueryBeforeCopyTestInstance(Context &context);
+    ResetTimestampQueryBeforeCopyTestInstance(Context &context, bool largeStride, bool nonZeroFirstQuery);
     virtual ~ResetTimestampQueryBeforeCopyTestInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
 
@@ -2956,23 +2963,25 @@ void ResetTimestampQueryBeforeCopyTest::initPrograms(SourceCollections &programC
 
 TestInstance *ResetTimestampQueryBeforeCopyTest::createInstance(Context &context) const
 {
-    return new ResetTimestampQueryBeforeCopyTestInstance(context);
+    return new ResetTimestampQueryBeforeCopyTestInstance(context, m_largeStride, m_nonZeroFirstQuery);
 }
 
-ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInstance(Context &context)
+ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInstance(Context &context, bool largeStride,
+                                                                                     bool nonZeroFirstQuery)
     : vkt::TestInstance(context)
 {
     const DeviceInterface &vk       = context.getDeviceInterface();
     const VkDevice vkDevice         = context.getDevice();
     const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
     Allocator &allocator            = context.getDefaultAllocator();
+    const uint32_t queryIndex       = nonZeroFirstQuery ? 1u : 0u;
 
     const VkQueryPoolCreateInfo queryPoolParams{
         VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType               sType;
         nullptr,                                  // const void*                   pNext;
         0u,                                       // VkQueryPoolCreateFlags        flags;
         VK_QUERY_TYPE_TIMESTAMP,                  // VkQueryType                   queryType;
-        1u,                                       // uint32_t                      entryCount;
+        queryIndex + 1u,                          // uint32_t                      entryCount;
         0u,                                       // VkQueryPipelineStatisticFlags pipelineStatistics;
     };
 
@@ -3010,13 +3019,14 @@ ResetTimestampQueryBeforeCopyTestInstance::ResetTimestampQueryBeforeCopyTestInst
         VK_WHOLE_SIZE                                // VkDeviceSize size;
     };
 
+    const VkDeviceSize stride = largeStride ? (64 * 1024 * 1024) : sizeof(TimestampWithAvailability);
+
     // Prepare command buffer.
     beginCommandBuffer(vk, *m_cmdBuffer, 0u);
-    vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
-    vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, 0u);
-    vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, 1u);
-    vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_resultBuffer, 0u,
-                               sizeof(TimestampWithAvailability),
+    vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, queryIndex, 1u);
+    vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, *m_queryPool, queryIndex);
+    vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, queryIndex, 1u);
+    vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, queryIndex, 1u, *m_resultBuffer, 0u, stride,
                                (VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
     vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
                           nullptr, 1u, &bufferBarrier, 0u, nullptr);
@@ -4530,7 +4540,12 @@ tcu::TestCaseGroup *createTimestampTests(tcu::TestContext &testCtx_, PipelineCon
                         }
 
                         // Reset timestamp query before copying results.
-                        miscTests->addChild(new ResetTimestampQueryBeforeCopyTest(testCtx, "reset_query_before_copy"));
+                        miscTests->addChild(
+                            new ResetTimestampQueryBeforeCopyTest(testCtx, "reset_query_before_copy", false, false));
+                        miscTests->addChild(new ResetTimestampQueryBeforeCopyTest(
+                            testCtx, "reset_query_before_copy_large_stride_0", true, false));
+                        miscTests->addChild(new ResetTimestampQueryBeforeCopyTest(
+                            testCtx, "reset_query_before_copy_large_stride_1", true, true));
 
                         // Fill buffer with 0s before copying results.
                         miscTests->addChild(new FillBufferBeforeCopyTest(testCtx, "fill_buffer_before_copy"));

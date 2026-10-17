@@ -251823,6 +251823,8 @@ dEQP-VKSC.pipeline.monolithic.timestamp.misc_tests.check_timestamp_compute_and_g
 dEQP-VKSC.pipeline.monolithic.timestamp.misc_tests.consistent_results
 dEQP-VKSC.pipeline.monolithic.timestamp.misc_tests.fill_buffer_before_copy
 dEQP-VKSC.pipeline.monolithic.timestamp.misc_tests.reset_query_before_copy
+dEQP-VKSC.pipeline.monolithic.timestamp.misc_tests.reset_query_before_copy_large_stride_0
+dEQP-VKSC.pipeline.monolithic.timestamp.misc_tests.reset_query_before_copy_large_stride_1
 dEQP-VKSC.pipeline.monolithic.timestamp.misc_tests.sequential_timestamps
 dEQP-VKSC.pipeline.monolithic.timestamp.misc_tests.timestamp_only
 dEQP-VKSC.pipeline.monolithic.timestamp.misc_tests.timestamp_only_host_query_reset
