@@ -427,6 +427,8 @@ tcu::TestStatus FillBufferTestInstance::iterate(void)
             dstFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
         if (m_params.size < VK_WHOLE_SIZE)
             dstFlags |= VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR;
+        if (m_params.size == 0)
+            dstFlags = 0;
 
         VkDeviceAddressRangeKHR dstRange{m_destinationDevicceAddress + m_params.dstOffset, m_params.size};
         vk.cmdFillMemoryKHR(*m_cmdBuffer, &dstRange, dstFlags, m_params.testData[0]);
@@ -752,6 +754,17 @@ void populateTestSubgroup(tcu::TestCaseGroup *currentTestsGroup, TestGroupData g
         currentTestsGroup->addChild(new UpdateBufferTestCase(testCtx, "update_" + testName, params));
         params.useDeviceAddressCommands = false;
     }
+
+#ifndef CTS_USES_VULKANSC
+    {
+        params.dstOffset                = 16;
+        params.size                     = 0;
+        params.useDeviceAddressCommands = true;
+
+        currentTestsGroup->addChild(new FillBufferTestCase(testCtx, "fill_buffer_empty_range_device_address", params));
+        params.useDeviceAddressCommands = false;
+    }
+#endif
 
     // VK_WHOLE_SIZE tests.
     {
