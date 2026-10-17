@@ -427,8 +427,10 @@ struct BufferMarkerMemDepCase : public ApiBufferMarkerMemDepTestCase
     using ApiBufferMarkerMemDepTestCase::ApiBufferMarkerMemDepTestCase;
     virtual std::string getRequiredCapabilitiesId() const override
     {
+        // Draw cases enable fragmentStoresAndAtomics, so they cannot share a device with the other cases
         return genBufferMarkerDeviceId(VkQueueFlagBits(m_arg0.arg0.base.testQueue), m_arg0.arg0.base.offset,
-                                       m_arg0.arg0.base.useHostPtr);
+                                       m_arg0.arg0.base.useHostPtr) +
+               (m_arg0.arg0.method == MEMORY_DEP_DRAW ? "-fragmentStoresAndAtomics" : "");
     }
     virtual void initDeviceCapabilities(DevCaps &caps) override
     {
@@ -446,8 +448,6 @@ struct BufferMarkerMemDepCase : public ApiBufferMarkerMemDepTestCase
             {caps.getContextManager().getDeviceFeaturesAndProperties().getDeviceProperties().limits.nonCoherentAtomSize,
              static_cast<VkDeviceSize>(m_arg0.arg0.base.offset)});
         caps.setAllocatorParams(offsetParams);
-
-        caps.addFeature(&VkPhysicalDeviceFeatures::fragmentStoresAndAtomics);
     }
 };
 
