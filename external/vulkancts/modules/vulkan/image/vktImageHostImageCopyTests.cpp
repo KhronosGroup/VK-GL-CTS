@@ -1583,13 +1583,13 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
     getHostImageCopyProperties(instanceDriver, physicalDevice, &hostImageCopyProperties);
     if (hostImageCopyProperties.identicalMemoryTypeRequirements)
     {
-        createInfo.flags &= ~(vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT);
-        de::MovePtr<ImageWithMemory> imageWithoutHostCopy = de::MovePtr<ImageWithMemory>(
-            new ImageWithMemory(vk, device, alloc, createInfo, vk::MemoryRequirement::HostVisible));
+        // Only the memory requirements of this image are queried, so it needs no memory.
+        createInfo.usage &= ~(vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT);
+        const auto imageWithoutHostCopy = createImage(vk, device, &createInfo);
         vk::VkMemoryRequirements hostImageMemoryRequirements;
         vk::VkMemoryRequirements memoryRequirements;
         vk.getImageMemoryRequirements(device, **image, &hostImageMemoryRequirements);
-        vk.getImageMemoryRequirements(device, **imageWithoutHostCopy, &memoryRequirements);
+        vk.getImageMemoryRequirements(device, *imageWithoutHostCopy, &memoryRequirements);
 
         if (hostImageMemoryRequirements.memoryTypeBits != memoryRequirements.memoryTypeBits)
             TCU_THROW(NotSupportedError, "Layout not supported for src host copy");
