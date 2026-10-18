@@ -656,7 +656,7 @@ tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
             0u,                                                       // uint32_t binding;
             stride,                                                   // uint32_t stride;
             VK_VERTEX_INPUT_RATE_VERTEX,                              // VkVertexInputRate inputRate;
-            0u,                                                       // uint32_t divisor;
+            1u,                                                       // uint32_t divisor;
         });
     }
 
@@ -672,7 +672,7 @@ tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
             static_cast<uint32_t>(i + 1),                             // uint32_t binding;
             stride,                                                   // uint32_t stride;
             VK_VERTEX_INPUT_RATE_VERTEX,                              // VkVertexInputRate inputRate;
-            0u,                                                       // uint32_t divisor;
+            1u,                                                       // uint32_t divisor;
         });
     };
 
