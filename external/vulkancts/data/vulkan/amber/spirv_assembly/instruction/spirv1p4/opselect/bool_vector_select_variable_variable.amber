@@ -1,0 +1,128 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main" %11 %23 %59
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %8 "idx"
+               OpName %11 "gl_GlobalInvocationID"
+               OpName %18 "cond"
+               OpName %21 "InBuffer"
+               OpMemberName %21 0 "inData"
+               OpName %23 ""
+               OpName %31 "a"
+               OpName %39 "a4"
+               OpName %42 "b"
+               OpName %48 "b4"
+               OpName %51 "result"
+               OpName %57 "OutBuffer"
+               OpMemberName %57 0 "outData"
+               OpName %59 ""
+               OpDecorate %11 BuiltIn GlobalInvocationId
+               OpDecorate %20 ArrayStride 16
+               OpDecorate %21 Block
+               OpMemberDecorate %21 0 Offset 0
+               OpDecorate %23 Binding 0
+               OpDecorate %23 DescriptorSet 0
+               OpDecorate %56 ArrayStride 16
+               OpDecorate %57 Block
+               OpMemberDecorate %57 0 Offset 0
+               OpDecorate %59 Binding 1
+               OpDecorate %59 DescriptorSet 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypePointer Function %6
+          %9 = OpTypeVector %6 3
+         %10 = OpTypePointer Input %9
+         %11 = OpVariable %10 Input
+         %12 = OpConstant %6 0
+         %13 = OpTypePointer Input %6
+         %16 = OpTypeBool
+         %17 = OpTypePointer Function %16
+         %19 = OpTypeVector %6 4
+         %20 = OpTypeRuntimeArray %19
+         %21 = OpTypeStruct %20
+         %22 = OpTypePointer StorageBuffer %21
+         %23 = OpVariable %22 StorageBuffer
+         %24 = OpTypeInt 32 1
+         %25 = OpConstant %24 0
+         %27 = OpTypePointer StorageBuffer %6
+         %33 = OpConstant %6 1
+         %37 = OpTypeVector %16 4
+         %38 = OpTypePointer Function %37
+         %44 = OpConstant %6 2
+         %56 = OpTypeRuntimeArray %19
+         %57 = OpTypeStruct %56
+         %58 = OpTypePointer StorageBuffer %57
+         %59 = OpVariable %58 StorageBuffer
+         %62 = OpConstantComposite %19 %12 %12 %12 %12
+         %63 = OpConstantComposite %19 %33 %33 %33 %33
+         %65 = OpTypePointer StorageBuffer %19
+         %67 = OpConstantComposite %9 %33 %33 %33
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %18 = OpVariable %17 Function
+         %31 = OpVariable %17 Function
+         %39 = OpVariable %38 Function
+         %42 = OpVariable %17 Function
+         %48 = OpVariable %38 Function
+         %51 = OpVariable %38 Function
+         %14 = OpAccessChain %13 %11 %12
+         %15 = OpLoad %6 %14
+               OpStore %8 %15
+         %26 = OpLoad %6 %8
+         %28 = OpAccessChain %27 %23 %25 %26 %12
+         %29 = OpLoad %6 %28
+         %30 = OpINotEqual %16 %29 %12
+               OpStore %18 %30
+         %32 = OpLoad %6 %8
+         %34 = OpAccessChain %27 %23 %25 %32 %33
+         %35 = OpLoad %6 %34
+         %36 = OpINotEqual %16 %35 %12
+               OpStore %31 %36
+         %40 = OpLoad %16 %31
+         %41 = OpCompositeConstruct %37 %40 %40 %40 %40
+               OpStore %39 %41
+         %43 = OpLoad %6 %8
+         %45 = OpAccessChain %27 %23 %25 %43 %44
+         %46 = OpLoad %6 %45
+         %47 = OpINotEqual %16 %46 %12
+               OpStore %42 %47
+         %49 = OpLoad %16 %42
+         %50 = OpCompositeConstruct %37 %49 %49 %49 %49
+               OpStore %48 %50
+         %52 = OpLoad %16 %18
+         %53 = OpLoad %37 %39
+         %54 = OpLoad %37 %48
+         %55 = OpSelect %37 %52 %53 %54
+               OpStore %51 %55
+         %60 = OpLoad %6 %8
+         %61 = OpLoad %37 %51
+         %64 = OpSelect %19 %61 %63 %62
+         %66 = OpAccessChain %65 %59 %25 %60
+               OpStore %66 %64
+               OpReturn
+               OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata uint 0 0 0 0 0  0 0 1 0  0 1 0 0  0 1 1 0  1 0 0 0  1 0 1 0  1 1 0 0  1 1 1 0
+ssbo 0:1 subdata uint 0 2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2
+
+compute entrypoint main
+compute 8 1 1
+
+probe ssbo uint 0:1 0 == 0 0 0 0
+probe ssbo uint 0:1 16 == 1 1 1 1
+probe ssbo uint 0:1 32 == 0 0 0 0
+probe ssbo uint 0:1 48 == 1 1 1 1
+probe ssbo uint 0:1 64 == 0 0 0 0
+probe ssbo uint 0:1 80 == 0 0 0 0
+probe ssbo uint 0:1 96 == 1 1 1 1
+probe ssbo uint 0:1 112 == 1 1 1 1

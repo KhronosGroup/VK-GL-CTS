@@ -357,6 +357,26 @@ tcu::TestCaseGroup *createSpirvVersion1p4Group(tcu::TestContext &testCtx)
     group.add("array_select");
     // OpSelect arrays with non-standard strides, new in SPIR-V 1.4
     group.add("array_stride_select");
+    // OpSelect bool vector constants false and true with vector selector, verify SPIR-V 1.0
+    group.add("bool_vector_element_select_false_true");
+    // OpSelect bool vector constant false and bvec4(variable) with vector selector, verify SPIR-V 1.0
+    group.add("bool_vector_element_select_false_variable");
+    // OpSelect bool vector constants true and false with vector selector, verify SPIR-V 1.0
+    group.add("bool_vector_element_select_true_false");
+    // OpSelect bool vector bvec4(variable) and constant false with vector selector, verify SPIR-V 1.0
+    group.add("bool_vector_element_select_variable_false");
+    // OpSelect bool vector bvec4(variable) operands with vector selector, verify SPIR-V 1.0
+    group.add("bool_vector_element_select_variable_variable");
+    // OpSelect bool vector constants false and true with scalar selector, new in SPIR-V 1.4
+    group.add("bool_vector_select_false_true");
+    // OpSelect bool vector constant false and bvec4(variable) with scalar selector, new in SPIR-V 1.4
+    group.add("bool_vector_select_false_variable");
+    // OpSelect bool vector constants true and false with scalar selector, new in SPIR-V 1.4
+    group.add("bool_vector_select_true_false");
+    // OpSelect bool vector bvec4(variable) and constant false with scalar selector, new in SPIR-V 1.4
+    group.add("bool_vector_select_variable_false");
+    // OpSelect bool vector bvec4(variable) operands with scalar selector, new in SPIR-V 1.4
+    group.add("bool_vector_select_variable_variable");
     // OpSelect structs with nested arrays, new in SPIR-V 1.4
     group.add("nested_array_select");
     // OpSelect structs with nested structs, new in SPIR-V 1.4

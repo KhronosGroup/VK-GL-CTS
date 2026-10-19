@@ -12176,6 +12176,16 @@ dEQP-VK.spirv_assembly.instruction.maint9_vectorization.bit_reverse.result_v64i-
 dEQP-VK.spirv_assembly.instruction.maint9_vectorization.bit_reverse.result_v64u-base_v64u
 dEQP-VK.spirv_assembly.instruction.maint9_vectorization.bit_reverse.result_v8i-base_v8i
 dEQP-VK.spirv_assembly.instruction.maint9_vectorization.bit_reverse.result_v8u-base_v8u
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_false_true
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_false_variable
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_true_false
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_variable_false
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_variable_variable
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_false_true
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_false_variable
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_true_false
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_variable_false
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_variable_variable
 dEQP-VK.spirv_assembly.type.scalar.i16.bit_count_comp
 dEQP-VK.spirv_assembly.type.scalar.i16.bit_count_frag
 dEQP-VK.spirv_assembly.type.scalar.i16.bit_count_geom

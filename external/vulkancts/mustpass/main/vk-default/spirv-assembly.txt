@@ -44887,6 +44887,16 @@ dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.variable_pointers_wg_n
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opptrnotequal.wg_comparisons_not_equal
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.array_select
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.array_stride_select
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_false_true
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_false_variable
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_true_false
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_variable_false
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_element_select_variable_variable
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_false_true
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_false_variable
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_true_false
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_variable_false
+dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.bool_vector_select_variable_variable
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.nested_array_select
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.nested_struct_select
 dEQP-VK.spirv_assembly.instruction.spirv1p4.opselect.scalar_select
