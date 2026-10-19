@@ -622,6 +622,10 @@ public:
                 checkTransferQueueGranularity(context, region.imageCopy.extent, m_params.dst.image.imageType);
             }
         }
+
+        // uploadImage() and readImage() copy on the universal queue in every variant
+        checkDepthStencilCopyQueueSupport(context, isDepthStencilFormat(m_params.src.image.format) ||
+                                                       isDepthStencilFormat(m_params.dst.image.format));
     }
 
 private:
@@ -1141,6 +1145,10 @@ public:
         if (m_params.useSparseBinding)
             checkSparseBindingSupport(context, m_params.src.image);
 #endif
+
+        // uploadImage() and readImage() copy on the universal queue in every variant
+        checkDepthStencilCopyQueueSupport(context, isDepthStencilFormat(m_params.src.image.format) ||
+                                                       isDepthStencilFormat(m_params.dst.image.format));
     }
 
 private:

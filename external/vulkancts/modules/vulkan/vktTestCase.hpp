@@ -408,6 +408,9 @@ uint32_t findQueueFamilyIndexWithCaps(const vk::InstanceInterface &vkInstance, v
 //! Capabilities to exclude when looking for a dedicated transfer queue family.
 vk::VkQueueFlags getTransferOnlyExcludedCaps(void);
 
+// Depth/stencil copies between buffers and images on the universal queue need VK_QUEUE_GRAPHICS_BIT
+void checkDepthStencilCopyQueueSupport(Context &context, bool copiesDepthStencilAspect);
+
 } // namespace vkt
 
 #endif // _VKTTESTCASE_HPP

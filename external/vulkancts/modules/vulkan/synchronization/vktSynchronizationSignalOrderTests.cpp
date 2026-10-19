@@ -955,6 +955,10 @@ public:
 
         m_writeOpSupport->checkSupport(context);
         m_readOpSupport->checkSupport(context);
+
+        // Both devices use the universal queue family, and depth/stencil images are copied to and from buffers
+        checkDepthStencilCopyQueueSupport(
+            context, (m_resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0u);
     }
 
     TestInstance *createInstance(Context &context) const

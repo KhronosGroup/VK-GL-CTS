@@ -703,6 +703,9 @@ public:
         if (m_params.useSparseBinding)
             checkSparseBindingSupport(context, m_params.dst.image);
 #endif // CTS_USES_VULKANSC
+
+        // Compute and transfer queue variants test maintenance10 and have their own checks
+        checkDepthStencilCopyQueueSupport(context, m_params.queueSelection == QueueSelectionOptions::Universal);
     }
 
 private:

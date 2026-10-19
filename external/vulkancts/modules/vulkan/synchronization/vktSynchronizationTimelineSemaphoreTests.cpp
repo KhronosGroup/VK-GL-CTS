@@ -1099,6 +1099,10 @@ public:
 
         m_writeOp->checkSupport(context);
         m_readOp->checkSupport(context);
+
+        // All operations run on the universal queue, and depth/stencil images are copied to and from buffers
+        checkDepthStencilCopyQueueSupport(
+            context, (m_resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0u);
     }
 
     void initPrograms(SourceCollections &programCollection) const override
@@ -1736,6 +1740,10 @@ public:
 
         for (auto &copyOp : m_copyOpVec)
             copyOp->checkSupport(context);
+
+        // Write and read operations run on the universal queue family and copy depth/stencil images to/from buffers
+        checkDepthStencilCopyQueueSupport(
+            context, (m_resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0u);
     }
 
     void initPrograms(SourceCollections &programCollection) const override
@@ -2324,6 +2332,10 @@ public:
 
         for (auto &copyOp : m_copyOpVec)
             copyOp->checkSupport(context);
+
+        // The write operation runs on the universal queue family and copies depth/stencil images from a buffer
+        checkDepthStencilCopyQueueSupport(
+            context, (m_resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0u);
     }
 
     void initPrograms(SourceCollections &programCollection) const override

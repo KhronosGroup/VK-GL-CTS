@@ -511,6 +511,18 @@ uint32_t findQueueFamilyIndexWithCaps(const InstanceInterface &vkInstance, VkPhy
     TCU_THROW(NotSupportedError, os.str());
 }
 
+void checkDepthStencilCopyQueueSupport(Context &context, bool copiesDepthStencilAspect)
+{
+    if (!copiesDepthStencilAspect)
+        return;
+
+    const InstanceInterface &vki = context.getInstanceInterface();
+    const auto queueProps        = getPhysicalDeviceQueueFamilyProperties(vki, context.getPhysicalDevice());
+
+    if ((queueProps[context.getUniversalQueueFamilyIndex()].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0u)
+        TCU_THROW(NotSupportedError, "Depth/stencil copy between buffer and image requires a graphics queue");
+}
+
 vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(de::SharedPtr<ContextManager> mgr)
 {
     const vk::InstanceInterface &vki          = mgr->getInstanceInterface();

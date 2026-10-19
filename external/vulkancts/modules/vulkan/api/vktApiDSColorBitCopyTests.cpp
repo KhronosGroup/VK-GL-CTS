@@ -502,6 +502,9 @@ void DSColorCopyCase::checkSupport(Context &context) const
 
     if (m_params.unrestricted)
         context.requireDeviceFunctionality("VK_EXT_depth_range_unrestricted");
+
+    // Compute and transfer queue variants test maintenance10 and have their own checks
+    checkDepthStencilCopyQueueSupport(context, m_params.queueType == QueueType::UNIVERSAL);
 }
 
 struct PixelValue

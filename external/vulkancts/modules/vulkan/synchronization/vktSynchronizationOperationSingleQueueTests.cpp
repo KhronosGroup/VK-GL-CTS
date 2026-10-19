@@ -934,6 +934,10 @@ public:
 
         m_writeOp->checkSupport(context);
         m_readOp->checkSupport(context);
+
+        // Depth/stencil images are always read back with a copy to a buffer on the universal queue
+        checkDepthStencilCopyQueueSupport(
+            context, (m_resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0u);
     }
 
     TestInstance *createInstance(Context &context) const

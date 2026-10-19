@@ -2212,19 +2212,6 @@ void QueryTestCase::checkSupport(vkt::Context &context) const
         TCU_THROW(NotSupportedError, "Format feature sampled image bit not supported for linear tiling.");
 }
 
-// Depth/stencil buffer to image copies are graphics-only and on a graphics-less device no family can legally record them
-void checkDepthStencilCopyQueueSupport(vkt::Context &context, bool copiesDepthStencilAspect)
-{
-    if (!copiesDepthStencilAspect)
-        return;
-
-    const InstanceInterface &vki = context.getInstanceInterface();
-    const auto queueProps        = getPhysicalDeviceQueueFamilyProperties(vki, context.getPhysicalDevice());
-
-    if ((queueProps[context.getUniversalQueueFamilyIndex()].queueFlags & vk::VK_QUEUE_GRAPHICS_BIT) == 0u)
-        TCU_THROW(NotSupportedError, "Depth/stencil buffer to image copy requires a graphics queue");
-}
-
 class IdenticalMemoryLayoutTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
