@@ -7360,6 +7360,232 @@ void PerPrimBlockOutputInstance::generateReferenceLevel()
     generateSolidRefLevel(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), m_referenceLevel);
 }
 
+namespace DrawIdMix
+{
+
+struct Params
+{
+    bool indirectMeshDraw;
+};
+using ParamsPtr = std::shared_ptr<const Params>;
+
+void checkSupport(Context &context, ParamsPtr)
+{
+    checkTaskMeshShaderSupportEXT(context, false, true);
+}
+
+void initPrograms(vk::SourceCollections &dst, ParamsPtr)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "// Make 2 draws of 3 vertices each to generate the full-screen quad.\n"
+         << "const vec4 coords[6] = vec4[](\n"
+         << "    vec4(-1.0, -1.0, 0.0, 1.0),\n"
+         << "    vec4(-1.0,  1.0, 0.0, 1.0),\n"
+         << "    vec4( 1.0, -1.0, 0.0, 1.0),\n"
+         << "    vec4( 1.0, -1.0, 0.0, 1.0),\n"
+         << "    vec4(-1.0,  1.0, 0.0, 1.0),\n"
+         << "    vec4( 1.0,  1.0, 0.0, 1.0));\n"
+         << "void main(void)\n"
+         << "{\n"
+         << "    uint offset = uint(3 * gl_DrawID);\n"
+         << "    uint vertid = uint(gl_VertexIndex) + offset;\n"
+         << "    gl_Position = coords[vertid];\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    const auto meshBuildOptions = getMinMeshEXTBuildOptions(dst.usedVulkanVersion);
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "layout (local_size_x=1) in;\n"
+         << "layout (triangles) out;\n"
+         << "layout (max_vertices=3, max_primitives=1) out;\n"
+         << "layout (set=0, binding=0, std430) readonly buffer CoordsBlock {\n"
+         << "    vec4 value[];\n"
+         << "} coords;\n"
+         << "void main(void)\n"
+         << "{\n"
+         << "    SetMeshOutputsEXT(3, 1);\n"
+         << "    gl_MeshVerticesEXT[0].gl_Position = coords.value[0];\n"
+         << "    gl_MeshVerticesEXT[1].gl_Position = coords.value[1];\n"
+         << "    gl_MeshVerticesEXT[2].gl_Position = coords.value[2];\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+         << "}\n";
+    dst.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << meshBuildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "layout (push_constant, std430) uniform PCBlock { vec4 color; } pc;\n"
+         << "void main(void) {\n"
+         << "    outColor = pc.color;\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus runTest(Context &context, ParamsPtr params)
+{
+    const auto ctx = context.getContextCommonData();
+
+    // Buffer with a full-screen triangle for the mesh shader.
+    const std::vector<tcu::Vec4> fullScreenTriangle{
+        // clang-format off
+        tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+        tcu::Vec4(-1.0f,  3.0f, 0.0f, 1.0f),
+        tcu::Vec4( 3.0f, -1.0f, 0.0f, 1.0f),
+        // clang-format on
+    };
+
+    const auto triangleBufferSize  = static_cast<VkDeviceSize>(de::dataSize(fullScreenTriangle));
+    const auto triangleBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    const auto triangleBufferInfo  = makeBufferCreateInfo(triangleBufferSize, triangleBufferUsage);
+    BufferWithMemory triangleBuffer(ctx.vkd, ctx.device, ctx.allocator, triangleBufferInfo, HostIntent::W);
+    {
+        auto &alloc = triangleBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(fullScreenTriangle), de::dataSize(fullScreenTriangle));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Make a descriptor pool and set with the buffer.
+    const auto descType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, 1u);
+    const auto descPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, VK_SHADER_STAGE_MESH_BIT_EXT);
+    const auto setLayout     = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+
+    const auto binding = DescriptorSetUpdateBuilder::Location::binding;
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto descInfo = makeDescriptorBufferInfo(*triangleBuffer, 0ull, VK_WHOLE_SIZE);
+    updateBuilder.writeSingle(*descriptorSet, binding(0u), descType, &descInfo);
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    // Push constants for the frag shader.
+    const auto pcStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto pcSize   = DE_SIZEOF32(tcu::Vec4);
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+
+    const auto vertPipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+    const auto meshPipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto vertShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto meshShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("mesh"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto renderPass  = makeRenderPass(ctx.vkd, ctx.device, colorFormat);
+
+    // Color buffer.
+    const tcu::IVec3 extent(2, 2, 1);
+    const auto extentVk = makeExtent3D(extent);
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    const auto colorBufferUsage = static_cast<VkImageUsageFlags>(
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorBufferUsage,
+                                VK_IMAGE_TYPE_2D);
+    const auto framebuffer =
+        makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), extentVk.width, extentVk.height);
+
+    const auto meshPipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *meshPipelineLayout, VK_NULL_HANDLE,
+                                                   *meshShader, *fragShader, *renderPass, viewports, scissors);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructureConst();
+
+    const auto vertPipeline =
+        makeGraphicsPipeline(ctx.vkd, ctx.device, *vertPipelineLayout, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, *fragShader, *renderPass, viewports, scissors,
+                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputStateCreateInfo);
+
+    // Indirect buffer for the vertex draw, with 2 draws and 3 vertices each.
+    const auto vertDrawCount  = 2u;
+    const auto vertDrawStride = DE_SIZEOF32(VkDrawIndirectCommand);
+    const std::vector<VkDrawIndirectCommand> vertDrawCmds(vertDrawCount, makeDrawIndirectCommand(3u, 1u, 0u, 0u));
+    const auto vertDrawCmdsBufferSize  = static_cast<VkDeviceSize>(de::dataSize(vertDrawCmds));
+    const auto vertDrawCmdsBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+    const auto vertDrawCmdsBufferInfo  = makeBufferCreateInfo(vertDrawCmdsBufferSize, vertDrawCmdsBufferUsage);
+    BufferWithMemory vertDrawCmdsBuffer(ctx.vkd, ctx.device, ctx.allocator, vertDrawCmdsBufferInfo, HostIntent::W);
+    {
+        auto &alloc = vertDrawCmdsBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertDrawCmds), de::dataSize(vertDrawCmds));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Indirect buffer for the mesh draw, with 1 draw containing a single dispatch.
+    const auto meshDrawCount  = 1u;
+    const auto meshDrawStride = DE_SIZEOF32(VkDrawMeshTasksIndirectCommandEXT);
+    const std::vector<VkDrawMeshTasksIndirectCommandEXT> meshDrawCmds(meshDrawCount,
+                                                                      makeDrawMeshTasksIndirectCommandEXT(1u, 1u, 1u));
+    const auto meshDrawCmdsBufferSize  = static_cast<VkDeviceSize>(de::dataSize(meshDrawCmds));
+    const auto meshDrawCmdsBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+    const auto meshDrawCmdsBufferInfo  = makeBufferCreateInfo(meshDrawCmdsBufferSize, meshDrawCmdsBufferUsage);
+    BufferWithMemory meshDrawCmdsBuffer(ctx.vkd, ctx.device, ctx.allocator, meshDrawCmdsBufferInfo, HostIntent::W);
+    {
+        auto &alloc = meshDrawCmdsBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(meshDrawCmds), de::dataSize(meshDrawCmds));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto clearColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    const auto vertColor  = tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    const auto meshColor  = tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f);
+
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.front(), clearColor);
+    {
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *vertPipeline);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *vertPipelineLayout, pcStages, 0u, pcSize, &vertColor);
+        ctx.vkd.cmdDrawIndirect(cmdBuffer, *vertDrawCmdsBuffer, 0ull, vertDrawCount, vertDrawStride);
+    }
+    {
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *meshPipeline);
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *meshPipelineLayout, 0u, 1u, &descriptorSet.get(), 0u,
+                                      nullptr);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *meshPipelineLayout, pcStages, 0u, pcSize, &meshColor);
+        if (params->indirectMeshDraw)
+            ctx.vkd.cmdDrawMeshTasksIndirectEXT(cmdBuffer, *meshDrawCmdsBuffer, 0ull, meshDrawCount, meshDrawStride);
+        else
+        {
+            DE_ASSERT(meshDrawCmds.size() == 1);
+            const auto &drawCmd = meshDrawCmds.front();
+            ctx.vkd.cmdDrawMeshTasksEXT(cmdBuffer, drawCmd.groupCountX, drawCmd.groupCountY, drawCmd.groupCountZ);
+        }
+    }
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::TextureLevel refLevel(tcuFormat, extent);
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, meshColor);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    auto &log = context.getTestContext().getLog();
+    const tcu::Vec4 threshold(0.0f); // Expect exact results.
+    if (!tcu::floatThresholdCompare(log, "Color", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace DrawIdMix
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
@@ -7907,6 +8133,14 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
                             addFunctionCaseWithPrograms(miscTests.get(), testName, VertexState::checkSupport,
                                                         VertexState::initPrograms, VertexState::iterate, params);
                         }
+    }
+
+    for (const bool indirectDraw : {false, true})
+    {
+        DrawIdMix::ParamsPtr params(new DrawIdMix::Params{indirectDraw});
+        const auto testName = std::string("draw_id_mix") + (indirectDraw ? "_indirect" : "");
+        addFunctionCaseWithPrograms(miscTests.get(), testName, DrawIdMix::checkSupport, DrawIdMix::initPrograms,
+                                    DrawIdMix::runTest, params);
     }
 
     return miscTests.release();
