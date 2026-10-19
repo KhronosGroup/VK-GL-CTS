@@ -272,6 +272,7 @@ def getUnusedPort ():
     return port
 
 def runNightly (config):
+    config.generator = getBuildGenerator(config.buildConfig, config.generator)
     build(config.buildConfig, config.generator)
 
     # Run parameters

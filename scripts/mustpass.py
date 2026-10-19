@@ -21,6 +21,7 @@
 
 from ctsbuild.common import *
 from ctsbuild.build import build
+from ctsbuild.config import getBuildGenerator
 from build_caselists import getBuildConfig, getModulesPath, DEFAULT_BUILD_DIR, DEFAULT_TARGET
 import json
 import logging
@@ -300,6 +301,7 @@ def runConfigWorker(buildCfg, generator, mustpass, package, config, verbose):
 
 
 def genMustpassLists (mustpassLists, generator, buildCfg):
+    generator = getBuildGenerator(buildCfg, generator)
     t0 = time.perf_counter()
 
     # Collect the unique set of modules used across all mustpass lists, then

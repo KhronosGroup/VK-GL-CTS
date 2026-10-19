@@ -89,8 +89,8 @@ def parseArgs ():
 if __name__ == "__main__":
     args = parseArgs()
 
-    generator = ANY_GENERATOR
     buildCfg = getBuildConfig(args.buildDir, args.targetName, args.buildType)
+    generator = getBuildGenerator(buildCfg, ANY_GENERATOR)
     module = VULKAN_MODULE
 
     build(buildCfg, generator, ["deqp-vk"])
