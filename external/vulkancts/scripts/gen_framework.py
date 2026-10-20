@@ -323,6 +323,7 @@ VK_MESA_image_alignment_control
 # extensions intentionally not tested by CTS, with the reason; framework is not generated for them
 EXTENSIONS_NOT_TESTED_BY_CTS = {
     'VK_EXT_validation_cache': 'implemented by the validation layers, see VK-GL-CTS issue 1694',
+    'VK_EXT_metal_objects': 'designed for MoltenVK, KosmicKrisp cannot implement it, see VK-GL-CTS issue 6970',
 }
 
 # instance extensions not listed above; every non-core instance extension must be
