@@ -684,17 +684,11 @@ struct Value
 
         switch (type)
         {
-        case VK_COMPONENT_TYPE_FLOAT16_KHR:
-        case VK_COMPONENT_TYPE_FLOAT32_KHR:
-        case VK_COMPONENT_TYPE_FLOAT64_KHR:
         case VK_COMPONENT_TYPE_SINT8_KHR:
         case VK_COMPONENT_TYPE_SINT16_KHR:
         case VK_COMPONENT_TYPE_SINT32_KHR:
         case VK_COMPONENT_TYPE_SINT64_KHR:
-        case VK_COMPONENT_TYPE_BFLOAT16_KHR:
         case VK_COMPONENT_TYPE_SINT8_PACKED_NV:
-        case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
-        case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
             hasSign = true;
             break;
         default:

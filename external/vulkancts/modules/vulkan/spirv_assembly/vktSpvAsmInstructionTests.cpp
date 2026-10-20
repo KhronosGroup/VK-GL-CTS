@@ -7687,9 +7687,6 @@ tcu::TestCaseGroup *createOpUndefGroup(tcu::TestContext &testCtx)
         "%uvec2     = OpTypeVector %u32 2\n"
         "%fvec4     = OpTypeVector %f32 4\n"
         "%fmat33    = OpTypeMatrix %fvec3 3\n"
-        "%image     = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
-        "%sampler   = OpTypeSampler\n"
-        "%simage    = OpTypeSampledImage %image\n"
         "%const100  = OpConstant %u32 100\n"
         "%uarr100   = OpTypeArray %i32 %const100\n"
         "%struct    = OpTypeStruct %f32 %i32 %u32\n"
@@ -7722,9 +7719,6 @@ tcu::TestCaseGroup *createOpUndefGroup(tcu::TestContext &testCtx)
     cases.push_back(CaseParameter("vec4float32", "%fvec4"));
     cases.push_back(CaseParameter("vec2uint32", "%uvec2"));
     cases.push_back(CaseParameter("matrix", "%fmat33"));
-    cases.push_back(CaseParameter("image", "%image"));
-    cases.push_back(CaseParameter("sampler", "%sampler"));
-    cases.push_back(CaseParameter("sampledimage", "%simage"));
     cases.push_back(CaseParameter("array", "%uarr100"));
     cases.push_back(CaseParameter("runtimearray", "%f32arr"));
     cases.push_back(CaseParameter("struct", "%struct"));
@@ -9633,12 +9627,6 @@ tcu::TestCaseGroup *createOpUndefTests(tcu::TestContext &testCtx)
     };
     const NameCodePair tests[] = {{"bool", "", "%bool"},
                                   {"vec2uint32", "", "%v2u32"},
-                                  {"image", "%type = OpTypeImage %f32 2D 0 0 0 1 Unknown", "%type"},
-                                  {"sampler", "%type = OpTypeSampler", "%type"},
-                                  {"sampledimage",
-                                   "%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
-                                   "%type = OpTypeSampledImage %img",
-                                   "%type"},
                                   {"pointer", "", "%fp_i32"},
                                   {"runtimearray", "%type = OpTypeRuntimeArray %f32", "%type"},
                                   {"array",
