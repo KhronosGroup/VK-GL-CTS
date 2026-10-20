@@ -394,13 +394,13 @@ tcu::TestStatus CopyImageToImage::checkTestResult(tcu::ConstPixelBufferAccess re
 
             if (isFloatFormat(result.getFormat()))
             {
-                if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison",
+                if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Depth", "Result comparison",
                                                 expectedResult, depthResult, fThreshold, tcu::COMPARE_LOG_RESULT))
                     return tcu::TestStatus::fail("CopiesAndBlitting test");
             }
             else
             {
-                if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison",
+                if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Depth", "Result comparison",
                                               expectedResult, depthResult, uThreshold, tcu::COMPARE_LOG_RESULT))
                     return tcu::TestStatus::fail("CopiesAndBlitting test");
             }
@@ -415,13 +415,13 @@ tcu::TestStatus CopyImageToImage::checkTestResult(tcu::ConstPixelBufferAccess re
 
             if (isFloatFormat(result.getFormat()))
             {
-                if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison",
+                if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Stencil", "Result comparison",
                                                 expectedResult, stencilResult, fThreshold, tcu::COMPARE_LOG_RESULT))
                     return tcu::TestStatus::fail("CopiesAndBlitting test");
             }
             else
             {
-                if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Compare", "Result comparison",
+                if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Stencil", "Result comparison",
                                               expectedResult, stencilResult, uThreshold, tcu::COMPARE_LOG_RESULT))
                     return tcu::TestStatus::fail("CopiesAndBlitting test");
             }
@@ -442,9 +442,11 @@ void CopyImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src,
 {
     DE_UNREF(mipLevel);
 
-    VkOffset3D srcOffset = region.imageCopy.srcOffset;
-    VkOffset3D dstOffset = region.imageCopy.dstOffset;
-    VkExtent3D extent    = region.imageCopy.extent;
+    VkOffset3D srcOffset   = region.imageCopy.srcOffset;
+    VkOffset3D dstOffset   = region.imageCopy.dstOffset;
+    VkExtent3D extent      = region.imageCopy.extent;
+    const bool copyDepth   = ((region.imageCopy.srcSubresource.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0);
+    const bool copyStencil = ((region.imageCopy.srcSubresource.aspectMask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0);
 
     if (region.imageCopy.dstSubresource.baseArrayLayer > region.imageCopy.srcSubresource.baseArrayLayer)
     {
@@ -463,7 +465,7 @@ void CopyImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src,
         DE_ASSERT(src.getFormat() == dst.getFormat());
 
         // Copy depth.
-        if (tcu::hasDepthComponent(src.getFormat().order))
+        if (tcu::hasDepthComponent(src.getFormat().order) && copyDepth)
         {
             const tcu::ConstPixelBufferAccess srcSubRegion =
                 getEffectiveDepthStencilAccess(tcu::getSubregion(src, srcOffset.x, srcOffset.y, srcOffset.z,
@@ -477,7 +479,7 @@ void CopyImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src,
         }
 
         // Copy stencil.
-        if (tcu::hasStencilComponent(src.getFormat().order))
+        if (tcu::hasStencilComponent(src.getFormat().order) && copyStencil)
         {
             const tcu::ConstPixelBufferAccess srcSubRegion =
                 getEffectiveDepthStencilAccess(tcu::getSubregion(src, srcOffset.x, srcOffset.y, srcOffset.z,
@@ -2718,7 +2720,7 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
             for (int32_t i = 0; i < defaultSize; i += defaultQuarterSize)
             {
                 CopyRegion copyRegion;
-                const VkOffset3D srcOffset = {0, 0, 0};
+                const VkOffset3D srcOffset = {0, i, 0};
                 const VkOffset3D dstOffset = {i, defaultSize - i - defaultQuarterSize, 0};
                 const VkExtent3D extent    = {defaultQuarterSize, defaultQuarterSize, 1};
 
@@ -2739,9 +2741,9 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
                 {
                     const VkImageCopy testCopy = {
                         defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
-                        srcOffset,                 // VkOffset3D srcOffset;
+                        dstOffset,                 // VkOffset3D srcOffset;
                         defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
-                        dstOffset,                 // VkOffset3D dstOffset;
+                        srcOffset,                 // VkOffset3D dstOffset;
                         extent,                    // VkExtent3D extent;
                     };
 
