@@ -11333,6 +11333,244 @@ tcu::TestStatus DescriptorHeapTestInstanceResourceMasking::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+class DescriptorHeapTestInstanceImageFetchMasking : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceImageFetchMasking(Context &context, const TestParams &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceImageFetchMasking::iterate()
+{
+    const auto &vkd       = m_device.getDriver();
+    const VkDevice device = *m_device;
+    tcu::TestLog &log     = m_context.getTestContext().getLog();
+
+    const float value = 0.5f;
+
+    const VkDeviceSize bufferOffset = alignUp(getImageDescriptorStride(m_descriptorHeapProperties),
+                                              m_descriptorHeapProperties.bufferDescriptorAlignment);
+
+    const auto heapFlags = VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+
+    const VkDeviceSize resourceHeapUserSize = alignUp(bufferOffset + m_descriptorHeapProperties.bufferDescriptorSize,
+                                                      m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize resourceHeapSize =
+        resourceHeapUserSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+    auto resourceHeap               = createBufferAndMemory(resourceHeapSize, heapFlags);
+    char *const resourceHeapHostPtr = static_cast<char *>(resourceHeap->memory->getHostPtr());
+
+    const VkDeviceSize samplerHeapSize = m_descriptorHeapProperties.minSamplerHeapReservedRangeWithEmbedded;
+    std::unique_ptr<Buffer> samplerHeap;
+    if (samplerHeapSize > 0)
+    {
+        samplerHeap = createBufferAndMemory(samplerHeapSize, heapFlags);
+    }
+
+    const VkDeviceSize outputBufferSize = sizeof(float) * 2u;
+    auto outputBuffer                   = createBufferAndMemory(outputBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT |
+                                                                                      VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+
+    VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format            = VK_FORMAT_R32_SFLOAT;
+    imageCreateInfo.extent            = {1u, 1u, 1u};
+    imageCreateInfo.mipLevels         = 1u;
+    imageCreateInfo.arrayLayers       = 1u;
+    imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage             = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    auto image                        = createImageAndMemory(imageCreateInfo);
+
+    const VkImageSubresourceRange subresourceRange = makeDefaultImageSubresourceRange();
+
+    VkImageViewCreateInfo imageView = initVulkanStructure();
+    imageView.image                 = *image->image;
+    imageView.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    imageView.format                = imageCreateInfo.format;
+    imageView.components            = makeComponentMappingRGBA();
+    imageView.subresourceRange      = subresourceRange;
+
+    VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+    imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_GENERAL;
+    imageDescriptorInfo.pView                    = &imageView;
+
+    VkResourceDescriptorInfoEXT imageResource = initVulkanStructure();
+    imageResource.type                        = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    imageResource.data.pImage                 = &imageDescriptorInfo;
+
+    VkHostAddressRangeEXT imageHostRange;
+    imageHostRange.address = resourceHeapHostPtr;
+    imageHostRange.size    = static_cast<size_t>(m_descriptorHeapProperties.imageDescriptorSize);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1, &imageResource, &imageHostRange));
+
+    VkDeviceAddressRangeEXT outputAddressRange;
+    outputAddressRange.address = outputBuffer->address;
+    outputAddressRange.size    = outputBufferSize;
+
+    VkResourceDescriptorInfoEXT outputResource = initVulkanStructure();
+    outputResource.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    outputResource.data.pAddressRange          = &outputAddressRange;
+
+    VkHostAddressRangeEXT outputHostRange;
+    outputHostRange.address = resourceHeapHostPtr + bufferOffset;
+    outputHostRange.size    = static_cast<size_t>(m_descriptorHeapProperties.bufferDescriptorSize);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1, &outputResource, &outputHostRange));
+    flushAlloc(vkd, device, *resourceHeap->memory);
+
+    const VkSamplerCreateInfo sampler = makeDefaultSamplerCreateInfo();
+
+    VkDescriptorSetAndBindingMappingEXT mappings[3];
+    mappings[0]                                            = initVulkanStructure();
+    mappings[0].descriptorSet                              = 0u;
+    mappings[0].firstBinding                               = 0u;
+    mappings[0].bindingCount                               = 1u;
+    mappings[0].resourceMask                               = VK_SPIRV_RESOURCE_TYPE_COMBINED_SAMPLED_IMAGE_BIT_EXT;
+    mappings[0].source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[0].sourceData.constantOffset.heapOffset       = 0u;
+    mappings[0].sourceData.constantOffset.pEmbeddedSampler = &sampler;
+    mappings[1]                                            = initVulkanStructure();
+    mappings[1].descriptorSet                              = 0u;
+    mappings[1].firstBinding                               = 1u;
+    mappings[1].bindingCount                               = 1u;
+    mappings[1].resourceMask                               = VK_SPIRV_RESOURCE_TYPE_SAMPLED_IMAGE_BIT_EXT;
+    mappings[1].source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[1].sourceData.constantOffset.heapOffset       = 0u;
+    mappings[2]                                            = initVulkanStructure();
+    mappings[2].descriptorSet                              = 0u;
+    mappings[2].firstBinding                               = 2u;
+    mappings[2].bindingCount                               = 1u;
+    mappings[2].resourceMask                               = VK_SPIRV_RESOURCE_TYPE_READ_WRITE_STORAGE_BUFFER_BIT_EXT;
+    mappings[2].source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[2].sourceData.constantOffset.heapOffset       = static_cast<uint32_t>(bufferOffset);
+
+    auto computeModule = createShaderModule(vkd, device, getShaderBinary("compute"));
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 3u;
+    mappingInfo.pMappings                                     = mappings;
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
+    pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+    pipelineCreateInfo.stage                       = initVulkanStructure(&mappingInfo);
+    pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineCreateInfo.stage.module                = *computeModule;
+    pipelineCreateInfo.stage.pName                 = "main";
+    auto pipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    VkBindHeapInfoEXT resourceHeapBindInfo   = initVulkanStructure();
+    resourceHeapBindInfo.heapRange.address   = resourceHeap->address;
+    resourceHeapBindInfo.heapRange.size      = resourceHeapSize;
+    resourceHeapBindInfo.reservedRangeOffset = resourceHeapUserSize;
+    resourceHeapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    VkBindHeapInfoEXT samplerHeapBindInfo = initVulkanStructure();
+    samplerHeapBindInfo.heapRange.address = samplerHeap ? samplerHeap->address : 0;
+    samplerHeapBindInfo.heapRange.size    = samplerHeapSize;
+    samplerHeapBindInfo.reservedRangeSize = samplerHeapSize;
+
+    VkClearColorValue clearColor{};
+    clearColor.float32[0] = value;
+
+    const VkImageMemoryBarrier2 preClearBarrier = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *image->image, subresourceRange);
+
+    const VkImageMemoryBarrier2 postClearBarrier = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        VK_ACCESS_2_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, *image->image,
+        subresourceRange);
+
+    VkDependencyInfo imageDependencyInfo        = initVulkanStructure();
+    imageDependencyInfo.imageMemoryBarrierCount = 1u;
+    imageDependencyInfo.pImageMemoryBarriers    = &preClearBarrier;
+
+    const VkMemoryBarrier2 hostBarrier =
+        makeMemoryBarrier2(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_WRITE_BIT,
+                           VK_PIPELINE_STAGE_2_HOST_BIT, VK_ACCESS_2_HOST_READ_BIT);
+
+    VkDependencyInfo dependencyInfo   = initVulkanStructure();
+    dependencyInfo.memoryBarrierCount = 1;
+    dependencyInfo.pMemoryBarriers    = &hostBarrier;
+
+    auto cmdPool      = makeCommandPool(vkd, device, m_queueFamilyIndex);
+    auto cmdBufferPtr = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cmdBuffer    = cmdBufferPtr.get();
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &resourceHeapBindInfo);
+    vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerHeapBindInfo);
+
+    vkd.cmdPipelineBarrier2(cmdBuffer, &imageDependencyInfo);
+    vkd.cmdClearColorImage(cmdBuffer, *image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1,
+                           &subresourceRange);
+    imageDependencyInfo.pImageMemoryBarriers = &postClearBarrier;
+    vkd.cmdPipelineBarrier2(cmdBuffer, &imageDependencyInfo);
+
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    endCommandBuffer(vkd, cmdBuffer);
+
+    submitCommandsAndWait(vkd, device, m_queues[0], cmdBuffer);
+    invalidateAlloc(vkd, device, *outputBuffer->memory);
+
+    const float *const result = static_cast<const float *>(outputBuffer->memory->getHostPtr());
+    if (result[0] != value || result[1] != value)
+    {
+        log << tcu::TestLog::Message << "Expected x and y to be " << value << ", but was x = " << result[0]
+            << " and y = " << result[1] << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseImageFetchMasking : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseImageFetchMasking(tcu::TestContext &testCtx, const std::string &name,
+                                                     const TestParams &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params(params)
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceImageFetchMasking(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParams m_params;
+};
+
+void DescriptorHeapTestCaseImageFetchMasking::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::string computeShader = R"(#version 450
+#extension GL_EXT_samplerless_texture_functions : require
+layout(set = 0, binding = 0) uniform sampler2D a;
+layout(set = 0, binding = 1) uniform texture2D b;
+layout(set = 0, binding = 2) buffer Output {
+    float x;
+    float y;
+};
+void main() {
+    x = texelFetch(a, ivec2(0), 0).r;
+    y = texelFetch(b, ivec2(0), 0).r;
+}
+)";
+    programCollection.glslSources.add("compute") << glu::ComputeSource(computeShader);
+}
+
 struct TestParamsInputAttachment : TestParams
 {
     bool nonWritable = false;
@@ -22183,6 +22421,7 @@ void populateResourceMaskingTests(tcu::TestCaseGroup *topGroup)
     TestParams params{};
     params.queue = VK_QUEUE_COMPUTE_BIT;
     resourceMaskingGroup->addChild(new DescriptorHeapTestCaseResourceMasking(testCtx, "resource_masking", params));
+    resourceMaskingGroup->addChild(new DescriptorHeapTestCaseImageFetchMasking(testCtx, "image_fetch", params));
 
     for (const bool nonWritable : {false, true})
     {

@@ -10966,6 +10966,7 @@ dEQP-VK.binding_model.descriptor_heap.reserved_heap.sampler_heap.copy_image
 dEQP-VK.binding_model.descriptor_heap.reserved_heap.sampler_heap.image_to_buffer
 dEQP-VK.binding_model.descriptor_heap.resource_heap_access.compute
 dEQP-VK.binding_model.descriptor_heap.resource_heap_access.graphics
+dEQP-VK.binding_model.descriptor_heap.resource_masking.image_fetch
 dEQP-VK.binding_model.descriptor_heap.resource_masking.input_attachment_local_read_color
 dEQP-VK.binding_model.descriptor_heap.resource_masking.input_attachment_local_read_color_msaa
 dEQP-VK.binding_model.descriptor_heap.resource_masking.input_attachment_local_read_depth_d16_unorm
