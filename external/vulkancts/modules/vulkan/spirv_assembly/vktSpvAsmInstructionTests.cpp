@@ -12252,25 +12252,56 @@ BufferSp makeBitcastBuffer(bool isSigned, uint32_t width, const vector<uint64_t>
     TCU_THROW(InternalError, "Unsupported bit width for bitcast test");
 }
 
-// Test for OpBitcast between a scalar integer and a vector made up of
-// narrower components of the same total width (e.g. uint32 <-> u16vec2),
-// for both directions, signednesses, and all widths for which the result is
-// a valid SPIR-V vector (2 or 4 components; a 64-bit scalar split into
-// 8-bit lanes would need 8 components, which OpTypeVector does not support,
-// so that combination is skipped).
+// Test for OpBitcast between integer scalars/vectors of different shapes but
+// the same total width (e.g. uint32 <-> u16vec2, u16vec2 <-> u8vec4), for
+// both directions and signednesses. A "vector" with one component is a
+// scalar. Both shapes must be valid SPIR-V types (1, 2, 3 or 4 components);
+// a 64-bit scalar split into 8-bit lanes would need 8 components, so that
+// combination is skipped.
 tcu::TestCaseGroup *createBitcastComputeTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "bitcast"));
 
     struct BitcastCase
     {
-        uint32_t scalarWidth;
-        uint32_t componentWidth;
+        uint32_t fromWidth;
+        uint32_t fromCount;
+        uint32_t toWidth;
+        uint32_t toCount;
     };
 
     const BitcastCase cases[] = {
-        {64, 32}, {64, 16}, {32, 16}, {32, 8}, {16, 8},
+        // Scalar <-> vector
+        {64, 1, 32, 2},
+        {32, 2, 64, 1},
+        {64, 1, 16, 4},
+        {16, 4, 64, 1},
+        {32, 1, 16, 2},
+        {16, 2, 32, 1},
+        {32, 1, 8, 4},
+        {8, 4, 32, 1},
+        {16, 1, 8, 2},
+        {8, 2, 16, 1},
+        // Vector <-> vector
+        {16, 2, 8, 4},
+        {8, 4, 16, 2},
+        {32, 2, 16, 4},
+        {16, 4, 32, 2},
+        {64, 2, 32, 4},
+        {32, 4, 64, 2},
     };
+
+    // Describes one side of a cast.
+    struct Shape
+    {
+        string asmType;  // SPIR-V type name (without the %)
+        string typeName; // Name used in the test case name
+        string decl;     // SPIR-V declaration of the type
+    };
+
+    // Both sides hold the same (up to 128) bits, with the first (least
+    // significant) lane first.
+    const uint64_t pattern[2] = {0x123456789abcdef0ull, 0xfedcba9876543210ull};
 
     for (int signedNdx = 0; signedNdx < 2; ++signedNdx)
     {
@@ -12279,121 +12310,122 @@ tcu::TestCaseGroup *createBitcastComputeTests(tcu::TestContext &testCtx)
 
         for (const BitcastCase &c : cases)
         {
-            assert(c.scalarWidth % c.componentWidth == 0);
-            uint32_t numComponents = c.scalarWidth / c.componentWidth;
-
-            const string scalarAsmType(sign + de::toString(c.scalarWidth));
-            const string compAsmType(sign + de::toString(c.componentWidth));
-            const string vecAsmType("v" + de::toString(numComponents) + compAsmType);
-
-            const string scalarTypeName((isSigned ? "int" : "uint") + de::toString(c.scalarWidth));
-            const string vecTypeName(sign + de::toString(c.componentWidth) + "vec" + de::toString(numComponents));
+            assert(c.fromWidth * c.fromCount == c.toWidth * c.toCount);
 
             string caps;
             string exts;
             VulkanFeatures vulkanFeatures;
             vector<string> extensions;
 
-            addBitcastWidthRequirements(c.scalarWidth, caps, exts, vulkanFeatures, extensions);
-            addBitcastWidthRequirements(c.componentWidth, caps, exts, vulkanFeatures, extensions);
-
-            string decl;
-            if (c.scalarWidth != 32)
-                decl +=
-                    "%" + scalarAsmType + " = OpTypeInt " + de::toString(c.scalarWidth) + (isSigned ? " 1\n" : " 0\n");
-            if (c.componentWidth != 32)
-                decl +=
-                    "%" + compAsmType + " = OpTypeInt " + de::toString(c.componentWidth) + (isSigned ? " 1\n" : " 0\n");
-            decl += "%" + vecAsmType + " = OpTypeVector %" + compAsmType + " " + de::toString(numComponents) + "\n";
-
-            // Bit pattern used to fill the scalar input/output; its low
-            // scalarWidth bits are what get split into (or merged from)
-            // numComponents lanes of componentWidth bits each, with the
-            // first (least significant) lane first.
-            const uint64_t fullPattern = 0x123456789abcdef0ull;
-            const uint64_t scalarMask  = (c.scalarWidth == 64) ? ~0ull : ((1ull << c.scalarWidth) - 1);
-            const uint64_t scalarBits  = fullPattern & scalarMask;
-            const uint64_t compMask    = (1ull << c.componentWidth) - 1;
-
-            vector<uint64_t> componentBits(numComponents);
-            for (uint32_t i = 0; i < numComponents; ++i)
-                componentBits[i] = (scalarBits >> (i * c.componentWidth)) & compMask;
-
-            const BufferSp scalarBuffer = makeBitcastBuffer(isSigned, c.scalarWidth, vector<uint64_t>(1, scalarBits));
-            const BufferSp vectorBuffer = makeBitcastBuffer(isSigned, c.componentWidth, componentBits);
-
-            for (int dirNdx = 0; dirNdx < 2; ++dirNdx)
+            auto makeShape = [&](uint32_t width, uint32_t count)
             {
-                const bool scalarToVector = (dirNdx == 0);
-                const string &fromAsmType = scalarToVector ? scalarAsmType : vecAsmType;
-                const string &toAsmType   = scalarToVector ? vecAsmType : scalarAsmType;
-                const string testName =
-                    scalarToVector ? (scalarTypeName + "_to_" + vecTypeName) : (vecTypeName + "_to_" + scalarTypeName);
+                addBitcastWidthRequirements(width, caps, exts, vulkanFeatures, extensions);
 
-                const string shaderSource = "OpCapability Shader\n" + caps + exts +
-                                            "OpMemoryModel Logical GLSL450\n"
-                                            "OpEntryPoint GLCompute %main \"main\"\n"
-                                            "OpExecutionMode %main LocalSize 1 1 1\n"
-                                            "OpSource GLSL 430\n"
-                                            "OpName %main           \"main\"\n"
-                                            // Decorators
-                                            "OpDecorate %indata DescriptorSet 0\n"
-                                            "OpDecorate %indata Binding 0\n"
-                                            "OpDecorate %outdata DescriptorSet 0\n"
-                                            "OpDecorate %outdata Binding 1\n"
-                                            "OpDecorate %in_buf BufferBlock\n"
-                                            "OpDecorate %out_buf BufferBlock\n"
-                                            "OpMemberDecorate %in_buf 0 Offset 0\n"
-                                            "OpMemberDecorate %out_buf 0 Offset 0\n"
-                                            // Base types
-                                            "%void       = OpTypeVoid\n"
-                                            "%voidf      = OpTypeFunction %void\n"
-                                            "%u32        = OpTypeInt 32 0\n"
-                                            "%i32        = OpTypeInt 32 1\n" +
-                                            decl +
-                                            // Derived types
-                                            "%in_ptr     = OpTypePointer Uniform %" + fromAsmType +
-                                            "\n"
-                                            "%out_ptr    = OpTypePointer Uniform %" +
-                                            toAsmType +
-                                            "\n"
-                                            "%in_buf     = OpTypeStruct %" +
-                                            fromAsmType +
-                                            "\n"
-                                            "%out_buf    = OpTypeStruct %" +
-                                            toAsmType +
-                                            "\n"
-                                            "%in_bufptr  = OpTypePointer Uniform %in_buf\n"
-                                            "%out_bufptr = OpTypePointer Uniform %out_buf\n"
-                                            "%indata     = OpVariable %in_bufptr Uniform\n"
-                                            "%outdata    = OpVariable %out_bufptr Uniform\n"
-                                            // Constants
-                                            "%zero       = OpConstant %i32 0\n"
-                                            // Main function
-                                            "%main       = OpFunction %void None %voidf\n"
-                                            "%label      = OpLabel\n"
-                                            "%inloc      = OpAccessChain %in_ptr %indata %zero\n"
-                                            "%outloc     = OpAccessChain %out_ptr %outdata %zero\n"
-                                            "%inval      = OpLoad %" +
-                                            fromAsmType +
-                                            " %inloc\n"
-                                            "%conv       = OpBitcast %" +
-                                            toAsmType +
-                                            " %inval\n"
-                                            "              OpStore %outloc %conv\n"
-                                            "              OpReturn\n"
-                                            "              OpFunctionEnd\n";
+                Shape shape;
+                const string compAsmType(sign + de::toString(width));
+                if (width != 32)
+                    shape.decl +=
+                        "%" + compAsmType + " = OpTypeInt " + de::toString(width) + (isSigned ? " 1\n" : " 0\n");
 
-                ComputeShaderSpec spec;
-                spec.assembly      = shaderSource;
-                spec.numWorkGroups = IVec3(1, 1, 1);
-                spec.inputs.push_back(scalarToVector ? scalarBuffer : vectorBuffer);
-                spec.outputs.push_back(scalarToVector ? vectorBuffer : scalarBuffer);
-                spec.extensions              = extensions;
-                spec.requestedVulkanFeatures = vulkanFeatures;
+                if (count == 1)
+                {
+                    shape.asmType  = compAsmType;
+                    shape.typeName = (isSigned ? "int" : "uint") + de::toString(width);
+                }
+                else
+                {
+                    shape.asmType  = "v" + de::toString(count) + compAsmType;
+                    shape.typeName = sign + de::toString(width) + "vec" + de::toString(count);
+                    shape.decl +=
+                        "%" + shape.asmType + " = OpTypeVector %" + compAsmType + " " + de::toString(count) + "\n";
+                }
+                return shape;
+            };
 
-                group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
-            }
+            auto makeBuffer = [&](uint32_t width, uint32_t count)
+            {
+                const uint64_t mask = (width == 64) ? ~0ull : ((1ull << width) - 1);
+                vector<uint64_t> lanes(count);
+                for (uint32_t i = 0; i < count; ++i)
+                {
+                    const uint32_t bitPos = i * width;
+                    lanes[i]              = (pattern[bitPos / 64] >> (bitPos % 64)) & mask;
+                }
+                return makeBitcastBuffer(isSigned, width, lanes);
+            };
+
+            const Shape from            = makeShape(c.fromWidth, c.fromCount);
+            const Shape to              = makeShape(c.toWidth, c.toCount);
+            const string decl           = from.decl + to.decl;
+            const string &fromAsmType   = from.asmType;
+            const string &toAsmType     = to.asmType;
+            const string testName       = from.typeName + "_to_" + to.typeName;
+            const BufferSp inputBuffer  = makeBuffer(c.fromWidth, c.fromCount);
+            const BufferSp outputBuffer = makeBuffer(c.toWidth, c.toCount);
+
+            const string shaderSource = "OpCapability Shader\n" + caps + exts +
+                                        "OpMemoryModel Logical GLSL450\n"
+                                        "OpEntryPoint GLCompute %main \"main\"\n"
+                                        "OpExecutionMode %main LocalSize 1 1 1\n"
+                                        "OpSource GLSL 430\n"
+                                        "OpName %main           \"main\"\n"
+                                        // Decorators
+                                        "OpDecorate %indata DescriptorSet 0\n"
+                                        "OpDecorate %indata Binding 0\n"
+                                        "OpDecorate %outdata DescriptorSet 0\n"
+                                        "OpDecorate %outdata Binding 1\n"
+                                        "OpDecorate %in_buf BufferBlock\n"
+                                        "OpDecorate %out_buf BufferBlock\n"
+                                        "OpMemberDecorate %in_buf 0 Offset 0\n"
+                                        "OpMemberDecorate %out_buf 0 Offset 0\n"
+                                        // Base types
+                                        "%void       = OpTypeVoid\n"
+                                        "%voidf      = OpTypeFunction %void\n"
+                                        "%u32        = OpTypeInt 32 0\n"
+                                        "%i32        = OpTypeInt 32 1\n" +
+                                        decl +
+                                        // Derived types
+                                        "%in_ptr     = OpTypePointer Uniform %" + fromAsmType +
+                                        "\n"
+                                        "%out_ptr    = OpTypePointer Uniform %" +
+                                        toAsmType +
+                                        "\n"
+                                        "%in_buf     = OpTypeStruct %" +
+                                        fromAsmType +
+                                        "\n"
+                                        "%out_buf    = OpTypeStruct %" +
+                                        toAsmType +
+                                        "\n"
+                                        "%in_bufptr  = OpTypePointer Uniform %in_buf\n"
+                                        "%out_bufptr = OpTypePointer Uniform %out_buf\n"
+                                        "%indata     = OpVariable %in_bufptr Uniform\n"
+                                        "%outdata    = OpVariable %out_bufptr Uniform\n"
+                                        // Constants
+                                        "%zero       = OpConstant %i32 0\n"
+                                        // Main function
+                                        "%main       = OpFunction %void None %voidf\n"
+                                        "%label      = OpLabel\n"
+                                        "%inloc      = OpAccessChain %in_ptr %indata %zero\n"
+                                        "%outloc     = OpAccessChain %out_ptr %outdata %zero\n"
+                                        "%inval      = OpLoad %" +
+                                        fromAsmType +
+                                        " %inloc\n"
+                                        "%conv       = OpBitcast %" +
+                                        toAsmType +
+                                        " %inval\n"
+                                        "              OpStore %outloc %conv\n"
+                                        "              OpReturn\n"
+                                        "              OpFunctionEnd\n";
+
+            ComputeShaderSpec spec;
+            spec.assembly      = shaderSource;
+            spec.numWorkGroups = IVec3(1, 1, 1);
+            spec.inputs.push_back(inputBuffer);
+            spec.outputs.push_back(outputBuffer);
+            spec.extensions              = extensions;
+            spec.requestedVulkanFeatures = vulkanFeatures;
+
+            group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
         }
     }
 
