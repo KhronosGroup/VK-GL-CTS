@@ -28,6 +28,9 @@
 #include "deMemory.h"
 
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <poll.h>
 
 namespace tcu
 {
@@ -43,7 +46,45 @@ const struct wl_registry_listener Display::s_registryListener
 
 Display::DisplayState Display::s_displayState = Display::DISPLAY_STATE_UNKNOWN;
 
-bool Window::s_addWMBaseListener = true;
+std::atomic<bool> Window::s_addWMBaseListener(true);
+
+// Thread-safe wl_display_dispatch(), which asserts if it returns 0 (another thread
+// dispatched the events first). Returns -1 on error, otherwise the dispatched count.
+static int dispatchDefaultQueue(struct wl_display *display)
+{
+    while (wl_display_prepare_read(display) != 0)
+    {
+        if (wl_display_dispatch_pending(display) == -1)
+            return -1;
+    }
+
+    // On EAGAIN the socket is full, so also wait for it to become writable
+    short events = POLLIN;
+    if (wl_display_flush(display) == -1)
+    {
+        if (errno != EAGAIN)
+        {
+            wl_display_cancel_read(display);
+            return -1;
+        }
+        events |= POLLOUT;
+    }
+
+    // Finite timeout: our events may have been dispatched by another thread
+    struct pollfd pfd = {wl_display_get_fd(display), events, 0};
+    int ret           = poll(&pfd, 1, 100);
+    if (ret <= 0 || !(pfd.revents & (POLLIN | POLLERR | POLLHUP)))
+    {
+        // Timeout, EINTR or only writable: the caller retries and flushes again
+        wl_display_cancel_read(display);
+        return (ret < 0 && errno != EINTR) ? -1 : 0;
+    }
+
+    if (wl_display_read_events(display) == -1)
+        return -1;
+
+    return wl_display_dispatch_pending(display);
+}
 
 const struct xdg_surface_listener Window::s_xdgSurfaceListener
 {
@@ -165,11 +206,8 @@ Window::Window(Display &display, int width, int height) : m_display(display)
             throw ResourceError("Failed to create ", "shell_surface", __FILE__, __LINE__);
 
         // add wm base listener once
-        if (s_addWMBaseListener)
-        {
+        if (s_addWMBaseListener.exchange(false))
             xdg_wm_base_add_listener(display.getShell(), &s_wmBaseListener, this);
-            s_addWMBaseListener = false;
-        }
         xdg_surface_add_listener(m_xdgSurface, &s_xdgSurfaceListener, this);
 
         // select xdg surface role
@@ -184,10 +222,13 @@ Window::Window(Display &display, int width, int height) : m_display(display)
         int dispatchedEvents = 0;
         while (dispatchedEvents != -1)
         {
-            dispatchedEvents = wl_display_dispatch(display.getDisplay());
+            dispatchedEvents = dispatchDefaultQueue(display.getDisplay());
             if (m_configured)
                 break;
         }
+        if (!m_configured)
+            throw ResourceError(std::string("Wayland dispatch failed: ") +
+                                strerror(wl_display_get_error(display.getDisplay())));
 
         if (width == glu::RenderConfig::DONT_CARE)
             width = DEFAULT_WINDOW_WIDTH;

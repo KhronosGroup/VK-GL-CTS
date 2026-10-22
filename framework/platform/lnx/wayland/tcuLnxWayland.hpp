@@ -30,6 +30,7 @@
 #include "gluPlatform.hpp"
 #include "tcuLnx.hpp"
 
+#include <atomic>
 #include <wayland-client.h>
 #include <wayland-egl.h>
 #include "xdg-shell.h"
@@ -120,7 +121,7 @@ protected:
     struct wl_surface *m_surface;
     struct xdg_surface *m_xdgSurface;
     struct xdg_toplevel *m_topLevel;
-    bool m_configured;
+    std::atomic<bool> m_configured;
     bool m_visible;
 
 private:
@@ -133,7 +134,7 @@ private:
     static void handlePing(void *data, struct xdg_wm_base *shellSurface, uint32_t serial);
     static void handleConfigure(void *data, struct xdg_surface *shellSurface, uint32_t serial);
 
-    static bool s_addWMBaseListener;
+    static std::atomic<bool> s_addWMBaseListener;
 };
 
 } // namespace wayland
