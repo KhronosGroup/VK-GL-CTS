@@ -534,8 +534,11 @@ public:
 
     void createPerformanceConfigurationResources()
     {
-        const DeviceInterface &vk = m_vk;
-        const VkDevice device     = m_device;
+        const DeviceInterface &vk       = m_vk;
+        const VkDevice device           = m_device;
+        const uint32_t queueFamilyIndex = m_queueFamilyIndex;
+
+        m_cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 
         VkQueryPoolPerformanceQueryCreateInfoINTEL queryPoolIntel = {
             VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO_INTEL, // VkStructureType				sType;
