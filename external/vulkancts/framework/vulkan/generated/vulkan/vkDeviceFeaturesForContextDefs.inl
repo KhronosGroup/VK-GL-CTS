@@ -206,6 +206,7 @@ const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&						Context::getTransfo
 const vk::VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR&					Context::getUnifiedImageLayoutsFeatures						(void) const { return m_device->getUnifiedImageLayoutsFeatures();					}
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&				Context::getUniformBufferStandardLayoutFeatures				(void) const { return m_device->getUniformBufferStandardLayoutFeatures();			}
 const vk::VkPhysicalDeviceVariablePointersFeatures&							Context::getVariablePointersFeatures						(void) const { return m_device->getVariablePointersFeatures();						}
+const vk::VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT&		Context::getVertexAddressBindingUnrestrictedFeaturesEXT		(void) const { return m_device->getVertexAddressBindingUnrestrictedFeaturesEXT();	}
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeatures&					Context::getVertexAttributeDivisorFeatures					(void) const { return m_device->getVertexAttributeDivisorFeatures();				}
 const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				Context::getVertexAttributeRobustnessFeaturesEXT			(void) const { return m_device->getVertexAttributeRobustnessFeaturesEXT();			}
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				Context::getVertexInputDynamicStateFeaturesEXT				(void) const { return m_device->getVertexInputDynamicStateFeaturesEXT();			}

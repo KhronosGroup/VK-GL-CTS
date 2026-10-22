@@ -81,6 +81,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawAhbTests.hpp
 	vktDrawMultiExtTests.hpp
 	vktDrawMultiExtTests.cpp
+	vktDrawVertexAddrBindingUnrestricted.cpp
+	vktDrawVertexAddrBindingUnrestricted.hpp
 )
 
 PCH(DEQP_VK_DRAW_SRCS ../pch.cpp)

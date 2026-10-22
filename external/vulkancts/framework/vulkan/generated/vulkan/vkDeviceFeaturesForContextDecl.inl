@@ -206,6 +206,7 @@ const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&						getTransformFeedbac
 const vk::VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR&					getUnifiedImageLayoutsFeatures						(void) const;
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&				getUniformBufferStandardLayoutFeatures				(void) const;
 const vk::VkPhysicalDeviceVariablePointersFeatures&							getVariablePointersFeatures							(void) const;
+const vk::VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT&		getVertexAddressBindingUnrestrictedFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeatures&					getVertexAttributeDivisorFeatures					(void) const;
 const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				getVertexAttributeRobustnessFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputDynamicStateFeaturesEXT				(void) const;

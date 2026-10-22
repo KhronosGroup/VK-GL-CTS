@@ -8494,6 +8494,13 @@ typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointer
 typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointerFeaturesKHR;
 typedef VkPhysicalDeviceVariablePointersFeatures VkPhysicalDeviceVariablePointersFeaturesKHR;
 
+struct VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		vertexAddressBindingUnrestricted;
+};
+
 struct VkPhysicalDeviceVertexAttributeDivisorFeatures
 {
 	VkStructureType	sType;

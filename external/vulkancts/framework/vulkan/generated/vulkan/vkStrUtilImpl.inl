@@ -17014,6 +17014,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVariablePointer
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvertexAddressBindingUnrestricted = " << value.vertexAddressBindingUnrestricted << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeatures& value)
 {
 	s << "VkPhysicalDeviceVertexAttributeDivisorFeatures = {\n";

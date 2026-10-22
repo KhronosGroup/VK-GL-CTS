@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT": [
+            {
+                "features": [
+                    "vertexAddressBindingUnrestricted"
+                ],
+                "requirements": [
+                    "VK_EXT_vertex_address_binding_unrestricted"
+                ]
+            }
+        ]
+    }
+}

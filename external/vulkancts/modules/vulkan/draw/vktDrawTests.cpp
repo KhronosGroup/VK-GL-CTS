@@ -59,6 +59,7 @@
 #include "vktDrawNonLineTests.hpp"
 #include "vktDrawIndirectInstancedTests.hpp"
 #include "vktDrawLargeViewportTests.hpp"
+#include "vktDrawVertexAddrBindingUnrestricted.hpp"
 
 namespace vkt
 {
@@ -140,6 +141,10 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
                    }));
 
     renderpassGroup->addChild(createDrawPointClampTests(testCtx));
+
+#ifndef CTS_USES_VULKANSC
+    renderpassGroup->addChild(createVertexAddressBindingUnrestrictedTests(testCtx));
+#endif
 
     mainGroup->addChild(renderpassGroup.release());
 
