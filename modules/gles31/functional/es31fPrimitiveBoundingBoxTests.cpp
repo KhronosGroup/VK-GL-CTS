@@ -799,6 +799,13 @@ void BBoxRenderCase::deinit(void)
     m_vbo.clear();
     m_fbo.clear();
 
+    // Set by init once the extension is known to be supported; the destructor calls deinit again, without a context.
+    if (m_boundingBoxFunc)
+    {
+        m_boundingBoxFunc(-1, -1, -1, 1, 1, 1, 1, 1);
+        m_boundingBoxFunc = NULL;
+    }
+
     if (m_vao)
     {
         m_context.getRenderContext().getFunctions().deleteVertexArrays(1, &m_vao);
