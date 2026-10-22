@@ -318,6 +318,7 @@ enum OperationId
     OID_MOD,
     OID_PHI,
     OID_SELECT,
+    OID_VSELECT,
     OID_DOT,
     OID_VEC_MUL_S,
     OID_VEC_MUL_M,
@@ -2301,33 +2302,43 @@ void TestCasesBuilder::init()
                 "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
            "", B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
 
-    mo[OID_ADD]       = Op("add", FLOAT_ARITHMETIC, "%result             = OpFAdd %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_SUB]       = Op("sub", FLOAT_ARITHMETIC, "%result             = OpFSub %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_MUL]       = Op("mul", FLOAT_ARITHMETIC, "%result             = OpFMul %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_DIV]       = Op("div", FLOAT_ARITHMETIC, "%result             = OpFDiv %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_REM]       = Op("rem", FLOAT_ARITHMETIC, "%result             = OpFRem %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_MOD]       = Op("mod", FLOAT_ARITHMETIC, "%result             = OpFMod %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_PHI]       = Op("phi", FLOAT_ARITHMETIC,
-                           "%comp               = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
-                                 "                      OpSelectionMerge %comp_merge None\n"
-                                 "                      OpBranchConditional %comp %true_branch %false_branch\n"
-                                 "%true_branch        = OpLabel\n"
-                                 "                      OpBranch %comp_merge\n"
-                                 "%false_branch       = OpLabel\n"
-                                 "                      OpBranch %comp_merge\n"
-                                 "%comp_merge         = OpLabel\n"
-                                 "%result             = OpPhi %type_valueType %arg2 %true_branch %arg1 %false_branch\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_SELECT]    = Op("select", FLOAT_ARITHMETIC,
-                           "%always_true        = OpFOrdGreaterThan %type_bool %c_valueType_1 %c_valueType_0\n"
-                              "%result             = OpSelect %type_valueType %always_true %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_ADD]    = Op("add", FLOAT_ARITHMETIC, "%result             = OpFAdd %type_valueType %arg1 %arg2\n",
+                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SUB]    = Op("sub", FLOAT_ARITHMETIC, "%result             = OpFSub %type_valueType %arg1 %arg2\n",
+                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_MUL]    = Op("mul", FLOAT_ARITHMETIC, "%result             = OpFMul %type_valueType %arg1 %arg2\n",
+                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_DIV]    = Op("div", FLOAT_ARITHMETIC, "%result             = OpFDiv %type_valueType %arg1 %arg2\n",
+                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_REM]    = Op("rem", FLOAT_ARITHMETIC, "%result             = OpFRem %type_valueType %arg1 %arg2\n",
+                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_MOD]    = Op("mod", FLOAT_ARITHMETIC, "%result             = OpFMod %type_valueType %arg1 %arg2\n",
+                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_PHI]    = Op("phi", FLOAT_ARITHMETIC,
+                        "%comp               = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
+                           "                      OpSelectionMerge %comp_merge None\n"
+                           "                      OpBranchConditional %comp %true_branch %false_branch\n"
+                           "%true_branch        = OpLabel\n"
+                           "                      OpBranch %comp_merge\n"
+                           "%false_branch       = OpLabel\n"
+                           "                      OpBranch %comp_merge\n"
+                           "%comp_merge         = OpLabel\n"
+                           "%result             = OpPhi %type_valueType %arg2 %true_branch %arg1 %false_branch\n",
+                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT] = Op("select", FLOAT_ARITHMETIC,
+                        "%always_true        = OpFOrdGreaterThan %type_bool %c_valueType_1 %c_valueType_0\n"
+                        "%result             = OpSelect %type_valueType %always_true %arg1 %arg2\n",
+                        B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_VSELECT] =
+        Op("vselect", FLOAT_ARITHMETIC, "", "%type_bool_vec2     = OpTypeVector %type_bool 2\n",
+           "%c_valueType_vec2_0 = OpConstantComposite %type_valueType_vec2 %c_valueType_0 %c_valueType_0\n", "", "",
+           "%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
+           "%vec2               = OpCompositeConstruct %type_valueType_vec2 %arg2 %arg2\n"
+           "%cond               = OpFUnordLessThanEqual %type_bool_vec2 %vec2 %c_valueType_vec2_0\n"
+           "%resVec             = OpSelect %type_valueType_vec2 %cond %vec1 %c_valueType_vec2_0\n"
+           "%result             = OpCompositeExtract %type_valueType %resVec 0\n",
+           B_STATEMENT_USAGE_CONSTS_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT |
+               B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
     mo[OID_DOT]       = Op("dot", FLOAT_ARITHMETIC,
                            "%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg1\n"
                                  "%vec2               = OpCompositeConstruct %type_valueType_vec2 %arg2 %arg2\n"
@@ -2741,6 +2752,7 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         // operation    fp64    second arg    preserve zero    preserve szero    preserve inf    preserve sinf    preserve nan
         {OID_PHI, true, V_INF, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_SELECT, true, V_ONE, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
+        {OID_VSELECT, true, V_ONE, V_ZERO, V_ZERO, V_ZERO, V_ZERO, V_ZERO},
         {OID_ADD, true, V_ZERO, V_ZERO, V_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_SUB, true, V_ZERO, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_MUL, true, V_ONE, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
