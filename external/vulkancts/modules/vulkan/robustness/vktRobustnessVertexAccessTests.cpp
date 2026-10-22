@@ -519,7 +519,7 @@ VertexAccessInstance::VertexAccessInstance(Context &context, Move<VkDevice> devi
             getPhysicalDeviceFormatProperties(vki, physicalDevice, m_inputFormat);
         context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
 
-        if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) !=
+        if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) !=
             VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT)
             TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT not supported");
     }
