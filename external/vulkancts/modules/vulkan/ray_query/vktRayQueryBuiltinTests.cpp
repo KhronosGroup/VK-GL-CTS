@@ -5980,9 +5980,8 @@ tcu::TestStatus RayQueryBuiltinTestInstance::queuePass(const QueueData &queueDat
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, **image, imageSubresourceRange);
         const VkClearValue clearValue               = makeClearValueColorU32(0u, 0u, 0u, 0u);
         const VkImageMemoryBarrier postImageBarrier = makeImageMemoryBarrier(
-            VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, **image, imageSubresourceRange);
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_GENERAL, **image, imageSubresourceRange);
         const VkMemoryBarrier postTestMemoryBarrier =
             makeMemoryBarrier(VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
         const VkMemoryBarrier postCopyMemoryBarrier =
@@ -5993,7 +5992,7 @@ tcu::TestStatus RayQueryBuiltinTestInstance::queuePass(const QueueData &queueDat
         vkd.cmdClearColorImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.color, 1,
                                &imageSubresourceRange);
         cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                      VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
+                                      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, &postImageBarrier);
 
         if (!m_initialized)
             m_topAS = m_testConfig->initAccelerationStructures(m_data, *cmdBuffer);

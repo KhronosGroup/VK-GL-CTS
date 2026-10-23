@@ -147,19 +147,19 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
     const uint32_t queueFamilyIndex = ctx.getQueueFamilyIndex();
     const uint32_t bufferSize       = (uint32_t)(BUFFER_SIZE * sizeof(uint32_t));
 
-    vk::VkBufferUsageFlags srcUsage =
+    vk::VkBufferUsageFlags dstUsage =
         vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     if (m_useDeviceAddressCommands)
-        srcUsage |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    vk::VkBufferUsageFlags dstUsage = srcUsage | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        dstUsage |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    vk::VkBufferUsageFlags srcUsage = dstUsage | vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
     de::MovePtr<vk::BufferWithMemory> dstBuffer(makeBuffer(
-        ctx, PROTECTION_ENABLED, queueFamilyIndex, bufferSize, srcUsage,
+        ctx, PROTECTION_ENABLED, queueFamilyIndex, bufferSize, dstUsage,
         m_useDeviceAddressCommands ? vk::MemoryRequirement::Protected | vk::MemoryRequirement::DeviceAddress :
                                      vk::MemoryRequirement::Protected));
 
     de::MovePtr<vk::BufferWithMemory> srcBuffer(makeBuffer(
-        ctx, PROTECTION_ENABLED, queueFamilyIndex, bufferSize, dstUsage,
+        ctx, PROTECTION_ENABLED, queueFamilyIndex, bufferSize, srcUsage,
         m_useDeviceAddressCommands ? vk::MemoryRequirement::Protected | vk::MemoryRequirement::DeviceAddress :
                                      vk::MemoryRequirement::Protected));
 
