@@ -450,8 +450,11 @@ Ballot subgroupSizeToMask(uint32_t subgroupSize, uint32_t subgroupCount)
     DE_UNREF(subgroupCount);
     Ballot b;
     DE_ASSERT(subgroupSize <= b.size());
-    for (uint32_t i = 0; i < subgroupSize; ++i)
-        b.set(i);
+    if (subgroupSize > 0u)
+    {
+        b.set();
+        b >>= (b.size() - subgroupSize);
+    }
     return b;
 }
 
@@ -2447,8 +2450,8 @@ protected:
     virtual void simulateBallot(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t primitiveID,
                                 const int32_t opsIndex, add_ref<std::vector<uint32_t>> outLoc,
                                 add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                                std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                                const OPType reason, const tcu::UVec4 *cmp)
+                                add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                                add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp)
     {
         DE_UNREF(countOnly);
         DE_UNREF(activeMask);
@@ -2466,8 +2469,8 @@ protected:
     virtual void simulateStore(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t primitiveID,
                                const uint64_t storeValue, add_ref<std::vector<uint32_t>> outLoc,
                                add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                               std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                               const OPType reason, const tcu::UVec4 *cmp)
+                               add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                               add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp)
     {
         DE_UNREF(countOnly);
         DE_UNREF(activeMask);
@@ -2542,8 +2545,8 @@ protected:
     virtual void simulateBallot(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t unusedPrimitiveID,
                                 const int32_t opsIndex, add_ref<std::vector<uint32_t>> outLoc,
                                 add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                                std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                                const OPType reason, const tcu::UVec4 *cmp) override
+                                add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                                add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp) override
     {
         DE_UNREF(unusedPrimitiveID);
         DE_UNREF(log);
@@ -2551,27 +2554,36 @@ protected:
         DE_UNREF(reason);
         DE_UNREF(cmp);
         const uint32_t subgroupCount = activeMask.subgroupCount();
-        const uint32_t subgroupSize  = static_pointer_cast<ComputePrerequisites>(prerequisites)->m_subgroupSize;
+        const uint32_t subgroupSize  = static_cast<const ComputePrerequisites *>(prerequisites.get())->m_subgroupSize;
 
-        for (uint32_t id = 0; id < invocationStride; ++id)
+        // When caseValue is set, emit a magic value to indicate that we shouldn't validate this ballot.
+        const bool skipValidation = (!countOnly && ops[opsIndex].caseValue != 0);
+        const tcu::UVec4 magicValue =
+            (skipValidation ? tcu::UVec4(bitsetToBallot(0x12345678, subgroupCount, subgroupSize, 0u)) : tcu::UVec4());
+
+        for (uint32_t g = 0u; g < subgroupCount; ++g)
         {
-            if (activeMask.test((Ballots::findBit(id, subgroupSize))))
+            const auto &subgroupMask = activeMask[g];
+            if (subgroupMask.none())
+                continue;
+
+            const uint32_t firstID = g * subgroupSize;
+            const uint32_t endID   = de::min(firstID + subgroupSize, invocationStride);
+
+            // The expected value is the same for all invocations in the subgroup.
+            tcu::UVec4 value;
+            if (!countOnly)
+                value = (skipValidation ? magicValue : tcu::UVec4(bitsetToBallot(activeMask, subgroupSize, firstID)));
+
+            for (uint32_t id = firstID; id < endID; ++id)
             {
+                if (!subgroupMask[id - firstID])
+                    continue;
+
                 if (countOnly)
-                {
                     outLoc[id]++;
-                }
                 else
-                {
-                    if (ops[opsIndex].caseValue)
-                    {
-                        // Emit a magic value to indicate that we shouldn't validate this ballot
-                        ref[(outLoc[id]++) * invocationStride + id] =
-                            bitsetToBallot(0x12345678, subgroupCount, subgroupSize, id);
-                    }
-                    else
-                        ref[(outLoc[id]++) * invocationStride + id] = bitsetToBallot(activeMask, subgroupSize, id);
-                }
+                    ref[(outLoc[id]++) * invocationStride + id] = value;
             }
         }
     }
@@ -2579,24 +2591,36 @@ protected:
     virtual void simulateStore(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t unusedPrimitiveID,
                                const uint64_t storeValue, add_ref<std::vector<uint32_t>> outLoc,
                                add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                               std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                               const OPType reason, const tcu::UVec4 *cmp) override
+                               add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                               add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp) override
     {
         DE_UNREF(unusedPrimitiveID);
         DE_UNREF(log);
         DE_UNREF(logFailureCount);
         DE_UNREF(reason);
         DE_UNREF(cmp);
-        const uint32_t subgroupSize = static_pointer_cast<ComputePrerequisites>(prerequisites)->m_subgroupSize;
-        for (uint32_t id = 0; id < invocationStride; ++id)
+        const uint32_t subgroupCount = activeMask.subgroupCount();
+        const uint32_t subgroupSize  = static_cast<const ComputePrerequisites *>(prerequisites.get())->m_subgroupSize;
+        const tcu::UVec4 storeVec(uint32_t(storeValue & 0xFFFFFFFF), 0u, 0u, 0u);
+
+        for (uint32_t g = 0u; g < subgroupCount; ++g)
         {
-            if (activeMask.test(Ballots::findBit(id, subgroupSize)))
+            const auto &subgroupMask = activeMask[g];
+            if (subgroupMask.none())
+                continue;
+
+            const uint32_t firstID = g * subgroupSize;
+            const uint32_t endID   = de::min(firstID + subgroupSize, invocationStride);
+
+            for (uint32_t id = firstID; id < endID; ++id)
             {
+                if (!subgroupMask[id - firstID])
+                    continue;
+
                 if (countOnly)
                     outLoc[id]++;
                 else
-                    ref[(outLoc[id]++) * invocationStride + id] =
-                        Ballot(tcu::UVec4(uint32_t(storeValue & 0xFFFFFFFF), 0u, 0u, 0u));
+                    ref[(outLoc[id]++) * invocationStride + id] = storeVec;
             }
         }
     }
@@ -2857,8 +2881,8 @@ protected:
     virtual void simulateStore(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t primitiveID,
                                const uint64_t storeValue, add_ref<std::vector<uint32_t>> outLoc,
                                add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                               std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                               const OPType reason, const tcu::UVec4 *cmp) override
+                               add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                               add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp) override
     {
         uint32_t isHelperInvocation;
         add_cref<Arrangement> a(*std::static_pointer_cast<Arrangement>(prerequisites));
@@ -2888,8 +2912,8 @@ protected:
     virtual void simulateBallot(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t primitiveID,
                                 const int32_t opsIndex, add_ref<std::vector<uint32_t>> outLoc,
                                 add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                                std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                                const OPType reason, const tcu::UVec4 *cmp) override
+                                add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                                add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp) override
     {
         DE_UNREF(opsIndex);
         uint32_t isHelperInvocation;
@@ -3120,8 +3144,8 @@ protected:
     virtual void simulateBallot(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t unusedPrimitiveID,
                                 const int32_t opsIndex, add_ref<std::vector<uint32_t>> outLoc,
                                 add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                                std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                                const OPType reason, const tcu::UVec4 *cmp) override
+                                add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                                add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp) override
     {
         DE_UNREF(unusedPrimitiveID);
         DE_UNREF(opsIndex);
@@ -3149,8 +3173,8 @@ protected:
     virtual void simulateStore(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t unusedPrimitiveID,
                                const uint64_t storeValue, add_ref<std::vector<uint32_t>> outLoc,
                                add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                               std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                               const OPType reason, const tcu::UVec4 *cmp) override
+                               add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                               add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp) override
     {
         DE_UNREF(unusedPrimitiveID);
         add_cref<Arrangement> a(*std::static_pointer_cast<Arrangement>(prerequisites));
@@ -4295,8 +4319,8 @@ protected:
     virtual void simulateBallot(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t unusedPrimitiveID,
                                 const int32_t opsIndex, add_ref<std::vector<uint32_t>> outLoc,
                                 add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                                std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                                const OPType reason, const tcu::UVec4 *cmp) override
+                                add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                                add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp) override
     {
         DE_UNREF(unusedPrimitiveID);
         DE_UNREF(opsIndex);
@@ -4324,8 +4348,8 @@ protected:
     virtual void simulateStore(const bool countOnly, add_cref<Ballots> activeMask, const uint32_t unusedPrimitiveID,
                                const uint64_t storeValue, add_ref<std::vector<uint32_t>> outLoc,
                                add_ref<std::vector<tcu::UVec4>> ref, add_ref<tcu::TestLog> log,
-                               std::shared_ptr<Prerequisites> prerequisites, add_ref<uint32_t> logFailureCount,
-                               const OPType reason, const tcu::UVec4 *cmp) override
+                               add_cref<std::shared_ptr<Prerequisites>> prerequisites,
+                               add_ref<uint32_t> logFailureCount, const OPType reason, const tcu::UVec4 *cmp) override
     {
         DE_UNREF(unusedPrimitiveID);
         add_cref<Arrangement> a(*std::static_pointer_cast<Arrangement>(prerequisites));
@@ -5402,7 +5426,7 @@ qpTestResult_e ReconvergenceTestComputeInstance::calculateAndLogResult(const tcu
     {
         DE_ASSERT(subgroupSize != 0);
 
-        Ballot fullMask = subgroupSizeToMask(subgroupSize, 0 /* ignored */);
+        const tcu::UVec4 fullMask = subgroupSizeToMask(subgroupSize, 0 /* ignored */);
         // For subgroup_uniform_control_flow, we expect any fully converged outputs in the reference
         // to have a corresponding fully converged output in the result. So walk through each lane's
         // results, and for each reference value of fullMask, find a corresponding result value of
@@ -5423,7 +5447,8 @@ qpTestResult_e ReconvergenceTestComputeInstance::calculateAndLogResult(const tcu
                 // (a value of 2) and all other lanes to be not elected (a value of 1). For TT_SUCF_BALLOT, we
                 // expect a full mask. Search until we find the expected result with a matching store value in
                 // the previous result.
-                Ballot expectedResult = m_data.isElect() ? Ballot((lane % m_subgroupSize) == 0 ? 2 : 1) : fullMask;
+                const tcu::UVec4 expectedResult =
+                    m_data.isElect() ? tcu::UVec4(Ballot((lane % m_subgroupSize) == 0 ? 2 : 1)) : fullMask;
 
                 while (resLoc < maxLoc && !(result[resLoc] == expectedResult &&
                                             result[resLoc - invocationStride] == ref[refLoc - invocationStride]))
