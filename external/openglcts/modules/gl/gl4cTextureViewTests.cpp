@@ -10075,9 +10075,8 @@ void TextureViewTestReferenceCounting::initTextures()
         if (gl.getError() != GL_NO_ERROR)
         {
             delete[] texel_data;
-            texel_data = NULL;
 
-            GLU_EXPECT_NO_ERROR(gl.getError(), "glTexSubImage2D() call failed");
+            TCU_FAIL("glTexSubImage2D() call failed.");
         }
     } /* for (all mip-maps) */
 
