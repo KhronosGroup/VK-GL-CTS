@@ -122,6 +122,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_QCOM_multiview_per_view_viewports",
         "VK_QCOM_multiview_per_view_render_areas",
         "VK_VALVE_fragment_density_map_layered",
+        "VK_INTEL_performance_query",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
