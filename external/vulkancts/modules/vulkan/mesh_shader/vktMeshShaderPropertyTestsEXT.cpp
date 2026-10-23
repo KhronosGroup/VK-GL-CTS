@@ -25,6 +25,7 @@
 #include "vktMeshShaderPropertyTestsEXT.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktMeshShaderUtil.hpp"
 
 #include "vkBufferWithMemory.hpp"
@@ -2424,121 +2425,121 @@ tcu::TestStatus limitsRun(Context &context)
 
 } // namespace
 
-tcu::TestCaseGroup *createMeshShaderPropertyTestsEXT(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderPropertyTestsEXT(tcu::TestContext &testContext)
 {
-    using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
-
-    // Tests checking mesh shading properties
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "properties"));
-
-    addFunctionCase(mainGroup.get(), "limits", limitsCheckSupport, limitsRun);
-
-    const struct
-    {
-        PayLoadShMemSizeType testType;
-        const char *name;
-    } taskPayloadShMemCases[] = {
-        {PayLoadShMemSizeType::PAYLOAD, "task_payload_size"},
-        {PayLoadShMemSizeType::SHARED_MEMORY, "task_shared_memory_size"},
-        {PayLoadShMemSizeType::BOTH, "task_payload_and_shared_memory_size"},
-    };
-
-    for (const auto &taskPayloadShMemCase : taskPayloadShMemCases)
-    {
-        const TaskPayloadShMemSizeParams params{taskPayloadShMemCase.testType};
-        mainGroup->addChild(new TaskPayloadShMemSizeCase(testCtx, taskPayloadShMemCase.name, params));
-    }
-
-    mainGroup->addChild(new MaxViewIndexCase(testCtx, "max_view_index"));
-    mainGroup->addChild(new MaxOutputLayersCase(testCtx, "max_output_layers"));
-
-    const struct
-    {
-        MaxPrimVertType limitPrimVertType;
-        const char *prefix;
-    } limitPrimVertCases[] = {
-        {MaxPrimVertType::PRIMITIVES, "max_mesh_output_primitives_"},
-        {MaxPrimVertType::VERTICES, "max_mesh_output_vertices_"},
-    };
-
-    const uint32_t itemCounts[] = {256u, 512u, 1024u, 2048u};
-
-    for (const auto &primVertCase : limitPrimVertCases)
-    {
-        for (const auto &count : itemCounts)
+    return createTestGroup2(
+        testContext, "properties",
+        [](tcu::TestCaseGroup *mainGroup)
         {
-            const MaxPrimVertParams params{primVertCase.limitPrimVertType, count};
-            mainGroup->addChild(
-                new MaxMeshOutputPrimVertCase(testCtx, primVertCase.prefix + std::to_string(count), params));
-        }
-    }
+            auto &testCtx = mainGroup->getTestContext();
 
-    mainGroup->addChild(new MaxMeshOutputComponentsCase(testCtx, "max_mesh_output_components"));
+            addFunctionCase(mainGroup, "limits", limitsCheckSupport, limitsRun);
 
-    const struct
-    {
-        PayLoadShMemSizeType testType;
-        const char *name;
-    } meshPayloadShMemCases[] = {
-        // No actual property for the first one, combines the two properties involving payload size.
-        {PayLoadShMemSizeType::PAYLOAD, "mesh_payload_size"},
-        {PayLoadShMemSizeType::SHARED_MEMORY, "mesh_shared_memory_size"},
-        {PayLoadShMemSizeType::BOTH, "mesh_payload_and_shared_memory_size"},
-    };
-    for (const auto &meshPayloadShMemCase : meshPayloadShMemCases)
-    {
-        const MeshPayloadShMemSizeParams params{meshPayloadShMemCase.testType};
-        mainGroup->addChild(new MeshPayloadShMemSizeCase(testCtx, meshPayloadShMemCase.name, params));
-    }
-
-    const struct
-    {
-        bool usePayload;
-        const char *suffix;
-    } meshOutputPayloadCases[] = {
-        {false, "_without_payload"},
-        {true, "_with_payload"},
-    };
-
-    const struct
-    {
-        LocationType locationType;
-        const char *suffix;
-    } locationTypeCases[] = {
-        {LocationType::PER_PRIMITIVE, "_per_primitive"},
-        {LocationType::PER_VERTEX, "_per_vertex"},
-    };
-
-    const struct
-    {
-        ViewIndexType viewIndexType;
-        const char *suffix;
-    } multiviewCases[] = {
-        {ViewIndexType::NO_VIEW_INDEX, "_no_view_index"},
-        {ViewIndexType::VIEW_INDEX_FRAG, "_view_index_in_frag"},
-        {ViewIndexType::VIEW_INDEX_BOTH, "_view_index_in_mesh_and_frag"},
-    };
-
-    for (const auto &meshOutputPayloadCase : meshOutputPayloadCases)
-    {
-        for (const auto &locationTypeCase : locationTypeCases)
-        {
-            for (const auto &multiviewCase : multiviewCases)
+            const struct
             {
-                const std::string name = std::string("max_mesh_output_size") + meshOutputPayloadCase.suffix +
-                                         locationTypeCase.suffix + multiviewCase.suffix;
-                const MaxMeshOutputParams params = {
-                    meshOutputPayloadCase.usePayload, // bool usePayload;
-                    locationTypeCase.locationType,    // LocationType locationType;
-                    multiviewCase.viewIndexType,      // ViewIndexType viewIndexType;
-                };
+                PayLoadShMemSizeType testType;
+                const char *name;
+            } taskPayloadShMemCases[] = {
+                {PayLoadShMemSizeType::PAYLOAD, "task_payload_size"},
+                {PayLoadShMemSizeType::SHARED_MEMORY, "task_shared_memory_size"},
+                {PayLoadShMemSizeType::BOTH, "task_payload_and_shared_memory_size"},
+            };
 
-                mainGroup->addChild(new MaxMeshOutputSizeCase(testCtx, name, params));
+            for (const auto &taskPayloadShMemCase : taskPayloadShMemCases)
+            {
+                const TaskPayloadShMemSizeParams params{taskPayloadShMemCase.testType};
+                mainGroup->addChild(new TaskPayloadShMemSizeCase(testCtx, taskPayloadShMemCase.name, params));
             }
-        }
-    }
 
-    return mainGroup.release();
+            mainGroup->addChild(new MaxViewIndexCase(testCtx, "max_view_index"));
+            mainGroup->addChild(new MaxOutputLayersCase(testCtx, "max_output_layers"));
+
+            const struct
+            {
+                MaxPrimVertType limitPrimVertType;
+                const char *prefix;
+            } limitPrimVertCases[] = {
+                {MaxPrimVertType::PRIMITIVES, "max_mesh_output_primitives_"},
+                {MaxPrimVertType::VERTICES, "max_mesh_output_vertices_"},
+            };
+
+            const uint32_t itemCounts[] = {256u, 512u, 1024u, 2048u};
+
+            for (const auto &primVertCase : limitPrimVertCases)
+            {
+                for (const auto &count : itemCounts)
+                {
+                    const MaxPrimVertParams params{primVertCase.limitPrimVertType, count};
+                    mainGroup->addChild(
+                        new MaxMeshOutputPrimVertCase(testCtx, primVertCase.prefix + std::to_string(count), params));
+                }
+            }
+
+            mainGroup->addChild(new MaxMeshOutputComponentsCase(testCtx, "max_mesh_output_components"));
+
+            const struct
+            {
+                PayLoadShMemSizeType testType;
+                const char *name;
+            } meshPayloadShMemCases[] = {
+                // No actual property for the first one, combines the two properties involving payload size.
+                {PayLoadShMemSizeType::PAYLOAD, "mesh_payload_size"},
+                {PayLoadShMemSizeType::SHARED_MEMORY, "mesh_shared_memory_size"},
+                {PayLoadShMemSizeType::BOTH, "mesh_payload_and_shared_memory_size"},
+            };
+            for (const auto &meshPayloadShMemCase : meshPayloadShMemCases)
+            {
+                const MeshPayloadShMemSizeParams params{meshPayloadShMemCase.testType};
+                mainGroup->addChild(new MeshPayloadShMemSizeCase(testCtx, meshPayloadShMemCase.name, params));
+            }
+
+            const struct
+            {
+                bool usePayload;
+                const char *suffix;
+            } meshOutputPayloadCases[] = {
+                {false, "_without_payload"},
+                {true, "_with_payload"},
+            };
+
+            const struct
+            {
+                LocationType locationType;
+                const char *suffix;
+            } locationTypeCases[] = {
+                {LocationType::PER_PRIMITIVE, "_per_primitive"},
+                {LocationType::PER_VERTEX, "_per_vertex"},
+            };
+
+            const struct
+            {
+                ViewIndexType viewIndexType;
+                const char *suffix;
+            } multiviewCases[] = {
+                {ViewIndexType::NO_VIEW_INDEX, "_no_view_index"},
+                {ViewIndexType::VIEW_INDEX_FRAG, "_view_index_in_frag"},
+                {ViewIndexType::VIEW_INDEX_BOTH, "_view_index_in_mesh_and_frag"},
+            };
+
+            for (const auto &meshOutputPayloadCase : meshOutputPayloadCases)
+            {
+                for (const auto &locationTypeCase : locationTypeCases)
+                {
+                    for (const auto &multiviewCase : multiviewCases)
+                    {
+                        const std::string name = std::string("max_mesh_output_size") + meshOutputPayloadCase.suffix +
+                                                 locationTypeCase.suffix + multiviewCase.suffix;
+                        const MaxMeshOutputParams params = {
+                            meshOutputPayloadCase.usePayload, // bool usePayload;
+                            locationTypeCase.locationType,    // LocationType locationType;
+                            multiviewCase.viewIndexType,      // ViewIndexType viewIndexType;
+                        };
+
+                        mainGroup->addChild(new MaxMeshOutputSizeCase(testCtx, name, params));
+                    }
+                }
+            }
+        });
 }
 } // namespace MeshShader
 } // namespace vkt

@@ -26,6 +26,7 @@
 #include "vkPipelineConstructionUtil.hpp"
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -2557,99 +2558,112 @@ TestInstance *CullPrimitivesCase::createInstance(Context &context) const
 
 } // namespace
 
-tcu::TestCaseGroup *createMeshShaderBuiltinTestsEXT(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderBuiltinTestsEXT(tcu::TestContext &testContext)
 {
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "builtin"));
+    return createTestGroup2(
+        testContext, "builtin",
+        [](tcu::TestCaseGroup *mainGroup)
+        {
+            auto &testCtx = mainGroup->getTestContext();
+            mainGroup->addChild(new PositionCase(testCtx, "position"));
+            mainGroup->addChild(new PointSizeCase(testCtx, "point_size"));
+            mainGroup->addChild(new ClipDistanceCase(testCtx, "clip_distance"));
+            mainGroup->addChild(new ClipDistanceMixedCase(testCtx, "clip_distance_mix"));
+            mainGroup->addChild(new CullDistanceCase(testCtx, "cull_distance"));
+            mainGroup->addChild(new CullDistanceMixedCase(testCtx, "cull_distance_mix"));
+            mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_glsl", true /*glslFrag*/));
+            mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_spirv", false /*glslFrag*/));
+            mainGroup->addChild(new LayerCase(testCtx, "layer", true /*writeval*/, false /*shareVertices*/));
+            mainGroup->addChild(new LayerCase(testCtx, "layer_shared", true /*writeval*/, true /*shareVertices*/));
+            mainGroup->addChild(new LayerCase(testCtx, "layer_no_write", false /*writeval*/, false /*shareVertices*/));
+            mainGroup->addChild(
+                new ViewportIndexCase(testCtx, "viewport_index", true /*writeVal*/, false /*shareVertices*/));
+            mainGroup->addChild(
+                new ViewportIndexCase(testCtx, "viewport_index_shared", true /*writeVal*/, true /*shareVertices*/));
+            mainGroup->addChild(
+                new ViewportIndexCase(testCtx, "viewport_index_no_write", false /*writeVal*/, false /*shareVertices*/));
+            mainGroup->addChild(new WorkGroupIdCase(testCtx, "work_group_id_in_mesh", false /*taskNeeded*/));
+            mainGroup->addChild(new WorkGroupIdCase(testCtx, "work_group_id_in_task", true /*taskNeeded*/));
+            mainGroup->addChild(
+                new NumWorkgroupsCase(testCtx, "num_work_groups_mesh", tcu::Nothing, tcu::UVec3(5u, 6u, 7u)));
+            mainGroup->addChild(new NumWorkgroupsCase(testCtx, "num_work_groups_task_and_mesh",
+                                                      tcu::just(tcu::UVec3(2u, 3u, 4u)), tcu::UVec3(3u, 4u, 2u)));
+            mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_id_in_mesh", false /*taskNeeded*/,
+                                                        LocalInvocation::ID));
+            mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_id_in_task", true /*taskNeeded*/,
+                                                        LocalInvocation::ID));
+            mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_index_in_task", true /*taskNeeded*/,
+                                                        LocalInvocation::INDEX));
+            mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_index_in_mesh", false /*taskNeeded*/,
+                                                        LocalInvocation::INDEX));
+            mainGroup->addChild(
+                new GlobalInvocationIdCase(testCtx, "global_invocation_id_in_mesh", false /*taskNeeded*/));
+            mainGroup->addChild(
+                new GlobalInvocationIdCase(testCtx, "global_invocation_id_in_task", true /*taskNeeded*/));
+            mainGroup->addChild(new DrawIndexCase(testCtx, "draw_index_in_mesh", false /*taskNeeded*/));
+            mainGroup->addChild(new DrawIndexCase(testCtx, "draw_index_in_task", true /*taskNeeded*/));
+            mainGroup->addChild(new ViewIndexCase(testCtx, "view_index"));
+            mainGroup->addChild(new CullPrimitivesCase(testCtx, "cull_primitives"));
 
-    mainGroup->addChild(new PositionCase(testCtx, "position"));
-    mainGroup->addChild(new PointSizeCase(testCtx, "point_size"));
-    mainGroup->addChild(new ClipDistanceCase(testCtx, "clip_distance"));
-    mainGroup->addChild(new ClipDistanceMixedCase(testCtx, "clip_distance_mix"));
-    mainGroup->addChild(new CullDistanceCase(testCtx, "cull_distance"));
-    mainGroup->addChild(new CullDistanceMixedCase(testCtx, "cull_distance_mix"));
-    mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_glsl", true /*glslFrag*/));
-    mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_spirv", false /*glslFrag*/));
-    mainGroup->addChild(new LayerCase(testCtx, "layer", true /*writeval*/, false /*shareVertices*/));
-    mainGroup->addChild(new LayerCase(testCtx, "layer_shared", true /*writeval*/, true /*shareVertices*/));
-    mainGroup->addChild(new LayerCase(testCtx, "layer_no_write", false /*writeval*/, false /*shareVertices*/));
-    mainGroup->addChild(new ViewportIndexCase(testCtx, "viewport_index", true /*writeVal*/, false /*shareVertices*/));
-    mainGroup->addChild(
-        new ViewportIndexCase(testCtx, "viewport_index_shared", true /*writeVal*/, true /*shareVertices*/));
-    mainGroup->addChild(
-        new ViewportIndexCase(testCtx, "viewport_index_no_write", false /*writeVal*/, false /*shareVertices*/));
-    mainGroup->addChild(new WorkGroupIdCase(testCtx, "work_group_id_in_mesh", false /*taskNeeded*/));
-    mainGroup->addChild(new WorkGroupIdCase(testCtx, "work_group_id_in_task", true /*taskNeeded*/));
-    mainGroup->addChild(new NumWorkgroupsCase(testCtx, "num_work_groups_mesh", tcu::Nothing, tcu::UVec3(5u, 6u, 7u)));
-    mainGroup->addChild(new NumWorkgroupsCase(testCtx, "num_work_groups_task_and_mesh",
-                                              tcu::just(tcu::UVec3(2u, 3u, 4u)), tcu::UVec3(3u, 4u, 2u)));
-    mainGroup->addChild(
-        new LocalInvocationCase(testCtx, "local_invocation_id_in_mesh", false /*taskNeeded*/, LocalInvocation::ID));
-    mainGroup->addChild(
-        new LocalInvocationCase(testCtx, "local_invocation_id_in_task", true /*taskNeeded*/, LocalInvocation::ID));
-    mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_index_in_task", true /*taskNeeded*/,
-                                                LocalInvocation::INDEX));
-    mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_index_in_mesh", false /*taskNeeded*/,
-                                                LocalInvocation::INDEX));
-    mainGroup->addChild(new GlobalInvocationIdCase(testCtx, "global_invocation_id_in_mesh", false /*taskNeeded*/));
-    mainGroup->addChild(new GlobalInvocationIdCase(testCtx, "global_invocation_id_in_task", true /*taskNeeded*/));
-    mainGroup->addChild(new DrawIndexCase(testCtx, "draw_index_in_mesh", false /*taskNeeded*/));
-    mainGroup->addChild(new DrawIndexCase(testCtx, "draw_index_in_task", true /*taskNeeded*/));
-    mainGroup->addChild(new ViewIndexCase(testCtx, "view_index"));
-    mainGroup->addChild(new CullPrimitivesCase(testCtx, "cull_primitives"));
-
-    // Primitive shading rate tests.
-    {
-        const auto sizeCount = static_cast<int>(FragmentSize::SIZE_COUNT);
-
-        for (int i = 0; i < sizeCount; ++i)
-            for (int j = 0; j < sizeCount; ++j)
+            // Primitive shading rate tests.
             {
-                const auto topSize    = static_cast<FragmentSize>(i);
-                const auto bottomSize = static_cast<FragmentSize>(j);
+                const auto sizeCount = static_cast<int>(FragmentSize::SIZE_COUNT);
 
-                const auto topExtent    = getShadingRateSize(topSize);
-                const auto bottomExtent = getShadingRateSize(bottomSize);
+                for (int i = 0; i < sizeCount; ++i)
+                    for (int j = 0; j < sizeCount; ++j)
+                    {
+                        const auto topSize    = static_cast<FragmentSize>(i);
+                        const auto bottomSize = static_cast<FragmentSize>(j);
 
-                const auto testName = "primitive_shading_rate_" + std::to_string(topExtent.width) + "x" +
-                                      std::to_string(topExtent.height) + "_" + std::to_string(bottomExtent.width) +
-                                      "x" + std::to_string(bottomExtent.height);
+                        const auto topExtent    = getShadingRateSize(topSize);
+                        const auto bottomExtent = getShadingRateSize(bottomSize);
 
-                mainGroup->addChild(new PrimitiveShadingRateCase(testCtx, testName, topSize, bottomSize));
+                        const auto testName = "primitive_shading_rate_" + std::to_string(topExtent.width) + "x" +
+                                              std::to_string(topExtent.height) + "_" +
+                                              std::to_string(bottomExtent.width) + "x" +
+                                              std::to_string(bottomExtent.height);
+
+                        mainGroup->addChild(new PrimitiveShadingRateCase(testCtx, testName, topSize, bottomSize));
+                    }
             }
-    }
-    return mainGroup.release();
+        });
 }
 
-tcu::TestCaseGroup *createMeshShaderPipelineTestsEXT(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderPipelineTestsEXT(tcu::TestContext &testContext)
 {
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "pipeline"));
-    GroupPtr mainSubGroup(new tcu::TestCaseGroup(testCtx, "builtin"));
+    return createTestGroup2(
+        testContext, "pipeline",
+        [](tcu::TestCaseGroup *mainGroup)
+        {
+            addTestGroup2(
+                mainGroup, "builtin",
+                [](tcu::TestCaseGroup *mainSubGroup)
+                {
+                    const struct
+                    {
+                        PipelineConstructionType constructionType;
+                        const char *name;
+                    } constructionTypes[] = {
+                        {PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, "optimized_lib"},
+                        {PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "fast_lib"},
+                        {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "shader_objects"}};
 
-    const struct
-    {
-        PipelineConstructionType constructionType;
-        const char *name;
-    } constructionTypes[] = {{PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, "optimized_lib"},
-                             {PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "fast_lib"},
-                             {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "shader_objects"}};
-
-    for (const auto &pipelineConstructionType : constructionTypes)
-    {
-        GroupPtr pipelineGroup(new tcu::TestCaseGroup(testCtx, pipelineConstructionType.name));
-        pipelineGroup->addChild(
-            new ClipDistanceCase(testCtx, "clip_distance", pipelineConstructionType.constructionType));
-        pipelineGroup->addChild(
-            new CullDistanceCase(testCtx, "cull_distance", pipelineConstructionType.constructionType));
-        pipelineGroup->addChild(
-            new ClipDistanceMixedCase(testCtx, "clip_distance_mix", pipelineConstructionType.constructionType));
-        pipelineGroup->addChild(
-            new CullDistanceMixedCase(testCtx, "cull_distance_mix", pipelineConstructionType.constructionType));
-        mainSubGroup->addChild(pipelineGroup.release());
-    }
-
-    mainGroup->addChild(mainSubGroup.release());
-
-    return mainGroup.release();
+                    for (const auto &pipelineConstructionType : constructionTypes)
+                    {
+                        const auto cType = pipelineConstructionType.constructionType;
+                        addTestGroup2(
+                            mainSubGroup, pipelineConstructionType.name,
+                            [cType](tcu::TestCaseGroup *pipelineGroup)
+                            {
+                                auto &testCtx = pipelineGroup->getTestContext();
+                                pipelineGroup->addChild(new ClipDistanceCase(testCtx, "clip_distance", cType));
+                                pipelineGroup->addChild(new CullDistanceCase(testCtx, "cull_distance", cType));
+                                pipelineGroup->addChild(new ClipDistanceMixedCase(testCtx, "clip_distance_mix", cType));
+                                pipelineGroup->addChild(new CullDistanceMixedCase(testCtx, "cull_distance_mix", cType));
+                            });
+                    }
+                });
+        });
 }
 
 } // namespace MeshShader

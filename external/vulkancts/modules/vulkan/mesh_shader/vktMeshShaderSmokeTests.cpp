@@ -26,6 +26,7 @@
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkImageWithMemory.hpp"
@@ -1134,22 +1135,25 @@ tcu::TestStatus testFullscreenGradient(Context &context, tcu::Maybe<FragmentSize
 
 } // namespace
 
-tcu::TestCaseGroup *createMeshShaderSmokeTests(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderSmokeTests(tcu::TestContext &testContext)
 {
-    GroupPtr smokeTests(new tcu::TestCaseGroup(testCtx, "smoke"));
+    return createTestGroup2(
+        testContext, "smoke",
+        [](tcu::TestCaseGroup *smokeTests)
+        {
+            auto &testCtx = smokeTests->getTestContext();
 
-    smokeTests->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle"));
-    smokeTests->addChild(new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle"));
-    smokeTests->addChild(new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle"));
+            smokeTests->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle"));
+            smokeTests->addChild(new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle"));
+            smokeTests->addChild(new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle"));
 
-    addFunctionCaseWithPrograms(smokeTests.get(), "fullscreen_gradient", checkMeshSupport, initGradientPrograms,
-                                testFullscreenGradient, tcu::nothing<FragmentSize>());
-    addFunctionCaseWithPrograms(smokeTests.get(), "fullscreen_gradient_fs2x2", checkMeshSupport, initGradientPrograms,
-                                testFullscreenGradient, tcu::just(FragmentSize::SIZE_2X2));
-    addFunctionCaseWithPrograms(smokeTests.get(), "fullscreen_gradient_fs2x1", checkMeshSupport, initGradientPrograms,
-                                testFullscreenGradient, tcu::just(FragmentSize::SIZE_2X1));
-
-    return smokeTests.release();
+            addFunctionCaseWithPrograms(smokeTests, "fullscreen_gradient", checkMeshSupport, initGradientPrograms,
+                                        testFullscreenGradient, tcu::nothing<FragmentSize>());
+            addFunctionCaseWithPrograms(smokeTests, "fullscreen_gradient_fs2x2", checkMeshSupport, initGradientPrograms,
+                                        testFullscreenGradient, tcu::just(FragmentSize::SIZE_2X2));
+            addFunctionCaseWithPrograms(smokeTests, "fullscreen_gradient_fs2x1", checkMeshSupport, initGradientPrograms,
+                                        testFullscreenGradient, tcu::just(FragmentSize::SIZE_2X1));
+        });
 }
 
 } // namespace MeshShader

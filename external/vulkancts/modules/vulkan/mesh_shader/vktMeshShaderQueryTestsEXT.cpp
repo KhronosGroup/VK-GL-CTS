@@ -26,6 +26,7 @@
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
@@ -47,6 +48,7 @@
 #include <string>
 #include <numeric>
 #include <array>
+#include <memory>
 #include <limits>
 
 namespace vkt
@@ -1380,313 +1382,338 @@ tcu::TestStatus MeshQueryInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
-
 } // namespace
 
 tcu::TestCaseGroup *createMeshShaderQueryTestsEXT(tcu::TestContext &testCtx)
 {
-    GroupPtr queryGroup(new tcu::TestCaseGroup(testCtx, "query"));
-
-    const struct
+    struct QueryCombinationCase
     {
         std::vector<QueryType> queryTypes;
         const char *name;
-    } queryCombinations[] = {
+    };
+
+    struct DrawCallCase
+    {
+        DrawCallType drawCallType;
+        const char *name;
+    };
+
+    struct BlockCase
+    {
+        std::vector<uint32_t> drawBlocks;
+        const char *name;
+    };
+
+    struct ResetTypeCase
+    {
+        ResetCase resetCase;
+        const char *name;
+    };
+
+    struct AccessMethodCase
+    {
+        AccessMethod accessMethod;
+        const char *name;
+    };
+
+    struct GeometryCase
+    {
+        GeometryType geometry;
+        const char *name;
+    };
+
+    struct ResultSizeCase
+    {
+        bool use64Bits;
+        const char *name;
+    };
+
+    struct AvailabilityCase
+    {
+        bool availabilityFlag;
+        const char *name;
+    };
+
+    struct WaitCase
+    {
+        bool waitFlag;
+        const char *name;
+    };
+
+    struct TaskShaderCase
+    {
+        bool taskShader;
+        const char *name;
+    };
+
+    struct OrderingCase
+    {
+        bool insideRenderPass;
+        const char *name;
+    };
+
+    struct MultiViewCase
+    {
+        bool multiView;
+        const char *name;
+    };
+
+    struct CmdBufferTypeCase
+    {
+        bool useSecondary;
+        const char *name;
+    };
+
+    using QueryCombinationCaseArray = std::array<QueryCombinationCase, 6>;
+    using DrawCallCaseArray         = std::array<DrawCallCase, 3>;
+    using BlockCaseArray            = std::array<BlockCase, 3>;
+    using ResetTypeCaseArray        = std::array<ResetTypeCase, 4>;
+    using AccessMethodCaseArray     = std::array<AccessMethodCase, 2>;
+    using GeometryCaseArray         = std::array<GeometryCase, 3>;
+    using ResultSizeCaseArray       = std::array<ResultSizeCase, 2>;
+    using AvailabilityCaseArray     = std::array<AvailabilityCase, 2>;
+    using WaitCaseArray             = std::array<WaitCase, 2>;
+    using TaskShaderCaseArray       = std::array<TaskShaderCase, 2>;
+    using OrderingCaseArray         = std::array<OrderingCase, 2>;
+    using MultiViewCaseArray        = std::array<MultiViewCase, 2>;
+    using CmdBufferTypeCaseArray    = std::array<CmdBufferTypeCase, 2>;
+
+    const auto queryCombinations = std::make_shared<const QueryCombinationCaseArray>(QueryCombinationCaseArray{{
         {{}, "no_queries"},
         {{QueryType::PRIMITIVES}, "prim_query"},
         {{QueryType::TASK_INVOCATIONS}, "task_invs_query"},
         {{QueryType::MESH_INVOCATIONS}, "mesh_invs_query"},
         {{QueryType::TASK_INVOCATIONS, QueryType::MESH_INVOCATIONS}, "all_stats_query"},
         {{QueryType::PRIMITIVES, QueryType::TASK_INVOCATIONS, QueryType::MESH_INVOCATIONS}, "all_queries"},
-    };
+    }});
 
-    const struct
-    {
-        DrawCallType drawCallType;
-        const char *name;
-    } drawCalls[] = {
+    const auto drawCalls = std::make_shared<const DrawCallCaseArray>(DrawCallCaseArray{{
         {DrawCallType::DIRECT, "draw"},
         {DrawCallType::INDIRECT, "indirect_draw"},
         {DrawCallType::INDIRECT_WITH_COUNT, "indirect_with_count_draw"},
-    };
+    }});
 
-    const struct
-    {
-        std::vector<uint32_t> drawBlocks;
-        const char *name;
-    } blockCases[] = {
+    const auto blockCases = std::make_shared<const BlockCaseArray>(BlockCaseArray{{
         {{}, "no_blocks"},
         {{10u}, "single_block"},
         {{10u, 20u, 30u}, "multiple_blocks"},
-    };
+    }});
 
-    const struct
-    {
-        ResetCase resetCase;
-        const char *name;
-    } resetTypes[] = {
+    const auto resetTypes = std::make_shared<const ResetTypeCaseArray>(ResetTypeCaseArray{{
         {ResetCase::NONE, "no_reset"},
         {ResetCase::NONE_WITH_HOST, "host_reset"},
         {ResetCase::BEFORE_ACCESS, "reset_before"},
         {ResetCase::AFTER_ACCESS, "reset_after"},
-    };
+    }});
 
-    const struct
-    {
-        AccessMethod accessMethod;
-        const char *name;
-    } accessMethods[] = {
+    const auto accessMethods = std::make_shared<const AccessMethodCaseArray>(AccessMethodCaseArray{{
         {AccessMethod::COPY, "copy"},
         {AccessMethod::GET, "get"},
-    };
+    }});
 
-    const struct
-    {
-        GeometryType geometry;
-        const char *name;
-    } geometryCases[] = {
+    const auto geometryCases = std::make_shared<const GeometryCaseArray>(GeometryCaseArray{{
         {GeometryType::POINTS, "points"},
         {GeometryType::LINES, "lines"},
         {GeometryType::TRIANGLES, "triangles"},
-    };
+    }});
 
-    const struct
-    {
-        bool use64Bits;
-        const char *name;
-    } resultSizes[] = {
+    const auto resultSizes = std::make_shared<const ResultSizeCaseArray>(ResultSizeCaseArray{{
         {false, "32bit"},
         {true, "64bit"},
-    };
+    }});
 
-    const struct
-    {
-        bool availabilityFlag;
-        const char *name;
-    } availabilityCases[] = {
+    const auto availabilityCases = std::make_shared<const AvailabilityCaseArray>(AvailabilityCaseArray{{
         {false, "no_availability"},
         {true, "with_availability"},
-    };
+    }});
 
-    const struct
-    {
-        bool waitFlag;
-        const char *name;
-    } waitCases[] = {
+    const auto waitCases = std::make_shared<const WaitCaseArray>(WaitCaseArray{{
         {false, "no_wait"},
         {true, "wait"},
-    };
+    }});
 
-    const struct
-    {
-        bool taskShader;
-        const char *name;
-    } taskShaderCases[] = {
+    const auto taskShaderCases = std::make_shared<const TaskShaderCaseArray>(TaskShaderCaseArray{{
         {false, "mesh_only"},
         {true, "task_mesh"},
-    };
+    }});
 
-    const struct
-    {
-        bool insideRenderPass;
-        const char *name;
-    } orderingCases[] = {
+    const auto orderingCases = std::make_shared<const OrderingCaseArray>(OrderingCaseArray{{
         {false, "include_rp"},
         {true, "inside_rp"},
-    };
+    }});
 
-    const struct
-    {
-        bool multiView;
-        const char *name;
-    } multiViewCases[] = {
+    const auto multiViewCases = std::make_shared<const MultiViewCaseArray>(MultiViewCaseArray{{
         {false, "single_view"},
         {true, "multi_view"},
-    };
+    }});
 
-    const struct
-    {
-        bool useSecondary;
-        const char *name;
-    } cmdBufferTypes[] = {
+    const auto cmdBufferTypes = std::make_shared<const CmdBufferTypeCaseArray>(CmdBufferTypeCaseArray{{
         {false, "only_primary"},
         {true, "with_secondary"},
-    };
+    }});
 
-    for (const auto &queryCombination : queryCombinations)
-    {
-        const bool noQueries = queryCombination.queryTypes.empty();
-        const bool hasPrimitivesQuery =
-            de::contains(queryCombination.queryTypes.begin(), queryCombination.queryTypes.end(), QueryType::PRIMITIVES);
-
-        GroupPtr queryCombinationGroup(new tcu::TestCaseGroup(testCtx, queryCombination.name));
-
-        for (const auto &geometryCase : geometryCases)
+    // clang-format off
+    return createTestGroup2(testCtx, "query", [=](tcu::TestCaseGroup *queryGroup){
+        for (size_t queryCombinationIdx = 0; queryCombinationIdx < queryCombinations->size(); ++queryCombinationIdx)
         {
-            if (noQueries && geometryCase.geometry != GeometryType::LINES)
-                continue;
+            const auto &queryTypes = queryCombinations->at(queryCombinationIdx).queryTypes;
+            const bool noQueries = queryTypes.empty();
+            const bool hasPrimitivesQuery = de::contains(queryTypes.begin(), queryTypes.end(), QueryType::PRIMITIVES);
 
-            const bool nonTriangles = (geometryCase.geometry != GeometryType::TRIANGLES);
-
-            // For cases without primitive queries, skip non-triangle geometries.
-            if (!hasPrimitivesQuery && !noQueries && nonTriangles)
-                continue;
-
-            GroupPtr geometryCaseGroup(new tcu::TestCaseGroup(testCtx, geometryCase.name));
-
-            for (const auto &resetType : resetTypes)
-            {
-                if (noQueries && resetType.resetCase != ResetCase::NONE)
-                    continue;
-
-                GroupPtr resetTypeGroup(new tcu::TestCaseGroup(testCtx, resetType.name));
-
-                for (const auto &accessMethod : accessMethods)
+            addTestGroup2(queryGroup, queryCombinations->at(queryCombinationIdx).name, [=](tcu::TestCaseGroup *queryCombinationGroup){
+                for (size_t geometryCaseIdx = 0; geometryCaseIdx < geometryCases->size(); ++geometryCaseIdx)
                 {
-                    if (noQueries && accessMethod.accessMethod != AccessMethod::COPY)
+                    const auto geometry = geometryCases->at(geometryCaseIdx).geometry;
+
+                    if (noQueries && geometry != GeometryType::LINES)
                         continue;
 
-                    // Get + reset after access is not a valid combination (queries will be accessed after submission).
-                    if (accessMethod.accessMethod == AccessMethod::GET &&
-                        resetType.resetCase == ResetCase::AFTER_ACCESS)
+                    const bool nonTriangles = (geometry != GeometryType::TRIANGLES);
+
+                    // For cases without primitive queries, skip non-triangle geometries.
+                    if (!hasPrimitivesQuery && !noQueries && nonTriangles)
                         continue;
 
-                    GroupPtr accessMethodGroup(new tcu::TestCaseGroup(testCtx, accessMethod.name));
-
-                    for (const auto &waitCase : waitCases)
-                    {
-                        if (noQueries && waitCase.waitFlag)
-                            continue;
-
-                        // Wait and reset before access is not valid (the query would never finish).
-                        if (resetType.resetCase == ResetCase::BEFORE_ACCESS && waitCase.waitFlag)
-                            continue;
-
-                        GroupPtr waitCaseGroup(new tcu::TestCaseGroup(testCtx, waitCase.name));
-
-                        for (const auto &drawCall : drawCalls)
+                    addTestGroup2(queryCombinationGroup, geometryCases->at(geometryCaseIdx).name, [=](tcu::TestCaseGroup *geometryCaseGroup){
+                        for (size_t resetTypeIdx = 0; resetTypeIdx < resetTypes->size(); ++resetTypeIdx)
                         {
-                            // Explicitly remove some combinations with non-triangles, just to reduce the number of tests.
-                            if (drawCall.drawCallType != DrawCallType::DIRECT && nonTriangles)
+                            if (noQueries && resetTypes->at(resetTypeIdx).resetCase != ResetCase::NONE)
                                 continue;
 
-                            GroupPtr drawCallGroup(new tcu::TestCaseGroup(testCtx, drawCall.name));
-
-                            for (const auto &resultSize : resultSizes)
-                            {
-                                if (noQueries && resultSize.use64Bits)
-                                    continue;
-
-                                // Explicitly remove some combinations with non-triangles, just to reduce the number of tests.
-                                if (resultSize.use64Bits && nonTriangles)
-                                    continue;
-
-                                GroupPtr resultSizeGroup(new tcu::TestCaseGroup(testCtx, resultSize.name));
-
-                                for (const auto &availabilityCase : availabilityCases)
+                            addTestGroup2(geometryCaseGroup, resetTypes->at(resetTypeIdx).name, [=](tcu::TestCaseGroup *resetTypeGroup){
+                                for (size_t accessMethodIdx = 0; accessMethodIdx < accessMethods->size(); ++accessMethodIdx)
                                 {
-                                    if (noQueries && availabilityCase.availabilityFlag)
+                                    if (noQueries && accessMethods->at(accessMethodIdx).accessMethod != AccessMethod::COPY)
                                         continue;
 
-                                    // Explicitly remove some combinations with non-triangles, just to reduce the number of tests.
-                                    if (availabilityCase.availabilityFlag && nonTriangles)
+                                    // Get + reset after access is not a valid combination (queries will be accessed after submission).
+                                    if (accessMethods->at(accessMethodIdx).accessMethod == AccessMethod::GET &&
+                                        resetTypes->at(resetTypeIdx).resetCase == ResetCase::AFTER_ACCESS)
                                         continue;
 
-                                    GroupPtr availabilityCaseGroup(
-                                        new tcu::TestCaseGroup(testCtx, availabilityCase.name));
-
-                                    for (const auto &blockCase : blockCases)
-                                    {
-                                        // Explicitly remove some combinations with non-triangles, just to reduce the number of tests.
-                                        if (blockCase.drawBlocks.size() <= 1 && nonTriangles)
-                                            continue;
-
-                                        GroupPtr blockCaseGroup(new tcu::TestCaseGroup(testCtx, blockCase.name));
-
-                                        for (const auto &taskShaderCase : taskShaderCases)
+                                    addTestGroup2(resetTypeGroup, accessMethods->at(accessMethodIdx).name, [=](tcu::TestCaseGroup *accessMethodGroup){
+                                        for (size_t waitCaseIdx = 0; waitCaseIdx < waitCases->size(); ++waitCaseIdx)
                                         {
-                                            GroupPtr taskShaderCaseGroup(
-                                                new tcu::TestCaseGroup(testCtx, taskShaderCase.name));
+                                            if (noQueries && waitCases->at(waitCaseIdx).waitFlag)
+                                                continue;
 
-                                            for (const auto &orderingCase : orderingCases)
-                                            {
-                                                if (noQueries && !orderingCase.insideRenderPass)
-                                                    continue;
+                                            // Wait and reset before access is not valid (the query would never finish).
+                                            if (resetTypes->at(resetTypeIdx).resetCase == ResetCase::BEFORE_ACCESS && waitCases->at(waitCaseIdx).waitFlag)
+                                                continue;
 
-                                                GroupPtr orderingCaseGroup(
-                                                    new tcu::TestCaseGroup(testCtx, orderingCase.name));
-
-                                                for (const auto &multiViewCase : multiViewCases)
+                                            addTestGroup2(accessMethodGroup, waitCases->at(waitCaseIdx).name, [=](tcu::TestCaseGroup *waitCaseGroup){
+                                                for (size_t drawCallIdx = 0; drawCallIdx < drawCalls->size(); ++drawCallIdx)
                                                 {
-                                                    if (multiViewCase.multiView && !orderingCase.insideRenderPass)
+                                                    // Explicitly remove some combinations with non-triangles, just to reduce the number of tests.
+                                                    if (drawCalls->at(drawCallIdx).drawCallType != DrawCallType::DIRECT && nonTriangles)
                                                         continue;
 
-                                                    GroupPtr multiViewGroup(
-                                                        new tcu::TestCaseGroup(testCtx, multiViewCase.name));
+                                                    addTestGroup2(waitCaseGroup, drawCalls->at(drawCallIdx).name, [=](tcu::TestCaseGroup *drawCallGroup){
+                                                        for (size_t resultSizeIdx = 0; resultSizeIdx < resultSizes->size(); ++resultSizeIdx)
+                                                        {
+                                                            if (noQueries && resultSizes->at(resultSizeIdx).use64Bits)
+                                                                continue;
 
-                                                    for (const auto &cmdBufferType : cmdBufferTypes)
-                                                    {
-                                                        TestParams params;
-                                                        params.queryTypes       = queryCombination.queryTypes;
-                                                        params.drawBlocks       = blockCase.drawBlocks;
-                                                        params.drawCall         = drawCall.drawCallType;
-                                                        params.geometry         = geometryCase.geometry;
-                                                        params.resetType        = resetType.resetCase;
-                                                        params.access           = accessMethod.accessMethod;
-                                                        params.use64Bits        = resultSize.use64Bits;
-                                                        params.availabilityBit  = availabilityCase.availabilityFlag;
-                                                        params.waitBit          = waitCase.waitFlag;
-                                                        params.useTaskShader    = taskShaderCase.taskShader;
-                                                        params.insideRenderPass = orderingCase.insideRenderPass;
-                                                        params.useSecondary     = cmdBufferType.useSecondary;
-                                                        params.multiView        = multiViewCase.multiView;
+                                                            // Explicitly remove some combinations with non-triangles, just to reduce the number of tests.
+                                                            if (resultSizes->at(resultSizeIdx).use64Bits && nonTriangles)
+                                                                continue;
 
-                                                        // VUID-vkCmdExecuteCommands-commandBuffer-07594
-                                                        if (params.areQueriesInherited() && params.hasPrimitivesQuery())
-                                                            continue;
+                                                            addTestGroup2(drawCallGroup, resultSizes->at(resultSizeIdx).name, [=](tcu::TestCaseGroup *resultSizeGroup){
+                                                                for (size_t availabilityCaseIdx = 0; availabilityCaseIdx < availabilityCases->size(); ++availabilityCaseIdx)
+                                                                {
+                                                                    if (noQueries && availabilityCases->at(availabilityCaseIdx).availabilityFlag)
+                                                                        continue;
 
-                                                        multiViewGroup->addChild(new MeshQueryCase(
-                                                            testCtx, cmdBufferType.name, std::move(params)));
-                                                    }
+                                                                    // Explicitly remove some combinations with non-triangles, just to reduce the number of tests.
+                                                                    if (availabilityCases->at(availabilityCaseIdx).availabilityFlag && nonTriangles)
+                                                                        continue;
 
-                                                    orderingCaseGroup->addChild(multiViewGroup.release());
+                                                                    addTestGroup2(resultSizeGroup, availabilityCases->at(availabilityCaseIdx).name, [=](tcu::TestCaseGroup *availabilityCaseGroup){
+                                                                        for (size_t blockCaseIdx = 0; blockCaseIdx < blockCases->size(); ++blockCaseIdx)
+                                                                        {
+                                                                            // Explicitly remove some combinations with non-triangles, just to reduce the number of tests.
+                                                                            if (blockCases->at(blockCaseIdx).drawBlocks.size() <= 1 && nonTriangles)
+                                                                                continue;
+
+                                                                            addTestGroup2(availabilityCaseGroup, blockCases->at(blockCaseIdx).name, [=](tcu::TestCaseGroup *blockCaseGroup){
+                                                                                for (size_t taskShaderCaseIdx = 0; taskShaderCaseIdx < taskShaderCases->size(); ++taskShaderCaseIdx)
+                                                                                {
+                                                                                    addTestGroup2(blockCaseGroup, taskShaderCases->at(taskShaderCaseIdx).name, [=](tcu::TestCaseGroup *taskShaderCaseGroup){
+                                                                                        for (size_t orderingCaseIdx = 0; orderingCaseIdx < orderingCases->size(); ++orderingCaseIdx)
+                                                                                        {
+                                                                                            if (noQueries && !orderingCases->at(orderingCaseIdx).insideRenderPass)
+                                                                                                continue;
+
+                                                                                            addTestGroup2(taskShaderCaseGroup, orderingCases->at(orderingCaseIdx).name, [=](tcu::TestCaseGroup *orderingCaseGroup){
+                                                                                                for (size_t multiViewCaseIdx = 0; multiViewCaseIdx < multiViewCases->size(); ++multiViewCaseIdx)
+                                                                                                {
+                                                                                                    if (multiViewCases->at(multiViewCaseIdx).multiView && !orderingCases->at(orderingCaseIdx).insideRenderPass)
+                                                                                                        continue;
+
+                                                                                                    addTestGroup2(orderingCaseGroup, multiViewCases->at(multiViewCaseIdx).name, [=](tcu::TestCaseGroup *multiViewGroup){
+                                                                                                        const auto &queryCombination = queryCombinations->at(queryCombinationIdx);
+                                                                                                        const auto &geometryCase     = geometryCases->at(geometryCaseIdx);
+                                                                                                        const auto &resetType        = resetTypes->at(resetTypeIdx);
+                                                                                                        const auto &accessMethod     = accessMethods->at(accessMethodIdx);
+                                                                                                        const auto &waitCase         = waitCases->at(waitCaseIdx);
+                                                                                                        const auto &drawCall         = drawCalls->at(drawCallIdx);
+                                                                                                        const auto &resultSize       = resultSizes->at(resultSizeIdx);
+                                                                                                        const auto &availabilityCase = availabilityCases->at(availabilityCaseIdx);
+                                                                                                        const auto &blockCase        = blockCases->at(blockCaseIdx);
+                                                                                                        const auto &taskShaderCase   = taskShaderCases->at(taskShaderCaseIdx);
+                                                                                                        const auto &orderingCase     = orderingCases->at(orderingCaseIdx);
+                                                                                                        const auto &multiViewCase    = multiViewCases->at(multiViewCaseIdx);
+
+                                                                                                        for (const auto &cmdBufferType : *cmdBufferTypes)
+                                                                                                        {
+                                                                                                            TestParams params;
+                                                                                                            params.queryTypes       = queryCombination.queryTypes;
+                                                                                                            params.drawBlocks       = blockCase.drawBlocks;
+                                                                                                            params.drawCall         = drawCall.drawCallType;
+                                                                                                            params.geometry         = geometryCase.geometry;
+                                                                                                            params.resetType        = resetType.resetCase;
+                                                                                                            params.access           = accessMethod.accessMethod;
+                                                                                                            params.use64Bits        = resultSize.use64Bits;
+                                                                                                            params.availabilityBit  = availabilityCase.availabilityFlag;
+                                                                                                            params.waitBit          = waitCase.waitFlag;
+                                                                                                            params.useTaskShader    = taskShaderCase.taskShader;
+                                                                                                            params.insideRenderPass = orderingCase.insideRenderPass;
+                                                                                                            params.useSecondary     = cmdBufferType.useSecondary;
+                                                                                                            params.multiView        = multiViewCase.multiView;
+
+                                                                                                            // VUID-vkCmdExecuteCommands-commandBuffer-07594
+                                                                                                            if (params.areQueriesInherited() && params.hasPrimitivesQuery())
+                                                                                                                continue;
+
+                                                                                                            multiViewGroup->addChild(new MeshQueryCase(
+                                                                                                                multiViewGroup->getTestContext(), cmdBufferType.name, std::move(params)));
+                                                                                                        }
+                                                                                                    });
+                                                                                                }
+                                                                                            });
+                                                                                        }
+                                                                                    });
+                                                                                }
+                                                                            });
+                                                                        }
+                                                                    });
+                                                                }
+                                                            });
+                                                        }
+                                                    });
                                                 }
-
-                                                taskShaderCaseGroup->addChild(orderingCaseGroup.release());
-                                            }
-
-                                            blockCaseGroup->addChild(taskShaderCaseGroup.release());
+                                            });
                                         }
-
-                                        availabilityCaseGroup->addChild(blockCaseGroup.release());
-                                    }
-
-                                    resultSizeGroup->addChild(availabilityCaseGroup.release());
+                                    });
                                 }
-
-                                drawCallGroup->addChild(resultSizeGroup.release());
-                            }
-
-                            waitCaseGroup->addChild(drawCallGroup.release());
+                            });
                         }
-
-                        accessMethodGroup->addChild(waitCaseGroup.release());
-                    }
-
-                    resetTypeGroup->addChild(accessMethodGroup.release());
+                    });
                 }
-
-                geometryCaseGroup->addChild(resetTypeGroup.release());
-            }
-
-            queryCombinationGroup->addChild(geometryCaseGroup.release());
+            });
         }
-
-        queryGroup->addChild(queryCombinationGroup.release());
-    }
-
-    return queryGroup.release();
+    });
+    // clang-format on
 }
 
 } // namespace MeshShader

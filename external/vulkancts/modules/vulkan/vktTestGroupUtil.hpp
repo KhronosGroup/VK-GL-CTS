@@ -236,6 +236,18 @@ void addTestGroup(tcu::TestCaseGroup *parent, const std::string &name,
         createTestGroup<Arg0, Arg1>(parent->getTestContext(), name, createChildren, arg0, arg1, cleanupGroup));
 }
 
+template <typename InitFunc>
+void addTestGroup2(tcu::TestCaseGroup *parent, const std::string &name, InitFunc initFunc)
+{
+    parent->addChild(createTestGroup2(parent->getTestContext(), name, initFunc));
+}
+
+template <typename InitFunc, typename CleanupFunc>
+void addTestGroup2(tcu::TestCaseGroup *parent, const std::string &name, InitFunc initFunc, CleanupFunc cleanupFunc)
+{
+    parent->addChild(createTestGroup2(parent->getTestContext(), name, initFunc, cleanupFunc));
+}
+
 } // namespace vkt
 
 #endif // _VKTTESTGROUPUTIL_HPP

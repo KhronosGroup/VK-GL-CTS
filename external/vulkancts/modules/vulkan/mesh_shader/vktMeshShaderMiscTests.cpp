@@ -26,6 +26,7 @@
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkImageWithMemory.hpp"
@@ -4811,301 +4812,305 @@ void CountReadCase::initPrograms(vk::SourceCollections &programCollection) const
 
 } // anonymous namespace
 
-tcu::TestCaseGroup *createMeshShaderMiscTests(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderMiscTests(tcu::TestContext &testContext)
 {
-    GroupPtr miscTests(new tcu::TestCaseGroup(testCtx, "misc"));
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::just(2u),
-            /*meshCount*/ 2u,
-            /*width*/ 8u,
-            /*height*/ 8u));
-
-        // Pass a complex structure from the task to the mesh shader
-        miscTests->addChild(new ComplexTaskDataCase(testCtx, "complex_task_data", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ 1u,
-            /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
-            /*height*/ 7u)); // Idem.
-
-        // Draw a single point
-        miscTests->addChild(new SinglePointCase(testCtx, "single_point", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ 1u,
-            /*width*/ 8u,
-            /*height*/ 5u)); // Use an odd value so there's a center line.
-
-        // Draw a single line
-        miscTests->addChild(new SingleLineCase(testCtx, "single_line", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ 1u,
-            /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
-            /*height*/ 7u)); // Idem.
-
-        // Draw a single triangle
-        miscTests->addChild(new SingleTriangleCase(testCtx, "single_triangle", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ 1u,
-            /*width*/ 16u,
-            /*height*/ 16u));
-
-        // Draw the maximum number of points
-        miscTests->addChild(new MaxPointsCase(testCtx, "max_points", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ 1u,
-            /*width*/ 1u,
-            /*height*/ 1020u));
-
-        // Draw the maximum number of lines
-        miscTests->addChild(new MaxLinesCase(testCtx, "max_lines", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ 1u,
-            /*width*/ 512u,
-            /*height*/ 512u));
-
-        // Draw the maximum number of triangles
-        miscTests->addChild(new MaxTrianglesCase(testCtx, "max_triangles", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::just(65535u),
-            /*meshCount*/ 1u,
-            /*width*/ 1360u,
-            /*height*/ 1542u));
-
-        // Generate a large number of task work groups
-        miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_task_work_groups", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ 65535u,
-            /*width*/ 1360u,
-            /*height*/ 1542u));
-
-        // Generate a large number of mesh work groups
-        miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_mesh_work_groups", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::just(512u),
-            /*meshCount*/ 512u,
-            /*width*/ 4096u,
-            /*height*/ 2048u));
-
-        // Generate a large number of task and mesh work groups
-        miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_task_mesh_work_groups", std::move(paramsPtr)));
-    }
-
-    {
-        const PrimitiveType types[] = {
-            PrimitiveType::POINTS,
-            PrimitiveType::LINES,
-            PrimitiveType::TRIANGLES,
-        };
-
-        for (int i = 0; i < 2; ++i)
+    return createTestGroup2(
+        testContext, "misc",
+        [](tcu::TestCaseGroup *miscTests)
         {
-            const bool extraWrites = (i > 0);
+            auto &testCtx = miscTests->getTestContext();
 
-            for (const auto primType : types)
             {
-                std::unique_ptr<NoPrimitivesParams> params(new NoPrimitivesParams(
-                    /*taskCount*/ (extraWrites ? tcu::just(1u) : tcu::Nothing),
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::just(2u),
+                    /*meshCount*/ 2u,
+                    /*width*/ 8u,
+                    /*height*/ 8u));
+
+                // Pass a complex structure from the task to the mesh shader
+                miscTests->addChild(new ComplexTaskDataCase(testCtx, "complex_task_data", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ 1u,
+                    /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
+                    /*height*/ 7u)); // Idem.
+
+                // Draw a single point
+                miscTests->addChild(new SinglePointCase(testCtx, "single_point", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ 1u,
+                    /*width*/ 8u,
+                    /*height*/ 5u)); // Use an odd value so there's a center line.
+
+                // Draw a single line
+                miscTests->addChild(new SingleLineCase(testCtx, "single_line", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ 1u,
+                    /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
+                    /*height*/ 7u)); // Idem.
+
+                // Draw a single triangle
+                miscTests->addChild(new SingleTriangleCase(testCtx, "single_triangle", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
                     /*meshCount*/ 1u,
                     /*width*/ 16u,
-                    /*height*/ 16u,
-                    /*primitiveType*/ primType));
+                    /*height*/ 16u));
 
-                ParamsPtr paramsPtr(params.release());
-                const auto primName    = primitiveTypeName(primType);
-                const std::string name = "no_" + primName + (extraWrites ? "_extra_writes" : "");
-
-                if (extraWrites)
-                    miscTests->addChild(new NoPrimitivesExtraWritesCase(testCtx, name, std::move(paramsPtr)));
-                else
-                    miscTests->addChild(new NoPrimitivesCase(testCtx, name, std::move(paramsPtr)));
+                // Draw the maximum number of points
+                miscTests->addChild(new MaxPointsCase(testCtx, "max_points", std::move(paramsPtr)));
             }
-        }
-    }
 
-    {
-        for (int i = 0; i < 2; ++i)
-        {
-            const bool useTaskShader = (i == 0);
-
-            ParamsPtr paramsPtr(new MiscTestParams(
-                /*taskCount*/ (useTaskShader ? tcu::just(1u) : tcu::Nothing),
-                /*meshCount*/ 1u,
-                /*width*/ 1u,
-                /*height*/ 1u));
-
-            const std::string shader = (useTaskShader ? "task" : "mesh");
-            const std::string name   = "barrier_in_" + shader;
-
-            miscTests->addChild(new SimpleBarrierCase(testCtx, name, std::move(paramsPtr)));
-        }
-    }
-
-    {
-        const struct
-        {
-            MemoryBarrierType memBarrierType;
-            std::string caseName;
-        } barrierTypes[] = {
-            {MemoryBarrierType::SHARED, "memory_barrier_shared"},
-            {MemoryBarrierType::GROUP, "group_memory_barrier"},
-        };
-
-        for (const auto &barrierCase : barrierTypes)
-        {
-            for (int i = 0; i < 2; ++i)
             {
-                const bool useTaskShader = (i == 0);
-
-                std::unique_ptr<MemoryBarrierParams> paramsPtr(new MemoryBarrierParams(
-                    /*taskCount*/ (useTaskShader ? tcu::just(1u) : tcu::Nothing),
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
                     /*meshCount*/ 1u,
                     /*width*/ 1u,
-                    /*height*/ 1u,
-                    /*memBarrierType*/ barrierCase.memBarrierType));
+                    /*height*/ 1020u));
 
-                const std::string shader = (useTaskShader ? "task" : "mesh");
-                const std::string name   = barrierCase.caseName + "_in_" + shader;
-
-                miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
+                // Draw the maximum number of lines
+                miscTests->addChild(new MaxLinesCase(testCtx, "max_lines", std::move(paramsPtr)));
             }
-        }
-    }
 
-    {
-        for (int i = 0; i < 2; ++i)
-        {
-            const bool useTaskShader = (i > 0);
-            const auto name          = std::string("custom_attributes") + (useTaskShader ? "_and_task_shader" : "");
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ 1u,
+                    /*width*/ 512u,
+                    /*height*/ 512u));
 
-            ParamsPtr paramsPtr(new MiscTestParams(
-                /*taskCount*/ (useTaskShader ? tcu::just(1u) : tcu::Nothing),
-                /*meshCount*/ 1u,
-                /*width*/ 32u,
-                /*height*/ 32u));
+                // Draw the maximum number of triangles
+                miscTests->addChild(new MaxTrianglesCase(testCtx, "max_triangles", std::move(paramsPtr)));
+            }
 
-            miscTests->addChild(new CustomAttributesCase(testCtx, name, std::move(paramsPtr)));
-        }
-    }
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::just(65535u),
+                    /*meshCount*/ 1u,
+                    /*width*/ 1360u,
+                    /*height*/ 1542u));
 
-    {
-        for (int i = 0; i < 2; ++i)
-        {
-            const bool useTaskShader = (i > 0);
-            const auto name          = std::string("push_constant") + (useTaskShader ? "_and_task_shader" : "");
+                // Generate a large number of task work groups
+                miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_task_work_groups", std::move(paramsPtr)));
+            }
 
-            ParamsPtr paramsPtr(new MiscTestParams(
-                /*taskCount*/ (useTaskShader ? tcu::just(1u) : tcu::Nothing),
-                /*meshCount*/ 1u,
-                /*width*/ 16u,
-                /*height*/ 16u));
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ 65535u,
+                    /*width*/ 1360u,
+                    /*height*/ 1542u));
 
-            miscTests->addChild(new PushConstantCase(testCtx, name, std::move(paramsPtr)));
-        }
-    }
+                // Generate a large number of mesh work groups
+                miscTests->addChild(new LargeWorkGroupCase(testCtx, "many_mesh_work_groups", std::move(paramsPtr)));
+            }
 
-    {
-        ParamsPtr paramsPtr(new MaximizeThreadsParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ 1u,
-            /*width*/ 128u,
-            /*height*/ 1u,
-            /*localSize*/ 32u,
-            /*numVertices*/ 128u,
-            /*numPrimitives*/ 256u));
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::just(512u),
+                    /*meshCount*/ 512u,
+                    /*width*/ 4096u,
+                    /*height*/ 2048u));
 
-        // Use a large number of primitives compared to other sizes
-        miscTests->addChild(new MaximizePrimitivesCase(testCtx, "maximize_primitives", std::move(paramsPtr)));
-    }
+                // Generate a large number of task and mesh work groups
+                miscTests->addChild(
+                    new LargeWorkGroupCase(testCtx, "many_task_mesh_work_groups", std::move(paramsPtr)));
+            }
 
-    {
-        ParamsPtr paramsPtr(new MaximizeThreadsParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ 1u,
-            /*width*/ 64u,
-            /*height*/ 1u,
-            /*localSize*/ 32u,
-            /*numVertices*/ 256u,
-            /*numPrimitives*/ 128u));
+            {
+                const PrimitiveType types[] = {
+                    PrimitiveType::POINTS,
+                    PrimitiveType::LINES,
+                    PrimitiveType::TRIANGLES,
+                };
 
-        // Use a large number of vertices compared to other sizes
-        miscTests->addChild(new MaximizeVerticesCase(testCtx, "maximize_vertices", std::move(paramsPtr)));
-    }
+                for (int i = 0; i < 2; ++i)
+                {
+                    const bool extraWrites = (i > 0);
 
-    {
-        const uint32_t kInvocationCases[] = {32u, 64u, 128u, 256u};
+                    for (const auto primType : types)
+                    {
+                        std::unique_ptr<NoPrimitivesParams> params(new NoPrimitivesParams(
+                            /*taskCount*/ (extraWrites ? tcu::just(1u) : tcu::Nothing),
+                            /*meshCount*/ 1u,
+                            /*width*/ 16u,
+                            /*height*/ 16u,
+                            /*primitiveType*/ primType));
 
-        for (const auto &invocationCase : kInvocationCases)
-        {
-            const auto invsStr   = std::to_string(invocationCase);
-            const auto numPixels = invocationCase / 2u;
+                        ParamsPtr paramsPtr(params.release());
+                        const auto primName    = primitiveTypeName(primType);
+                        const std::string name = "no_" + primName + (extraWrites ? "_extra_writes" : "");
 
-            ParamsPtr paramsPtr(new MaximizeThreadsParams(
-                /*taskCount*/ tcu::Nothing,
-                /*meshCount*/ 1u,
-                /*width*/ numPixels,
-                /*height*/ 1u,
-                /*localSize*/ invocationCase,
-                /*numVertices*/ numPixels,
-                /*numPrimitives*/ numPixels));
+                        if (extraWrites)
+                            miscTests->addChild(new NoPrimitivesExtraWritesCase(testCtx, name, std::move(paramsPtr)));
+                        else
+                            miscTests->addChild(new NoPrimitivesCase(testCtx, name, std::move(paramsPtr)));
+                    }
+                }
+            }
 
-            // Use a large number of invocations compared to other sizes
-            miscTests->addChild(
-                new MaximizeInvocationsCase(testCtx, "maximize_invocations_" + invsStr, std::move(paramsPtr)));
-        }
-    }
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    const bool useTaskShader = (i == 0);
 
-    if (false) // This test does not work and the spec is not clear that it should.
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::just(1u),
-            /*meshCount*/ 128u,
-            /*width*/ 32u,
-            /*height*/ 128u));
+                    ParamsPtr paramsPtr(new MiscTestParams(
+                        /*taskCount*/ (useTaskShader ? tcu::just(1u) : tcu::Nothing),
+                        /*meshCount*/ 1u,
+                        /*width*/ 1u,
+                        /*height*/ 1u));
 
-        // Attempt to read gl_TaskCountNV and gl_PrimitiveCountNV from multiple invocations
-        miscTests->addChild(new CountReadCase(testCtx, "count_reads", std::move(paramsPtr)));
-    }
+                    const std::string shader = (useTaskShader ? "task" : "mesh");
+                    const std::string name   = "barrier_in_" + shader;
 
-    // Mix classic and mesh shader pipelines in the same render pass
-    addFunctionCaseWithPrograms(miscTests.get(), "mixed_pipelines", checkMeshSupport, initMixedPipelinesPrograms,
-                                testMixedPipelines);
+                    miscTests->addChild(new SimpleBarrierCase(testCtx, name, std::move(paramsPtr)));
+                }
+            }
 
-    return miscTests.release();
+            {
+                const struct
+                {
+                    MemoryBarrierType memBarrierType;
+                    std::string caseName;
+                } barrierTypes[] = {
+                    {MemoryBarrierType::SHARED, "memory_barrier_shared"},
+                    {MemoryBarrierType::GROUP, "group_memory_barrier"},
+                };
+
+                for (const auto &barrierCase : barrierTypes)
+                {
+                    for (int i = 0; i < 2; ++i)
+                    {
+                        const bool useTaskShader = (i == 0);
+
+                        std::unique_ptr<MemoryBarrierParams> paramsPtr(new MemoryBarrierParams(
+                            /*taskCount*/ (useTaskShader ? tcu::just(1u) : tcu::Nothing),
+                            /*meshCount*/ 1u,
+                            /*width*/ 1u,
+                            /*height*/ 1u,
+                            /*memBarrierType*/ barrierCase.memBarrierType));
+
+                        const std::string shader = (useTaskShader ? "task" : "mesh");
+                        const std::string name   = barrierCase.caseName + "_in_" + shader;
+
+                        miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
+                    }
+                }
+            }
+
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    const bool useTaskShader = (i > 0);
+                    const auto name = std::string("custom_attributes") + (useTaskShader ? "_and_task_shader" : "");
+
+                    ParamsPtr paramsPtr(new MiscTestParams(
+                        /*taskCount*/ (useTaskShader ? tcu::just(1u) : tcu::Nothing),
+                        /*meshCount*/ 1u,
+                        /*width*/ 32u,
+                        /*height*/ 32u));
+
+                    miscTests->addChild(new CustomAttributesCase(testCtx, name, std::move(paramsPtr)));
+                }
+            }
+
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    const bool useTaskShader = (i > 0);
+                    const auto name          = std::string("push_constant") + (useTaskShader ? "_and_task_shader" : "");
+
+                    ParamsPtr paramsPtr(new MiscTestParams(
+                        /*taskCount*/ (useTaskShader ? tcu::just(1u) : tcu::Nothing),
+                        /*meshCount*/ 1u,
+                        /*width*/ 16u,
+                        /*height*/ 16u));
+
+                    miscTests->addChild(new PushConstantCase(testCtx, name, std::move(paramsPtr)));
+                }
+            }
+
+            {
+                ParamsPtr paramsPtr(new MaximizeThreadsParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ 1u,
+                    /*width*/ 128u,
+                    /*height*/ 1u,
+                    /*localSize*/ 32u,
+                    /*numVertices*/ 128u,
+                    /*numPrimitives*/ 256u));
+
+                // Use a large number of primitives compared to other sizes
+                miscTests->addChild(new MaximizePrimitivesCase(testCtx, "maximize_primitives", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MaximizeThreadsParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ 1u,
+                    /*width*/ 64u,
+                    /*height*/ 1u,
+                    /*localSize*/ 32u,
+                    /*numVertices*/ 256u,
+                    /*numPrimitives*/ 128u));
+
+                // Use a large number of vertices compared to other sizes
+                miscTests->addChild(new MaximizeVerticesCase(testCtx, "maximize_vertices", std::move(paramsPtr)));
+            }
+
+            {
+                const uint32_t kInvocationCases[] = {32u, 64u, 128u, 256u};
+
+                for (const auto &invocationCase : kInvocationCases)
+                {
+                    const auto invsStr   = std::to_string(invocationCase);
+                    const auto numPixels = invocationCase / 2u;
+
+                    ParamsPtr paramsPtr(new MaximizeThreadsParams(
+                        /*taskCount*/ tcu::Nothing,
+                        /*meshCount*/ 1u,
+                        /*width*/ numPixels,
+                        /*height*/ 1u,
+                        /*localSize*/ invocationCase,
+                        /*numVertices*/ numPixels,
+                        /*numPrimitives*/ numPixels));
+
+                    // Use a large number of invocations compared to other sizes
+                    miscTests->addChild(
+                        new MaximizeInvocationsCase(testCtx, "maximize_invocations_" + invsStr, std::move(paramsPtr)));
+                }
+            }
+
+            if (false) // This test does not work and the spec is not clear that it should.
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::just(1u),
+                    /*meshCount*/ 128u,
+                    /*width*/ 32u,
+                    /*height*/ 128u));
+
+                // Attempt to read gl_TaskCountNV and gl_PrimitiveCountNV from multiple invocations
+                miscTests->addChild(new CountReadCase(testCtx, "count_reads", std::move(paramsPtr)));
+            }
+
+            // Mix classic and mesh shader pipelines in the same render pass
+            addFunctionCaseWithPrograms(miscTests, "mixed_pipelines", checkMeshSupport, initMixedPipelinesPrograms,
+                                        testMixedPipelines);
+        });
 }
 
 tcu::TestCaseGroup *createMeshShaderInOutTests(tcu::TestContext &testCtx)

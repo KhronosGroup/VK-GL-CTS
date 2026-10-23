@@ -25,6 +25,7 @@
 #include "vktMeshShaderBuiltinTests.hpp"
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -2038,57 +2039,62 @@ TestInstance *PrimitiveShadingRateCase::createInstance(Context &context) const
 
 } // namespace
 
-tcu::TestCaseGroup *createMeshShaderBuiltinTests(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderBuiltinTests(tcu::TestContext &testContext)
 {
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "builtin"));
+    return createTestGroup2(
+        testContext, "builtin",
+        [](tcu::TestCaseGroup *mainGroup)
+        {
+            auto &testCtx = mainGroup->getTestContext();
+            mainGroup->addChild(new PositionCase(testCtx, "position"));
+            mainGroup->addChild(new PointSizeCase(testCtx, "point_size"));
+            mainGroup->addChild(new ClipDistanceCase(testCtx, "clip_distance"));
+            mainGroup->addChild(new CullDistanceCase(testCtx, "cull_distance"));
+            mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_glsl", true /*glslFrag*/));
+            mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_spirv", false /*glslFrag*/));
+            mainGroup->addChild(new LayerCase(testCtx, "layer", false /*shareVertices*/));
+            mainGroup->addChild(new LayerCase(testCtx, "layer_shared", true /*shareVertices*/));
+            mainGroup->addChild(new ViewportIndexCase(testCtx, "viewport_index", false /*shareVertices*/));
+            mainGroup->addChild(new ViewportIndexCase(testCtx, "viewport_index_shared", true /*shareVertices*/));
+            mainGroup->addChild(new WorkGroupIdCase(testCtx, "work_group_id_in_mesh", false /*taskNeeded*/));
+            mainGroup->addChild(new WorkGroupIdCase(testCtx, "work_group_id_in_task", true /*taskNeeded*/));
+            mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_id_in_mesh", false /*taskNeeded*/,
+                                                        LocalInvocation::ID));
+            mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_id_in_task", true /*taskNeeded*/,
+                                                        LocalInvocation::ID));
+            mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_index_in_task", true /*taskNeeded*/,
+                                                        LocalInvocation::INDEX));
+            mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_index_in_mesh", false /*taskNeeded*/,
+                                                        LocalInvocation::INDEX));
+            mainGroup->addChild(
+                new GlobalInvocationIdCase(testCtx, "global_invocation_id_in_mesh", false /*taskNeeded*/));
+            mainGroup->addChild(
+                new GlobalInvocationIdCase(testCtx, "global_invocation_id_in_task", true /*taskNeeded*/));
+            mainGroup->addChild(new DrawIndexCase(testCtx, "draw_index_in_mesh", false /*taskNeeded*/));
+            mainGroup->addChild(new DrawIndexCase(testCtx, "draw_index_in_task", true /*taskNeeded*/));
 
-    mainGroup->addChild(new PositionCase(testCtx, "position"));
-    mainGroup->addChild(new PointSizeCase(testCtx, "point_size"));
-    mainGroup->addChild(new ClipDistanceCase(testCtx, "clip_distance"));
-    mainGroup->addChild(new CullDistanceCase(testCtx, "cull_distance"));
-    mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_glsl", true /*glslFrag*/));
-    mainGroup->addChild(new PrimitiveIdCase(testCtx, "primitive_id_spirv", false /*glslFrag*/));
-    mainGroup->addChild(new LayerCase(testCtx, "layer", false /*shareVertices*/));
-    mainGroup->addChild(new LayerCase(testCtx, "layer_shared", true /*shareVertices*/));
-    mainGroup->addChild(new ViewportIndexCase(testCtx, "viewport_index", false /*shareVertices*/));
-    mainGroup->addChild(new ViewportIndexCase(testCtx, "viewport_index_shared", true /*shareVertices*/));
-    mainGroup->addChild(new WorkGroupIdCase(testCtx, "work_group_id_in_mesh", false /*taskNeeded*/));
-    mainGroup->addChild(new WorkGroupIdCase(testCtx, "work_group_id_in_task", true /*taskNeeded*/));
-    mainGroup->addChild(
-        new LocalInvocationCase(testCtx, "local_invocation_id_in_mesh", false /*taskNeeded*/, LocalInvocation::ID));
-    mainGroup->addChild(
-        new LocalInvocationCase(testCtx, "local_invocation_id_in_task", true /*taskNeeded*/, LocalInvocation::ID));
-    mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_index_in_task", true /*taskNeeded*/,
-                                                LocalInvocation::INDEX));
-    mainGroup->addChild(new LocalInvocationCase(testCtx, "local_invocation_index_in_mesh", false /*taskNeeded*/,
-                                                LocalInvocation::INDEX));
-    mainGroup->addChild(new GlobalInvocationIdCase(testCtx, "global_invocation_id_in_mesh", false /*taskNeeded*/));
-    mainGroup->addChild(new GlobalInvocationIdCase(testCtx, "global_invocation_id_in_task", true /*taskNeeded*/));
-    mainGroup->addChild(new DrawIndexCase(testCtx, "draw_index_in_mesh", false /*taskNeeded*/));
-    mainGroup->addChild(new DrawIndexCase(testCtx, "draw_index_in_task", true /*taskNeeded*/));
-
-    // Primitive shading rate tests.
-    {
-        const auto sizeCount = static_cast<int>(FragmentSize::SIZE_COUNT);
-
-        for (int i = 0; i < sizeCount; ++i)
-            for (int j = 0; j < sizeCount; ++j)
+            // Primitive shading rate tests.
             {
-                const auto topSize    = static_cast<FragmentSize>(i);
-                const auto bottomSize = static_cast<FragmentSize>(j);
+                const auto sizeCount = static_cast<int>(FragmentSize::SIZE_COUNT);
 
-                const auto topExtent    = getShadingRateSize(topSize);
-                const auto bottomExtent = getShadingRateSize(bottomSize);
+                for (int i = 0; i < sizeCount; ++i)
+                    for (int j = 0; j < sizeCount; ++j)
+                    {
+                        const auto topSize    = static_cast<FragmentSize>(i);
+                        const auto bottomSize = static_cast<FragmentSize>(j);
 
-                const auto testName = "primitive_shading_rate_" + std::to_string(topExtent.width) + "x" +
-                                      std::to_string(topExtent.height) + "_" + std::to_string(bottomExtent.width) +
-                                      "x" + std::to_string(bottomExtent.height);
+                        const auto topExtent    = getShadingRateSize(topSize);
+                        const auto bottomExtent = getShadingRateSize(bottomSize);
 
-                mainGroup->addChild(new PrimitiveShadingRateCase(testCtx, testName, topSize, bottomSize));
+                        const auto testName = "primitive_shading_rate_" + std::to_string(topExtent.width) + "x" +
+                                              std::to_string(topExtent.height) + "_" +
+                                              std::to_string(bottomExtent.width) + "x" +
+                                              std::to_string(bottomExtent.height);
+
+                        mainGroup->addChild(new PrimitiveShadingRateCase(testCtx, testName, topSize, bottomSize));
+                    }
             }
-    }
-
-    return mainGroup.release();
+        });
 }
 
 } // namespace MeshShader

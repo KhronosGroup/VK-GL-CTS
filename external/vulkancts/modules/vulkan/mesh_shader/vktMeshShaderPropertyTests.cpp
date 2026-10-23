@@ -25,6 +25,7 @@
 #include "vktMeshShaderPropertyTests.hpp"
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkObjUtil.hpp"
@@ -666,23 +667,25 @@ void MaxMeshTotalMemorySizeCase::initPrograms(vk::SourceCollections &programColl
 
 } // namespace
 
-tcu::TestCaseGroup *createMeshShaderPropertyTests(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderPropertyTests(tcu::TestContext &testContext)
 {
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "property"));
-
-    mainGroup->addChild(new MaxDrawMeshTasksCountCase(testCtx, "max_draw_mesh_tasks_count_with_task",
-                                                      MaxDrawMeshTasksCountCase::TestType::TASK));
-    mainGroup->addChild(new MaxDrawMeshTasksCountCase(testCtx, "max_draw_mesh_tasks_count_with_mesh",
-                                                      MaxDrawMeshTasksCountCase::TestType::MESH));
-    mainGroup->addChild(new MaxTaskWorkGroupInvocationsCase(testCtx, "max_task_work_group_invocations"));
-    mainGroup->addChild(new MaxTaskWorkGroupSizeCase(testCtx, "max_task_work_group_size"));
-    mainGroup->addChild(new MaxTaskOutputCountCase(testCtx, "max_task_output_count"));
-    mainGroup->addChild(new MaxMeshWorkGroupInvocationsCase(testCtx, "max_mesh_work_group_invocations"));
-    mainGroup->addChild(new MaxMeshWorkGroupSizeCase(testCtx, "max_mesh_work_group_size"));
-    mainGroup->addChild(new MaxTaskTotalMemorySizeCase(testCtx, "max_task_total_memory_size"));
-    mainGroup->addChild(new MaxMeshTotalMemorySizeCase(testCtx, "max_mesh_total_memory_size"));
-
-    return mainGroup.release();
+    return createTestGroup2(
+        testContext, "property",
+        [](tcu::TestCaseGroup *mainGroup)
+        {
+            auto &testCtx = mainGroup->getTestContext();
+            mainGroup->addChild(new MaxDrawMeshTasksCountCase(testCtx, "max_draw_mesh_tasks_count_with_task",
+                                                              MaxDrawMeshTasksCountCase::TestType::TASK));
+            mainGroup->addChild(new MaxDrawMeshTasksCountCase(testCtx, "max_draw_mesh_tasks_count_with_mesh",
+                                                              MaxDrawMeshTasksCountCase::TestType::MESH));
+            mainGroup->addChild(new MaxTaskWorkGroupInvocationsCase(testCtx, "max_task_work_group_invocations"));
+            mainGroup->addChild(new MaxTaskWorkGroupSizeCase(testCtx, "max_task_work_group_size"));
+            mainGroup->addChild(new MaxTaskOutputCountCase(testCtx, "max_task_output_count"));
+            mainGroup->addChild(new MaxMeshWorkGroupInvocationsCase(testCtx, "max_mesh_work_group_invocations"));
+            mainGroup->addChild(new MaxMeshWorkGroupSizeCase(testCtx, "max_mesh_work_group_size"));
+            mainGroup->addChild(new MaxTaskTotalMemorySizeCase(testCtx, "max_task_total_memory_size"));
+            mainGroup->addChild(new MaxMeshTotalMemorySizeCase(testCtx, "max_mesh_total_memory_size"));
+        });
 }
 
 } // namespace MeshShader
