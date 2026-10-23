@@ -3233,7 +3233,7 @@ SampleMaskWithConservativeInstance::SampleMaskWithConservativeInstance(
     , m_conservativeRasterizationMode(conservativeRasterizationMode)
     , m_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
     , m_renderColor(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f))
-    , m_depthClearValue(0.5f)
+    , m_depthClearValue(0.5f - 0.5f / 65535.0f)
     , m_vertices(generateVertices())
     , m_enableSampleMask(enableSampleMask)
     , m_sampleMask(std::vector<VkSampleMask>{sampleMask})
@@ -4603,28 +4603,32 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                     subpassDescriptions.push_back(copySampleSubpassDescription);
 
                     const VkSubpassDependency copySampleSubpassDependency = {
-                        0u,                                            // uint32_t                            srcSubpass
-                        1u + static_cast<uint32_t>(i),                 // uint32_t                            dstSubpass
-                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags                srcStageMask
-                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // VkPipelineStageFlags                dstStageMask
-                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,  // VkAccessFlags                    srcAccessMask
-                        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,   // VkAccessFlags                    dstAccessMask
-                        0u,                                    // VkDependencyFlags                dependencyFlags
+                        0u,                                            // uint32_t             srcSubpass
+                        1u + static_cast<uint32_t>(i),                 // uint32_t             dstSubpass
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags srcStageMask
+                        (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT), // VkPipelineStageFlags dstStageMask
+                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,    // VkAccessFlags        srcAccessMask
+                        (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                         VK_ACCESS_INPUT_ATTACHMENT_READ_BIT), // VkAccessFlags     dstAccessMask
+                        0u,                                    // VkDependencyFlags dependencyFlags
                     };
                     subpassDependencies.push_back(copySampleSubpassDependency);
                 }
-                // the very last sample pass must synchronize with all prior subpasses
+                // chain the sample passes so their layout transitions of the input attachment do not race, which also
+                // makes the very last sample pass synchronize with all prior subpasses
                 for (size_t i = 0; i < (m_perSampleImages.size() - 1); ++i)
                 {
                     const VkSubpassDependency storeSubpassDependency = {
-                        1u + static_cast<uint32_t>(i), // uint32_t                            srcSubpass
-                        static_cast<uint32_t>(
-                            m_perSampleImages.size()),                 // uint32_t                            dstSubpass
-                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags                srcStageMask
-                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // VkPipelineStageFlags                dstStageMask
-                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,  // VkAccessFlags                    srcAccessMask
-                        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,   // VkAccessFlags                    dstAccessMask
-                        0u,                                    // VkDependencyFlags                dependencyFlags
+                        1u + static_cast<uint32_t>(i),                 // uint32_t             srcSubpass
+                        2u + static_cast<uint32_t>(i),                 // uint32_t             dstSubpass
+                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags srcStageMask
+                        (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT), // VkPipelineStageFlags dstStageMask
+                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,    // VkAccessFlags        srcAccessMask
+                        (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                         VK_ACCESS_INPUT_ATTACHMENT_READ_BIT), // VkAccessFlags     dstAccessMask
+                        0u,                                    // VkDependencyFlags dependencyFlags
                     };
                     subpassDependencies.push_back(storeSubpassDependency);
                 }
