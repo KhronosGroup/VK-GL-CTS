@@ -200,14 +200,13 @@ add_subdirectory(src/src)
 
 # GCC 14+ produces a false-positive -Wuninitialized in jsoncpp's
 # Json::Value move constructor (swap-on-uninitialized-union pattern).
-# The parent vk-gl-cts build enables -Werror, which turns this into a
-# fatal error. Relax it for the jsoncpp targets only.
+# Disable it for the jsoncpp targets only.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     foreach(_jsoncpp_tgt jsoncpp_static jsoncpp_lib jsoncpp_object)
         if(TARGET ${_jsoncpp_tgt})
             target_compile_options(${_jsoncpp_tgt} PRIVATE
-                -Wno-error=uninitialized
-                -Wno-error=maybe-uninitialized)
+                -Wno-uninitialized
+                -Wno-maybe-uninitialized)
         endif()
     endforeach()
 endif()

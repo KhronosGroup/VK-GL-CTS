@@ -2838,9 +2838,6 @@ void testGenerator(tcu::TestCaseGroup *pgqGroup)
 
                             for (const Topology &topology : topologies)
                             {
-                                de::MovePtr<tcu::TestCaseGroup> topologyGroup(
-                                    new tcu::TestCaseGroup(testCtx, topology.name));
-
                                 // Only test patch lists with tessellation shaders.
                                 if ((topology.type == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST &&
                                      shader.stage != SHADER_STAGE_TESSELLATION_EVALUATION) ||
@@ -2855,10 +2852,23 @@ void testGenerator(tcu::TestCaseGroup *pgqGroup)
                                     topologyData.at(topology.type).hasAdjacency)
                                     continue;
 
+                                de::MovePtr<tcu::TestCaseGroup> topologyGroup(
+                                    new tcu::TestCaseGroup(testCtx, topology.name));
+
                                 for (const StreamIndex &pgqStream : streamIndices)
                                 {
                                     for (const StreamIndex &xfbStream : streamIndices)
                                     {
+                                        // Only test nondefault vertex streams with geometry shaders.
+                                        if ((pgqStream.index != VERTEX_STREAM_DEFAULT ||
+                                             xfbStream.index != VERTEX_STREAM_DEFAULT) &&
+                                            shader.stage != SHADER_STAGE_GEOMETRY)
+                                            continue;
+
+                                        // Skip nondefault vertex streams for XFB when not enabled.
+                                        if (!xfbState.enable && xfbStream.index != VERTEX_STREAM_DEFAULT)
+                                            continue;
+
                                         const std::string streamGroupName =
                                             std::string("pgq_") + pgqStream.name +
                                             (xfbState.enable ? std::string("_xfb_") + xfbStream.name : "");
@@ -2873,18 +2883,9 @@ void testGenerator(tcu::TestCaseGroup *pgqGroup)
                                         const std::string streamGroupDesc =
                                             std::string("Tests for ") + pgqDescStr +
                                             (xfbState.enable ? (std::string(" and ") + xfbDescStr) : "");
+
                                         de::MovePtr<tcu::TestCaseGroup> streamGroup(
                                             new tcu::TestCaseGroup(testCtx, streamGroupName.c_str()));
-
-                                        // Only test nondefault vertex streams with geometry shaders.
-                                        if ((pgqStream.index != VERTEX_STREAM_DEFAULT ||
-                                             xfbStream.index != VERTEX_STREAM_DEFAULT) &&
-                                            shader.stage != SHADER_STAGE_GEOMETRY)
-                                            continue;
-
-                                        // Skip nondefault vertex streams for XFB when not enabled.
-                                        if (!xfbState.enable && xfbStream.index != VERTEX_STREAM_DEFAULT)
-                                            continue;
 
                                         for (const CmdBufCase &cmdBufCase : cmdBufCases)
                                         {
