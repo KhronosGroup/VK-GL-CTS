@@ -565,6 +565,10 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate(void)
         // Wait for sparse queue to become idle
         deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
 
+        const bool ignoreLsb6Bits = areLsb6BitsDontCare(imageSparseInfo.format);
+        const bool ignoreLsb4Bits = areLsb4BitsDontCare(imageSparseInfo.format);
+        const uint8_t lsbMask     = ignoreLsb6Bits ? 0xC0 : 0xF0;
+
         for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
         {
             for (uint32_t mipmapNdx = 0; mipmapNdx < imageSparseInfo.mipLevels; ++mipmapNdx)
@@ -574,8 +578,23 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate(void)
                 const uint32_t bufferOffset = static_cast<uint32_t>(
                     bufferImageCopy[planeNdx * imageSparseInfo.mipLevels + mipmapNdx].bufferOffset);
 
-                if (deMemCmp(outputData + bufferOffset, &referenceData[bufferOffset], mipLevelSizeInBytes) != 0)
-                    return tcu::TestStatus::fail("Failed");
+                const uint8_t *outPtr = outputData + bufferOffset;
+                const uint8_t *refPtr = &referenceData[bufferOffset];
+
+                if (!ignoreLsb6Bits && !ignoreLsb4Bits)
+                {
+                    if (deMemCmp(outPtr, refPtr, mipLevelSizeInBytes) != 0)
+                        return tcu::TestStatus::fail("Failed");
+                }
+                else
+                {
+                    for (uint32_t byteNdx = 0; byteNdx < mipLevelSizeInBytes; ++byteNdx)
+                    {
+                        const uint8_t mask = (byteNdx & 0x01) ? 0xFF : lsbMask;
+                        if ((outPtr[byteNdx] & mask) != (refPtr[byteNdx] & mask))
+                            return tcu::TestStatus::fail("Failed");
+                    }
+                }
             }
         }
     }

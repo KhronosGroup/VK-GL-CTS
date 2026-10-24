@@ -279,11 +279,24 @@ tcu::TestStatus TransferQueueInstance::iterate(void)
         invalidateAlloc(vk, device, alloc);
         deMemcpy(resultData.data(), alloc.getHostPtr(), resultData.size());
 
-        for (uint32_t i = 0; i < pixelDataSize; ++i)
+        const bool ignoreLsb6Bits = areLsb6BitsDontCare(m_params.imageFormat, m_params.imageFormat);
+        const bool ignoreLsb4Bits = areLsb4BitsDontCare(m_params.imageFormat, m_params.imageFormat);
+
+        if (!ignoreLsb6Bits && !ignoreLsb4Bits)
         {
-            if (resultData[i] != generatedData[i])
-            {
+            if (deMemCmp(resultData.data(), generatedData.data(), pixelDataSize) != 0)
                 return tcu::TestStatus::fail("Transfer queue test");
+        }
+        else
+        {
+            const uint8_t lsbMask = ignoreLsb6Bits ? 0xC0 : 0xF0;
+            for (uint32_t i = 0; i < pixelDataSize; ++i)
+            {
+                const uint8_t mask = (i & 0x01) ? 0xFF : lsbMask;
+                if ((resultData[i] & mask) != (generatedData[i] & mask))
+                {
+                    return tcu::TestStatus::fail("Transfer queue test");
+                }
             }
         }
     }
