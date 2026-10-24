@@ -2367,9 +2367,16 @@ tcu::TestStatus EarlyFragmentSampleCountTestInstance::iterate(void)
         const VkImageMemoryBarrier postResolveImageBarrier = makeImageMemoryBarrier(
             VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *resolveColorImage, colorSubresourceRange);
-        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                              0u, 0u, nullptr, 0u, nullptr, 1u, &postResolveImageBarrier);
+        const VkImageMemoryBarrier depthBarrier = makeImageMemoryBarrier(
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            *depthImage, depthSubresourceRange);
 
+        const VkImageMemoryBarrier postRPBarriers[] = {postResolveImageBarrier, depthBarrier};
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                              0u, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(postRPBarriers), postRPBarriers);
         vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
