@@ -4168,8 +4168,11 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                                          ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f);
                         }
                     }
-                    else if (isConvertOp(m_data.testType) && isUIntType(m_data.outputType))
+                    else if ((isConvertOp(m_data.testType) || isTransposeTest(m_data.testType)) &&
+                             isUIntType(m_data.outputType))
+                    {
                         setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0xff)) / 4.0f);
+                    }
                     else if (!isMatrixMulAddOp(m_data.testType) && !isReduceSum(m_data.testType))
                         setDataFloat(ptrs[i], dataTypes[i], j,
                                      ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f);
