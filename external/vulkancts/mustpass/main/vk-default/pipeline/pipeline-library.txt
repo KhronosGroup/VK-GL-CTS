@@ -37545,6 +37545,12 @@ dEQP-VK.pipeline.pipeline_library.graphics_library.misc.bind_null_descriptor_set
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.bind_null_descriptor_set.101
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.bind_null_descriptor_set.1010
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.bind_null_descriptor_set.11
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.depth_export_switch.fast_lib
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.depth_export_switch.fast_lib_split_render_pass
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.depth_export_switch.monolithic
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.depth_export_switch.monolithic_split_render_pass
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.depth_export_switch.optimized_lib
+dEQP-VK.pipeline.pipeline_library.graphics_library.misc.depth_export_switch.optimized_lib_split_render_pass
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.independent_pipeline_layout_sets.fast_linked
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.independent_pipeline_layout_sets.link_opt_union_handle
 dEQP-VK.pipeline.pipeline_library.graphics_library.misc.non_graphics.shader_module_info_comp
