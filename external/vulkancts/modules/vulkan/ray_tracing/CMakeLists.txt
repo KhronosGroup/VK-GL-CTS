@@ -33,6 +33,8 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingMiscTests.hpp
 	vktRayTracingNonUniformArgsTests.cpp
 	vktRayTracingNonUniformArgsTests.hpp
+	vktRayTracingNonUniformASIndexingTests.cpp
+	vktRayTracingNonUniformASIndexingTests.hpp
 	vktRayTracingNullASTests.cpp
 	vktRayTracingNullASTests.hpp
 	vktRayTracingShaderBindingTableTests.cpp

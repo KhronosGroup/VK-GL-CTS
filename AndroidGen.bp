@@ -547,6 +547,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingLinearSweptSpheresTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingMemGuaranteeTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingMiscTests.cpp",
+        "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingNonUniformASIndexingTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingNonUniformArgsTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingNullASTests.cpp",
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingOpacityMicromapTests.cpp",

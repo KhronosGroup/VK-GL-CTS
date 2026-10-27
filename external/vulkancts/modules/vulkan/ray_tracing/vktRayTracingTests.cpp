@@ -45,6 +45,7 @@
 #include "vktRayTracingDirectionTests.hpp"
 #include "vktRayTracingBarycentricCoordinatesTests.hpp"
 #include "vktRayTracingNonUniformArgsTests.hpp"
+#include "vktRayTracingNonUniformASIndexingTests.hpp"
 #include "vktRayTracingPipelineFlagsTests.hpp"
 #include "vktRayTracingOpacityMicromapTests.hpp"
 #include "vktRayTracingOpacityMicromapTestsKHR.hpp"
@@ -93,6 +94,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     group->addChild(createInsideAABBsTests(testCtx));
     group->addChild(createBarycentricCoordinatesTests(testCtx));
     group->addChild(createNonUniformArgsTests(testCtx));
+    group->addChild(createNonUniformASIndexingTests(testCtx));
     group->addChild(createPipelineFlagsTests(testCtx));
     group->addChild(createTraceRays2Tests(testCtx));
 

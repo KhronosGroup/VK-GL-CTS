@@ -4377,6 +4377,10 @@ dEQP-VK.ray_tracing_pipeline.misc.preserve_flip_facing
 dEQP-VK.ray_tracing_pipeline.misc.shaders_from_lib
 dEQP-VK.ray_tracing_pipeline.misc.update_empty_bottom
 dEQP-VK.ray_tracing_pipeline.misc.update_empty_top
+dEQP-VK.ray_tracing_pipeline.non_uniform_as_indexing.ray_query_compute.nonuniform
+dEQP-VK.ray_tracing_pipeline.non_uniform_as_indexing.ray_query_compute.uniform_loop
+dEQP-VK.ray_tracing_pipeline.non_uniform_as_indexing.raygen.nonuniform
+dEQP-VK.ray_tracing_pipeline.non_uniform_as_indexing.raygen.uniform_loop
 dEQP-VK.ray_tracing_pipeline.null_as.mixed_dispatches
 dEQP-VK.ray_tracing_pipeline.opacity_micromap.ext.cull_no_opaque_ray_flag.map_value.2.level_0
 dEQP-VK.ray_tracing_pipeline.opacity_micromap.ext.cull_no_opaque_ray_flag.map_value.2.level_1
