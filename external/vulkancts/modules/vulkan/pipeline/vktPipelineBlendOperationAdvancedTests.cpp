@@ -199,6 +199,7 @@ enum TestMode
 {
     TEST_MODE_GENERIC  = 0,
     TEST_MODE_COHERENT = 1,
+    TEST_MODE_MSAA     = 2,
 };
 
 struct BlendOperationAdvancedParam
@@ -214,6 +215,7 @@ struct BlendOperationAdvancedParam
     VkBool32 premultipliedDstColor;
     VkBlendOverlapEXT overlap;
     VkFormat format;
+    VkSampleCountFlagBits sampleCount;
 };
 
 // helper functions
@@ -844,7 +846,7 @@ RenderPassWrapper makeTestRenderPass(BlendOperationAdvancedParam param, const De
     const VkAttachmentDescription colorAttachmentDescription = {
         (VkAttachmentDescriptionFlags)0,  // VkAttachmentDescriptionFlags        flags
         colorFormat,                      // VkFormat                            format
-        VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits            samples
+        param.sampleCount,                // VkSampleCountFlagBits            samples
         colorLoadOp,                      // VkAttachmentLoadOp                loadOp
         VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp                storeOp
         VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp                stencilLoadOp
@@ -857,6 +859,7 @@ RenderPassWrapper makeTestRenderPass(BlendOperationAdvancedParam param, const De
 
     std::vector<VkAttachmentDescription> attachmentDescriptions;
     std::vector<VkAttachmentReference> colorAttachmentRefs;
+    std::vector<VkAttachmentReference> resolveAttachmentRefs;
 
     for (uint32_t i = 0; i < param.colorAttachmentsCount; i++)
     {
@@ -869,6 +872,23 @@ RenderPassWrapper makeTestRenderPass(BlendOperationAdvancedParam param, const De
         colorAttachmentRefs.push_back(colorAttachmentRef);
     }
 
+    if (param.sampleCount != VK_SAMPLE_COUNT_1_BIT)
+    {
+        VkAttachmentDescription resolveAttachmentDescription = colorAttachmentDescription;
+        resolveAttachmentDescription.samples                 = VK_SAMPLE_COUNT_1_BIT;
+        resolveAttachmentDescription.loadOp                  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        resolveAttachmentDescription.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        for (uint32_t i = 0; i < param.colorAttachmentsCount; i++)
+        {
+            attachmentDescriptions.push_back(resolveAttachmentDescription);
+            resolveAttachmentRefs.push_back(
+                {param.colorAttachmentsCount + i, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+        }
+    }
+
+    const VkAttachmentReference *pResolveAttachments = de::dataOrNull(resolveAttachmentRefs);
+
     const VkSubpassDescription subpassDescription = {
         (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags        flags
         VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint                pipelineBindPoint
@@ -876,7 +896,7 @@ RenderPassWrapper makeTestRenderPass(BlendOperationAdvancedParam param, const De
         nullptr,                         // const VkAttachmentReference*        pInputAttachments
         param.colorAttachmentsCount,     // uint32_t                            colorAttachmentCount
         colorAttachmentRefs.data(),      // const VkAttachmentReference*        pColorAttachments
-        nullptr,                         // const VkAttachmentReference*        pResolveAttachments
+        pResolveAttachments,             // const VkAttachmentReference*        pResolveAttachments
         nullptr,                         // const VkAttachmentReference*        pDepthStencilAttachment
         0u,                              // uint32_t                            preserveAttachmentCount
         nullptr                          // const uint32_t*                    pPreserveAttachments
@@ -2158,10 +2178,134 @@ tcu::TestStatus BlendOperationAdvancedTestCoherentInstance::verifyTestResult(voi
     return tcu::TestStatus::pass("Result images matches references");
 }
 
+class BlendOperationAdvancedTestMsaaInstance : public vkt::TestInstance
+{
+public:
+    BlendOperationAdvancedTestMsaaInstance(Context &context, const BlendOperationAdvancedParam param)
+        : TestInstance(context)
+        , m_param(param)
+    {
+    }
+    virtual tcu::TestStatus iterate();
+
+protected:
+    const BlendOperationAdvancedParam m_param;
+};
+
+tcu::TestStatus BlendOperationAdvancedTestMsaaInstance::iterate()
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+    const VkFormat format           = m_param.format;
+    const tcu::UVec2 renderSize     = tcu::UVec2(widthArea, heightArea);
+    const Vec4 srcColor             = Vec4(1.0f, 0.5f, 0.5f, 1.0f);
+    const Vec4 dstColor             = Vec4(0.25f, 0.75f, 0.25f, 1.0f);
+
+    const std::vector<Vec4> vertices = createPoints();
+    de::MovePtr<Allocation> vertexBufferAlloc;
+    const auto vertexBuffer = createBufferAndBindMemory(m_context, vertices.size() * sizeof(Vec4),
+                                                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &vertexBufferAlloc);
+    deMemcpy(vertexBufferAlloc->getHostPtr(), vertices.data(), vertices.size() * sizeof(Vec4));
+    flushAlloc(vk, device, *vertexBufferAlloc);
+
+    de::MovePtr<Allocation> msaaImageAlloc;
+    de::MovePtr<Allocation> resolveImageAlloc;
+    const auto msaaImage =
+        createImage2DAndBindMemory(m_context, format, renderSize.x(), renderSize.y(),
+                                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, m_param.sampleCount, &msaaImageAlloc);
+    const auto resolveImage =
+        createImage2DAndBindMemory(m_context, format, renderSize.x(), renderSize.y(),
+                                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                   VK_SAMPLE_COUNT_1_BIT, &resolveImageAlloc);
+
+    const auto subresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+    const auto msaaView    = makeImageView(vk, device, *msaaImage, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange);
+    const auto resolveView = makeImageView(vk, device, *resolveImage, VK_IMAGE_VIEW_TYPE_2D, format, subresourceRange);
+
+    RenderPassWrapper renderPass    = makeTestRenderPass(m_param, vk, device, format);
+    const VkImage images[]          = {*msaaImage, *resolveImage};
+    const VkImageView attachments[] = {*msaaView, *resolveView};
+    renderPass.createFramebuffer(vk, device, 2u, images, attachments, renderSize.x(), renderSize.y());
+
+    const VkPushConstantRange pushConstantRange = {VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(Vec4)};
+    const PipelineLayoutWrapper pipelineLayout(m_param.pipelineConstructionType, vk, device, VK_NULL_HANDLE,
+                                               &pushConstantRange);
+    const ShaderWrapper vertShader(vk, device, m_context.getBinaryCollection().get("vert"));
+    const ShaderWrapper fragShader(vk, device, m_context.getBinaryCollection().get("frag"));
+
+    const std::vector<VkViewport> viewports{makeViewport(renderSize)};
+    const std::vector<VkRect2D> scissors{makeRect2D(renderSize)};
+
+    VkPipelineColorBlendAdvancedStateCreateInfoEXT blendAdvancedState = initVulkanStructure();
+    blendAdvancedState.srcPremultiplied                               = m_param.premultipliedSrcColor;
+    blendAdvancedState.dstPremultiplied                               = m_param.premultipliedDstColor;
+    blendAdvancedState.blendOverlap                                   = m_param.overlap;
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachmentState{};
+    colorBlendAttachmentState.blendEnable         = VK_TRUE;
+    colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachmentState.colorBlendOp        = m_param.blendOps[0];
+    colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachmentState.alphaBlendOp        = m_param.blendOps[0];
+    colorBlendAttachmentState.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState = initVulkanStructure(&blendAdvancedState);
+    colorBlendState.attachmentCount                     = 1u;
+    colorBlendState.pAttachments                        = &colorBlendAttachmentState;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+    multisampleState.rasterizationSamples                 = m_param.sampleCount;
+
+    GraphicsPipelineWrapper pipeline(m_context.getInstanceInterface(), vk, m_context.getPhysicalDevice(), device,
+                                     m_context.getDeviceExtensions(), m_param.pipelineConstructionType);
+    pipeline.setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setupVertexInputState()
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertShader)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader, nullptr, &multisampleState)
+        .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState)
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .buildPipeline();
+
+    const auto cmdPool   = makeCommandPool(vk, device, queueFamilyIndex);
+    const auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    const VkDeviceSize vertexBufferOffset = 0u;
+    beginCommandBuffer(vk, *cmdBuffer);
+    renderPass.begin(vk, *cmdBuffer, makeRect2D(renderSize), dstColor);
+    pipeline.bind(*cmdBuffer);
+    vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+    vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(Vec4), &srcColor);
+    vk.cmdDraw(*cmdBuffer, (uint32_t)vertices.size(), 1u, 0u, 0u);
+    renderPass.end(vk, *cmdBuffer);
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    const Vec4 expectedColor = calculateFinalColor(m_param, m_param.blendOps[0], srcColor, dstColor);
+    const Vec4 threshold     = (format == VK_FORMAT_R8G8B8A8_UNORM) ? Vec4(0.15f, 0.15f, 0.15f, 0.13f) : Vec4(0.01f);
+
+    const auto result =
+        readColorAttachment(vk, device, queue, queueFamilyIndex, allocator, *resolveImage, format, renderSize);
+    if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "FloatImageCompare", "Image comparison",
+                                    expectedColor, result->getAccess(), threshold, tcu::COMPARE_LOG_RESULT))
+        return tcu::TestStatus::fail("Image mismatch");
+
+    return tcu::TestStatus::pass("Result image matches reference");
+}
+
 TestInstance *BlendOperationAdvancedTest::createInstance(Context &context) const
 {
     if (m_param.testMode == TEST_MODE_GENERIC)
         return new BlendOperationAdvancedTestInstance(context, m_param);
+    else if (m_param.testMode == TEST_MODE_MSAA)
+        return new BlendOperationAdvancedTestMsaaInstance(context, m_param);
     else
         return new BlendOperationAdvancedTestCoherentInstance(context, m_param);
 }
@@ -2263,8 +2407,9 @@ tcu::TestCaseGroup *createBlendOperationAdvancedTests(tcu::TestContext &testCtx,
                         (premultiplyModes[premultiply] & PREMULTIPLY_SRC) ? VK_TRUE : VK_FALSE;
                     testParams.premultipliedDstColor =
                         (premultiplyModes[premultiply] & PREMULTIPLY_DST) ? VK_TRUE : VK_FALSE;
-                    testParams.testNumber = testNumber++;
-                    testParams.format     = VK_FORMAT_R16G16B16A16_SFLOAT;
+                    testParams.testNumber  = testNumber++;
+                    testParams.format      = VK_FORMAT_R16G16B16A16_SFLOAT;
+                    testParams.sampleCount = VK_SAMPLE_COUNT_1_BIT;
 
                     for (uint32_t numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount];
                          numColorAtt++)
@@ -2297,6 +2442,7 @@ tcu::TestCaseGroup *createBlendOperationAdvancedTests(tcu::TestContext &testCtx,
         testParams.premultipliedDstColor    = VK_TRUE;
         testParams.testNumber               = testNumber++;
         testParams.format                   = VK_FORMAT_R16G16B16A16_SFLOAT;
+        testParams.sampleCount              = VK_SAMPLE_COUNT_1_BIT;
 
         for (uint32_t numColorAtt = 0; numColorAtt < colorAttachmentCounts[colorAttachmentCount]; numColorAtt++)
         {
@@ -2328,6 +2474,7 @@ tcu::TestCaseGroup *createBlendOperationAdvancedTests(tcu::TestContext &testCtx,
         testParams.premultipliedDstColor    = VK_TRUE;
         testParams.testNumber               = testNumber++;
         testParams.format                   = VK_FORMAT_R16G16B16A16_SFLOAT;
+        testParams.sampleCount              = VK_SAMPLE_COUNT_1_BIT;
 
         // We do two consecutive advanced blending operations
         uint32_t i = de::randomScalar<uint32_t>(rnd, 0, DE_LENGTH_OF_ARRAY(blendOps) - 1);
@@ -2341,6 +2488,53 @@ tcu::TestCaseGroup *createBlendOperationAdvancedTests(tcu::TestContext &testCtx,
         coherentTests->addChild(newTestCase<BlendOperationAdvancedTest>(testCtx, testParams));
     }
     tests->addChild(coherentTests.release());
+
+    de::MovePtr<tcu::TestCaseGroup> msaaTests(new tcu::TestCaseGroup(testCtx, "msaa"));
+
+    const struct
+    {
+        VkBlendOp op;
+        const char *name;
+    } msaaBlendOps[] = {
+        {VK_BLEND_OP_OVERLAY_EXT, "overlay"},     {VK_BLEND_OP_COLORDODGE_EXT, "colordodge"},
+        {VK_BLEND_OP_COLORBURN_EXT, "colorburn"}, {VK_BLEND_OP_DIFFERENCE_EXT, "difference"},
+        {VK_BLEND_OP_EXCLUSION_EXT, "exclusion"},
+    };
+
+    const struct
+    {
+        VkFormat format;
+        const char *suffix;
+    } msaaFormats[] = {
+        {VK_FORMAT_R16G16B16A16_SFLOAT, ""},
+        {VK_FORMAT_R8G8B8A8_UNORM, "_r8g8b8a8_unorm"},
+        {VK_FORMAT_A2B10G10R10_UNORM_PACK32, "_a2b10g10r10_unorm_pack32"},
+    };
+
+    for (const auto &blendOp : msaaBlendOps)
+    {
+        for (const auto &format : msaaFormats)
+        {
+            BlendOperationAdvancedParam testParams;
+            testParams.pipelineConstructionType = pipelineConstructionType;
+            testParams.testMode                 = TEST_MODE_MSAA;
+            testParams.overlap                  = VK_BLEND_OVERLAP_UNCORRELATED_EXT;
+            testParams.coherentOperations       = false;
+            testParams.colorAttachmentsCount    = 1u;
+            testParams.independentBlend         = false;
+            testParams.premultipliedSrcColor    = VK_TRUE;
+            testParams.premultipliedDstColor    = VK_TRUE;
+            testParams.testNumber               = 0u;
+            testParams.format                   = format.format;
+            testParams.sampleCount              = VK_SAMPLE_COUNT_4_BIT;
+            testParams.blendOps.push_back(blendOp.op);
+
+            msaaTests->addChild(
+                new BlendOperationAdvancedTest(testCtx, std::string(blendOp.name) + format.suffix, testParams));
+        }
+    }
+
+    tests->addChild(msaaTests.release());
 
     return tests.release();
 }
