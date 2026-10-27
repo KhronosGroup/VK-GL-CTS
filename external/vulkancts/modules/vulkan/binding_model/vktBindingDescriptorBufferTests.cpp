@@ -7168,11 +7168,201 @@ TestInstance *InvalidationRulesTestCase::createInstance(Context &context) const
     return new InvalidationRulesTestInstance(context, m_mode);
 }
 
+struct EmptySetLayoutParams
+{
+    uint32_t emptySetIndex;
+    bool singleCall;
+    bool emptySetOnly;
+};
+
+class EmptySetLayoutTestInstance : public TestInstance
+{
+public:
+    EmptySetLayoutTestInstance(Context &context, const EmptySetLayoutParams &params);
+
+    tcu::TestStatus iterate() override;
+
+private:
+    const EmptySetLayoutParams m_params;
+};
+
+EmptySetLayoutTestInstance::EmptySetLayoutTestInstance(Context &context, const EmptySetLayoutParams &params)
+    : TestInstance(context)
+    , m_params(params)
+{
+}
+
+tcu::TestStatus EmptySetLayoutTestInstance::iterate()
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+
+    const auto &dbProperties = m_context.getDescriptorBufferPropertiesEXT();
+
+    const uint32_t setCount   = m_params.emptySetOnly ? 1u : 2u;
+    const uint32_t otherIndex = m_params.emptySetIndex == 0u ? 1u : 0u;
+
+    const auto emptySetLayout =
+        DescriptorSetLayoutBuilder().build(vk, device, VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
+    const auto outputSetLayout = DescriptorSetLayoutBuilder()
+                                     .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+                                     .build(vk, device, VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
+
+    VkDescriptorSetLayout setLayouts[2];
+    setLayouts[m_params.emptySetIndex] = *emptySetLayout;
+    setLayouts[otherIndex]             = *outputSetLayout;
+
+    const auto pipelineLayout = makePipelineLayout(vk, device, setCount, setLayouts);
+    const auto shaderModule   = createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"));
+    const auto pipeline = makeComputePipeline(vk, device, *pipelineLayout, VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,
+                                              nullptr, *shaderModule, 0u);
+
+    VkDeviceSize emptySetLayoutSize  = 0u;
+    VkDeviceSize outputSetLayoutSize = 0u;
+    VkDeviceSize outputBindingOffset = 0u;
+    vk.getDescriptorSetLayoutSizeEXT(device, *emptySetLayout, &emptySetLayoutSize);
+    vk.getDescriptorSetLayoutSizeEXT(device, *outputSetLayout, &outputSetLayoutSize);
+    vk.getDescriptorSetLayoutBindingOffsetEXT(device, *outputSetLayout, 0u, &outputBindingOffset);
+
+    const VkDeviceSize setStride =
+        deAlign64(std::max(emptySetLayoutSize, outputSetLayoutSize), dbProperties.descriptorBufferOffsetAlignment);
+
+    const auto outputBufferInfo = makeBufferCreateInfo(sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                                                             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    BufferWithMemory outputBuffer(vk, device, allocator, outputBufferInfo,
+                                  MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    deMemset(outputBuffer.getAllocation().getHostPtr(), 0, sizeof(uint32_t));
+    flushAlloc(vk, device, outputBuffer.getAllocation());
+
+    const auto descriptorBufferInfo =
+        makeBufferCreateInfo(setCount * setStride, VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT |
+                                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    BufferWithMemory descriptorBuffer(vk, device, allocator, descriptorBufferInfo,
+                                      MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    auto &descriptorAlloc  = descriptorBuffer.getAllocation();
+    auto descriptorHostPtr = static_cast<uint8_t *>(descriptorAlloc.getHostPtr());
+    deMemset(descriptorHostPtr, 0, static_cast<std::size_t>(descriptorBufferInfo.size));
+
+    const VkDeviceSize setOffsets[] = {0u, setStride};
+
+    if (!m_params.emptySetOnly)
+    {
+        VkDescriptorAddressInfoEXT addressInfo = initVulkanStructure();
+        addressInfo.address                    = getBufferDeviceAddress(vk, device, *outputBuffer, 0);
+        addressInfo.range                      = outputBufferInfo.size;
+
+        VkDescriptorGetInfoEXT getInfo = initVulkanStructure();
+        getInfo.type                   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        getInfo.data.pStorageBuffer    = &addressInfo;
+        vk.getDescriptorEXT(device, &getInfo, dbProperties.storageBufferDescriptorSize,
+                            descriptorHostPtr + setOffsets[otherIndex] + outputBindingOffset);
+    }
+    flushAlloc(vk, device, descriptorAlloc);
+
+    VkDescriptorBufferBindingInfoEXT bindingInfo = initVulkanStructure();
+    bindingInfo.address                          = getBufferDeviceAddress(vk, device, *descriptorBuffer, 0);
+    bindingInfo.usage                            = VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+
+    const auto cmdPool   = makeCommandPool(vk, device, m_context.getUniversalQueueFamilyIndex());
+    const auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vk.cmdBindDescriptorBuffersEXT(*cmdBuffer, 1u, &bindingInfo);
+
+    const uint32_t bufferIndices[] = {0u, 0u};
+    if (m_params.singleCall)
+    {
+        vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, setCount,
+                                            bufferIndices, setOffsets);
+    }
+    else
+    {
+        for (uint32_t setIndex = 0u; setIndex < setCount; ++setIndex)
+            vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, setIndex,
+                                                1u, &bufferIndices[setIndex], &setOffsets[setIndex]);
+    }
+    vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
+
+    const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    cmdPipelineMemoryBarrier(vk, *cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                             &barrier);
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+
+    if (!m_params.emptySetOnly)
+    {
+        invalidateAlloc(vk, device, outputBuffer.getAllocation());
+        const uint32_t *result = static_cast<uint32_t *>(outputBuffer.getAllocation().getHostPtr());
+        if (*result != 1u)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Expected result 1, but was " << *result << tcu::TestLog::EndMessage;
+            return tcu::TestStatus::fail("Fail");
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class EmptySetLayoutTestCase : public TestCase
+{
+public:
+    EmptySetLayoutTestCase(tcu::TestContext &testCtx, const std::string &name, const EmptySetLayoutParams &params);
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    void checkSupport(Context &context) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+private:
+    const EmptySetLayoutParams m_params;
+};
+
+EmptySetLayoutTestCase::EmptySetLayoutTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                               const EmptySetLayoutParams &params)
+    : TestCase(testCtx, name)
+    , m_params(params)
+{
+}
+
+void EmptySetLayoutTestCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream comp;
+    if (m_params.emptySetOnly)
+    {
+        comp << "#version 450\n"
+             << "layout (local_size_x = 1) in;\n"
+             << "void main () {}\n";
+    }
+    else
+    {
+        comp << "#version 450\n"
+             << "layout (local_size_x = 1) in;\n"
+             << "layout (set = " << (1u - m_params.emptySetIndex) << ", binding = 0, std430) buffer OutputBlock {\n"
+             << "    uint value;\n"
+             << "};\n"
+             << "void main () {\n"
+             << "    value = 1u;\n"
+             << "}\n";
+    }
+    programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+void EmptySetLayoutTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
+}
+
+TestInstance *EmptySetLayoutTestCase::createInstance(Context &context) const
+{
+    return new EmptySetLayoutTestInstance(context, m_params);
+}
+
 void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceResidency resourceResidency)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
     const uint32_t baseSeed   = static_cast<uint32_t>(testCtx.getCommandLine().getBaseSeed());
-    ;
     std::string caseName;
 
     const VkQueueFlagBits choiceQueues[]{
@@ -7863,6 +8053,28 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
                 subGroup->addChild(
                     new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
             }
+
+        topGroup->addChild(subGroup.release());
+    }
+
+    if (resourceResidency == ResourceResidency::TRADITIONAL)
+    {
+        MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "empty_set_layout"));
+
+        for (uint32_t emptySetIndex = 0u; emptySetIndex < 2u; ++emptySetIndex)
+            for (const bool singleCall : {false, true})
+            {
+                EmptySetLayoutParams params = {};
+                params.emptySetIndex        = emptySetIndex;
+                params.singleCall           = singleCall;
+                const std::string name =
+                    "set_" + std::to_string(emptySetIndex) + (singleCall ? "_single_call" : "_separate_calls");
+                subGroup->addChild(new EmptySetLayoutTestCase(testCtx, name, params));
+            }
+
+        EmptySetLayoutParams params = {};
+        params.emptySetOnly         = true;
+        subGroup->addChild(new EmptySetLayoutTestCase(testCtx, "only_empty_set", params));
 
         topGroup->addChild(subGroup.release());
     }
