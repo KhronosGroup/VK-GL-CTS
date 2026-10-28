@@ -2298,6 +2298,207 @@ tcu::TestStatus rayTracingTest(Context &context, RayTracingParams params)
     return tcu::TestStatus::pass("Pass");
 }
 
+void resetQueryPoolShaders(SourceCollections &programCollection, GeneralCmdParams)
+{
+    std::ostringstream vert;
+    {
+        vert << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+             << "out gl_PerVertex\n"
+             << "{\n"
+             << "    vec4 gl_Position;\n"
+             << "};\n"
+             << "void main()\n"
+             << "{\n"
+             << "    gl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
+             << "                       ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
+             << "}\n";
+    }
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    {
+        frag << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
+        frag << "layout (location = 0) out vec4 outColor;\n"
+             << "void main()\n"
+             << "{\n"
+             << "    outColor = vec4(0, 1, 0, 1);\n"
+             << "}\n";
+    }
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus resetQueryPoolTest(Context &context, GeneralCmdParams params)
+{
+    const auto ctx = context.getContextCommonData();
+
+    const VkQueryType queryType = VK_QUERY_TYPE_OCCLUSION;
+    const auto queryCount       = 1u;
+    const auto queryStride      = 2u * sizeof(uint32_t);
+    const auto queryBufferSize  = 2u * sizeof(uint32_t);
+    const auto constructionType = PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC;
+    const auto format           = VK_FORMAT_R8G8B8A8_UNORM;
+    const tcu::IVec3 dims       = tcu::IVec3(1, 1, 1);
+    const auto extent           = makeExtent3D(dims);
+
+    // Query pool and buffer
+    VkQueryPoolCreateInfo queryPoolInfo = {
+        VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                  // const void* pNext;
+        (VkQueryPoolCreateFlags)0,                // VkQueryPoolCreateFlags flags;
+        queryType,                                // VkQueryType queryType;
+        queryCount,                               // uint32_t queryCount;
+        0u,                                       // VkQueryPipelineStatisticFlags pipelineStatistics;
+    };
+
+    Move<VkQueryPool> queryPool = createQueryPool(ctx.vkd, ctx.device, &queryPoolInfo);
+
+    const auto queryBufferInfo = makeBufferCreateInfo(queryBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+    BufferWithMemory queryBufferWithoutCond{ctx.vkd, ctx.device, ctx.allocator, queryBufferInfo,
+                                            MemoryRequirement::HostVisible};
+
+    BufferWithMemory queryBufferWithCond{ctx.vkd, ctx.device, ctx.allocator, queryBufferInfo,
+                                         MemoryRequirement::HostVisible};
+
+    // Conditional rendering buffer
+    const auto crBufferSize  = static_cast<VkDeviceSize>(sizeof(uint32_t));
+    const auto crBufferUsage = VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT;
+    const auto crBufferInfo  = makeBufferCreateInfo(crBufferSize, crBufferUsage);
+    BufferWithMemory crBuffer(ctx.vkd, ctx.device, ctx.allocator, crBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = crBuffer.getAllocation();
+        memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Shaders
+    const auto &binaries = context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    // Color image
+    ImageWithBuffer colorImage(ctx.vkd, ctx.device, ctx.allocator, extent, format,
+                               (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
+                               VK_IMAGE_TYPE_2D);
+
+    // Pipeline
+    PipelineLayoutWrapper pipelineLayout(constructionType, ctx.vkd, ctx.device);
+
+    RenderPassWrapper renderPass(constructionType, ctx.vkd, ctx.device, format);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, colorImage.getImage(), colorImage.getImageView(), extent.width,
+                                 extent.height);
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                     constructionType);
+
+    const auto renderArea = makeRect2D(extent);
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, renderArea);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    pipeline.setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setDefaultRasterizationState()
+        .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertShader)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader)
+        .setupFragmentOutputState(renderPass.get(), 0u)
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Run query without conditional rendering and get non-zero results
+    ctx.vkd.cmdResetQueryPool(cmdBuffer, *queryPool, 0u, queryCount);
+
+    renderPass.begin(ctx.vkd, cmdBuffer, renderArea, clearColor);
+    pipeline.bind(cmdBuffer);
+
+    ctx.vkd.cmdBeginQuery(cmdBuffer, *queryPool, 0u, 0u);
+    ctx.vkd.cmdDraw(cmdBuffer, 6u, 1u, 0u, 0u);
+    ctx.vkd.cmdEndQuery(cmdBuffer, *queryPool, 0u);
+
+    renderPass.end(ctx.vkd, cmdBuffer);
+
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorImage.getImage(), colorImage.getBuffer(), dims.swizzle(0, 1));
+    ctx.vkd.cmdCopyQueryPoolResults(cmdBuffer, *queryPool, 0u, queryCount, *queryBufferWithoutCond, 0u, queryStride,
+                                    VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+
+    // Run query inside conditional rendering
+    const VkConditionalRenderingBeginInfoEXT conditionalRenderingBegin = {
+        VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT,
+        nullptr,
+        *crBuffer,
+        0ull,
+        params.getConditionalRenderingFlags(),
+    };
+    ctx.vkd.cmdBeginConditionalRenderingEXT(cmdBuffer, &conditionalRenderingBegin);
+
+    ctx.vkd.cmdResetQueryPool(cmdBuffer, *queryPool, 0u, queryCount);
+
+    ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
+
+    ctx.vkd.cmdCopyQueryPoolResults(cmdBuffer, *queryPool, 0u, queryCount, *queryBufferWithCond, 0u, queryStride,
+                                    VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+
+    {
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &barrier);
+    }
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorImage.getBufferAllocation());
+    invalidateAlloc(ctx.vkd, ctx.device, queryBufferWithoutCond.getAllocation());
+    invalidateAlloc(ctx.vkd, ctx.device, queryBufferWithCond.getAllocation());
+
+    const auto tcuFormat = mapVkFormat(format);
+    tcu::ConstPixelBufferAccess result(tcuFormat, dims, colorImage.getBufferAllocation().getHostPtr());
+
+    tcu::TextureLevel refLevel(tcuFormat, dims.x(), dims.y(), dims.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
+
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
+    auto &log = context.getTestContext().getLog();
+
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        return tcu::TestStatus::fail("Image comparison failed");
+
+    uint32_t *queryBufferWithoutCondPtr =
+        reinterpret_cast<uint32_t *>(queryBufferWithoutCond.getAllocation().getHostPtr());
+    uint32_t *queryBufferWithCondPtr = reinterpret_cast<uint32_t *>(queryBufferWithCond.getAllocation().getHostPtr());
+
+    // Get query results with normal rendering
+    uint32_t queryResult  = queryBufferWithoutCondPtr[0];
+    uint32_t availability = queryBufferWithoutCondPtr[1];
+
+    if (availability == 0u)
+        return tcu::TestStatus::fail("Unavailable query result");
+
+    if (queryResult != 1u)
+        return tcu::TestStatus::fail("Unexpected query result");
+
+    // Get query results after reset (inside conditional rendering)
+    queryResult  = queryBufferWithCondPtr[0];
+    availability = queryBufferWithCondPtr[1];
+
+    if (availability != 0)
+        return tcu::TestStatus::fail("Unexpected query result availability");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous namespace
 
 // operations that ignore conditions
@@ -2425,6 +2626,11 @@ void ConditionalIgnoreTests::init(void)
             const RayTracingParams rtParams{{params.inverted}, RayTracingCmd::TRACE_RAYS_INDIRECT2};
             addFunctionCaseWithPrograms(this, testName, rayTracingCheckSupport, rayTracingInitPrograms, rayTracingTest,
                                         rtParams);
+        }
+        {
+            const auto testName = "reset_query_pool" + suffix;
+            addFunctionCaseWithPrograms(this, testName, generalConditionalRenderingCheckSupport, resetQueryPoolShaders,
+                                        resetQueryPoolTest, params);
         }
     }
 }
