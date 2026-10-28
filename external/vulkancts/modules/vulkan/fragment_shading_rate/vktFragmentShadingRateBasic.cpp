@@ -3674,7 +3674,12 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
         SAMPLEMASKOUT,
         DS_BASELEVEL,
         DS_BASELAYER,
-        DS_BASELEVEL_BASELAYER
+        DS_BASELEVEL_BASELAYER,
+        COLORLAYERED_DEPTH,
+        SRLAYERED_DEPTH,
+        MULTIVIEW_DEPTH,
+        MULTIVIEWSRLAYERED_DEPTH,
+        MULTIVIEWCORRELATION_DEPTH,
     };
 
     typedef struct
@@ -3799,6 +3804,12 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
         {TestGroupCaseId::DS_BASELEVEL, "ds_baselevel"},
         {TestGroupCaseId::DS_BASELAYER, "ds_baselayer"},
         {TestGroupCaseId::DS_BASELEVEL_BASELAYER, "ds_baselevel_baselayer"},
+        // Same as the layered and multiview groups above, with a 2-layer depth/stencil attachment
+        {TestGroupCaseId::COLORLAYERED_DEPTH, "colorlayered_depth"},
+        {TestGroupCaseId::SRLAYERED_DEPTH, "srlayered_depth"},
+        {TestGroupCaseId::MULTIVIEW_DEPTH, "multiview_depth"},
+        {TestGroupCaseId::MULTIVIEWSRLAYERED_DEPTH, "multiviewsrlayered_depth"},
+        {TestGroupCaseId::MULTIVIEWCORRELATION_DEPTH, "multiviewcorrelation_depth"},
     };
 
     TestDynamicCase dynCases[] = {
@@ -3958,13 +3969,27 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                                            groupCaseId == TestGroupCaseId::MULTIPASS_FRAGSTENCIL;
                                         bool multiViewport = groupCaseId == TestGroupCaseId::MULTIVIEWPORT;
                                         bool colorLayered  = groupCaseId == TestGroupCaseId::COLORLAYERED ||
-                                                            groupCaseId == TestGroupCaseId::SRLAYERED;
+                                                            groupCaseId == TestGroupCaseId::SRLAYERED ||
+                                                            groupCaseId == TestGroupCaseId::COLORLAYERED_DEPTH ||
+                                                            groupCaseId == TestGroupCaseId::SRLAYERED_DEPTH;
                                         bool srLayered = groupCaseId == TestGroupCaseId::SRLAYERED ||
-                                                         groupCaseId == TestGroupCaseId::MULTIVIEWSRLAYERED;
+                                                         groupCaseId == TestGroupCaseId::MULTIVIEWSRLAYERED ||
+                                                         groupCaseId == TestGroupCaseId::SRLAYERED_DEPTH ||
+                                                         groupCaseId == TestGroupCaseId::MULTIVIEWSRLAYERED_DEPTH;
                                         bool multiView = groupCaseId == TestGroupCaseId::MULTIVIEW ||
                                                          groupCaseId == TestGroupCaseId::MULTIVIEWSRLAYERED ||
-                                                         groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION;
-                                        bool correlationMask     = groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION;
+                                                         groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION ||
+                                                         groupCaseId == TestGroupCaseId::MULTIVIEW_DEPTH ||
+                                                         groupCaseId == TestGroupCaseId::MULTIVIEWSRLAYERED_DEPTH ||
+                                                         groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION_DEPTH;
+                                        bool correlationMask =
+                                            groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION ||
+                                            groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION_DEPTH;
+                                        bool layeredDepth = groupCaseId == TestGroupCaseId::COLORLAYERED_DEPTH ||
+                                                            groupCaseId == TestGroupCaseId::SRLAYERED_DEPTH ||
+                                                            groupCaseId == TestGroupCaseId::MULTIVIEW_DEPTH ||
+                                                            groupCaseId == TestGroupCaseId::MULTIVIEWSRLAYERED_DEPTH ||
+                                                            groupCaseId == TestGroupCaseId::MULTIVIEWCORRELATION_DEPTH;
                                         bool interlock           = groupCaseId == TestGroupCaseId::INTERLOCK;
                                         bool sampleLocations     = groupCaseId == TestGroupCaseId::SAMPLELOCATIONS;
                                         bool sampleShadingEnable = groupCaseId == TestGroupCaseId::SAMPLESHADINGENABLE;
@@ -3993,7 +4018,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                         bool useDepthStencil =
                                             (fragDepth || fragStencil || groupCaseId == TestGroupCaseId::DS_BASELEVEL ||
                                              groupCaseId == TestGroupCaseId::DS_BASELAYER ||
-                                             groupCaseId == TestGroupCaseId::DS_BASELEVEL_BASELAYER);
+                                             groupCaseId == TestGroupCaseId::DS_BASELEVEL_BASELAYER || layeredDepth);
                                         bool shaderWritesRate =
                                             (shdCases[shdNdx].id == TestShaderRateCaseId::SHADERRATE);
 
@@ -4040,8 +4065,8 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                                         groupParams->useDynamicRendering))
                                             continue;
 
-                                        // Test baseLevel and baseLayer for DS cases with only attachment, single sample, and renderpass.
-                                        if ((dsBaseMipLevel > 0 || dsBaseLayer > 0) &&
+                                        // Test baseLevel, baseLayer and layered DS cases with only attachment, single sample, and renderpass.
+                                        if ((dsBaseMipLevel > 0 || dsBaseLayer > 0 || layeredDepth) &&
                                             (attCases[attNdx].usage != AttachmentUsage::WITH_ATTACHMENT ||
                                              groupParams->useDynamicRendering ||
                                              sampCases[sampNdx].count > VK_SAMPLE_COUNT_1_BIT))
