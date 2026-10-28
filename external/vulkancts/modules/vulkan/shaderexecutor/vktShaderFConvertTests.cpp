@@ -39,6 +39,8 @@
 #include "tcuFormatUtil.hpp"
 #include "tcuStringTemplate.hpp"
 
+#include "spirv/unified1/spirv.hpp11"
+
 #include <vector>
 #include <iterator>
 #include <algorithm>
@@ -480,7 +482,7 @@ const std::vector<uint32_t> &InputGenerator::getValues() const
 
 // Check single result is as expected.
 template <class T1, class T2>
-bool validConversion(const T1 &orig, const T2 &result, bool sat)
+bool validConversion(const T1 &orig, const T2 &result, bool sat, bool nanPreserve)
 {
     DE_UNREF(sat);
 
@@ -494,7 +496,7 @@ bool validConversion(const T1 &orig, const T2 &result, bool sat)
         // 0x80 has undefined conversion result
         if (orig.bits() == 0x80)
             return true;
-        return validConversion(tcu::Float32(orig.asFloat()), result, sat);
+        return validConversion(tcu::Float32(orig.asFloat()), result, sat, nanPreserve);
     }
     else if constexpr (t2IsMx)
     {
@@ -510,7 +512,7 @@ bool validConversion(const T1 &orig, const T2 &result, bool sat)
     // Without SignedZeroInfNanPreserve, OpFConvert may assume operands are not NaN.
     else if constexpr (!t1IsInt)
     {
-        if (orig.isNaN())
+        if (orig.isNaN() && !nanPreserve)
             return true;
     }
 
@@ -589,7 +591,8 @@ bool validConversion(const T1 &orig, const T2 &result, bool sat)
 
 // Check results vector is as expected.
 template <class TIn, class TOut>
-bool validConversion(const std::vector<TIn> &orig, const std::vector<TOut> &converted, tcu::TestLog &log, bool sat)
+bool validConversion(const std::vector<TIn> &orig, const std::vector<TOut> &converted, tcu::TestLog &log, bool sat,
+                     bool nanPreserve)
 {
     DE_UNREF(sat);
     DE_ASSERT(orig.size() == converted.size());
@@ -604,7 +607,7 @@ bool validConversion(const std::vector<TIn> &orig, const std::vector<TOut> &conv
         if constexpr (!((std::is_same_v<TIn, int32_t> || std::is_same_v<TIn, uint32_t>)&&(
                           std::is_same_v<TOut, int32_t> || std::is_same_v<TOut, uint32_t>)))
         {
-            valid = validConversion(orig[i], converted[i], sat);
+            valid = validConversion(orig[i], converted[i], sat, nanPreserve);
         }
 
         if (valid)
@@ -864,6 +867,7 @@ struct TestParams
     size_t vectorLength;
     bool saturatedConvert;
     bool bitcastExtract;
+    bool signedZeroInfNanPreserve = false;
 
     void validate() const
     {
@@ -912,6 +916,33 @@ struct TestParams
 #endif
     }
 
+    std::vector<uint32_t> getPreserveWidths() const
+    {
+        if (!signedZeroInfNanPreserve)
+            return {};
+
+        std::vector<uint32_t> widths;
+        for (const DataType dt : {from, to})
+        {
+            switch (dt)
+            {
+            case FLOAT_TYPE_16_BITS:
+                widths.push_back(16u);
+                break;
+            case FLOAT_TYPE_32_BITS:
+                widths.push_back(32u);
+                break;
+            case FLOAT_TYPE_64_BITS:
+                widths.push_back(64u);
+                break;
+            default:
+                return {};
+            }
+        }
+
+        return widths;
+    }
+
     static bool isConversionDoable(DataType from, DataType to)
     {
         DE_UNREF(from);
@@ -927,6 +958,7 @@ void verifyConversionTo(const std::vector<TIn> &inputValues, //
                         size_t vectorLength,                 //
                         size_t expectedNumValues,            //
                         bool sat,                            //
+                        bool nanPreserve,                    //
                         tcu::TestLog &testLog,               //
                         const Tuple &,                       //
                         std::index_sequence<Is...>)
@@ -938,7 +970,7 @@ void verifyConversionTo(const std::vector<TIn> &inputValues, //
          if (dataTypeToEnum<TOut>() == outType)
          {
              const auto outputValues = unpackData<TOut>(memory, vectorLength, expectedNumValues);
-             const bool conversionOk = validConversion(inputValues, outputValues, testLog, sat);
+             const bool conversionOk = validConversion(inputValues, outputValues, testLog, sat, nanPreserve);
              throw std::optional(conversionOk);
          }
      }());
@@ -952,6 +984,7 @@ void verifyConversionFrom(DataType inType,                    //
                           size_t vectorLength,                //
                           size_t expectedNumValues,           //
                           bool sat,                           //
+                          bool nanPreserve,                   //
                           tcu::TestLog &testLog,              //
                           const Tuple &t,                     //
                           std::index_sequence<Is...>)
@@ -963,8 +996,8 @@ void verifyConversionFrom(DataType inType,                    //
          if (dataTypeToEnum<TIn>() == inType)
          {
              const auto &inputValues = InputGenerator::getInstance().getValues<TIn>();
-             verifyConversionTo(inputValues, outType, memory, vectorLength, expectedNumValues, sat, testLog, t,
-                                std::index_sequence<Is...>{});
+             verifyConversionTo(inputValues, outType, memory, vectorLength, expectedNumValues, sat, nanPreserve,
+                                testLog, t, std::index_sequence<Is...>{});
          }
      }());
     throw std::nullopt;
@@ -978,12 +1011,13 @@ std::optional<bool> verifyConversion(DataType fromType,                  //
                                      size_t vectorLength,                //
                                      size_t expectedNumValues,           //
                                      bool sat,                           //
+                                     bool nanPreserve,                   //
                                      tcu::TestLog &log)
 {
     try
     {
-        verifyConversionFrom(fromType, toType, memory, vectorLength, expectedNumValues, sat, log, available,
-                             std::index_sequence_for<U...>{});
+        verifyConversionFrom(fromType, toType, memory, vectorLength, expectedNumValues, sat, nanPreserve, log,
+                             available, std::index_sequence_for<U...>{});
     }
     catch (const std::optional<bool> &result)
     {
@@ -1160,6 +1194,15 @@ void FConvertTestCase::initPrograms(vk::SourceCollections &programCollection) co
     if (m_params.vectorLength > 4)
     {
         s("#extension GL_EXT_long_vector: require");
+    }
+    const std::vector<uint32_t> preserveWidths = m_params.getPreserveWidths();
+    if (!preserveWidths.empty())
+        s("#extension GL_EXT_spirv_intrinsics: require");
+    for (const uint32_t width : preserveWidths)
+    {
+        s("spirv_execution_mode(extensions = [\"SPV_KHR_float_controls\"], capabilities = [",
+          static_cast<uint32_t>(spv::Capability::SignedZeroInfNanPreserve), "], ",
+          static_cast<uint32_t>(spv::ExecutionMode::SignedZeroInfNanPreserve), ", ", width, ");");
     }
 
     s("layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;");
@@ -1475,6 +1518,22 @@ void FConvertTestCase::checkSupport(Context &context) const
         break;
     default:
         break;
+    }
+
+    if (m_params.signedZeroInfNanPreserve)
+    {
+        context.requireDeviceFunctionality("VK_KHR_shader_float_controls");
+
+        const auto &floatControls = context.getFloatControlsProperties();
+        for (const uint32_t width : m_params.getPreserveWidths())
+        {
+            const bool supported = (width == 16u) ? floatControls.shaderSignedZeroInfNanPreserveFloat16 :
+                                   (width == 32u) ? floatControls.shaderSignedZeroInfNanPreserveFloat32 :
+                                                    floatControls.shaderSignedZeroInfNanPreserveFloat64;
+            if (!supported)
+                TCU_THROW(NotSupportedError,
+                          "SignedZeroInfNanPreserve not supported for " + std::to_string(width) + "-bit floats");
+        }
     }
 
     if (m_params.vectorLength > 4)
@@ -1897,9 +1956,9 @@ tcu::TestStatus FConvertTestInstance::iterate(void)
 #endif
         availableTypes;
 
-    const std::optional<bool> res =
-        verifyConversion(m_params.from, m_params.to, availableTypes, outputMemory, m_params.vectorLength,
-                         inputBufferSizeInfo.numValues, m_params.saturatedConvert, testLog);
+    const std::optional<bool> res = verifyConversion(
+        m_params.from, m_params.to, availableTypes, outputMemory, m_params.vectorLength, inputBufferSizeInfo.numValues,
+        m_params.saturatedConvert, m_params.signedZeroInfNanPreserve, testLog);
     if (false == res.has_value())
     {
         // this should never happen
@@ -1933,7 +1992,7 @@ tcu::TestCaseGroup *createPrecisionFconvertGroup(tcu::TestContext &testCtx)
                 {
                     continue;
                 }
-                // NaN inputs may produce any result without float controls.
+                // NaN inputs may produce any result unless SignedZeroInfNanPreserve is declared
                 for (bool sat : {false, true})
                 {
                     for (bool bitcastExtract : {false, true})
@@ -1968,6 +2027,11 @@ tcu::TestCaseGroup *createPrecisionFconvertGroup(tcu::TestContext &testCtx)
                                                (bitcastExtract ? "_bitcastextract" : "");
 
                         newGroup->addChild(new FConvertTestCase(testCtx, testName, params));
+
+                        params.signedZeroInfNanPreserve = true;
+                        if (!params.getPreserveWidths().empty())
+                            newGroup->addChild(
+                                new FConvertTestCase(testCtx, testName + "_signed_zero_inf_nan_preserve", params));
                     }
                 }
             }
