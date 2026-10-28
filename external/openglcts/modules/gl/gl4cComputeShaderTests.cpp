@@ -4385,9 +4385,11 @@ class AdvancedPipelineComputeChain : public ComputeShaderBase
                     vec4(static_cast<GLfloat>(colorData[i] / 255.), static_cast<GLfloat>(colorData[i + 1] / 255.),
                          static_cast<GLfloat>(colorData[i + 2] / 255.), static_cast<GLfloat>(colorData[i + 3] / 255.));
             }
+            // Account for quantization from the GL_UNSIGNED_BYTE readback.
+            const vec4 epsilon(1.0f / 255.0f);
             for (std::size_t i = 0; i < data.size(); ++i)
             {
-                if (!ColorEqual(data[i], vec4(0.25f, 0.5f, 0.75f, 1.0f), g_color_eps))
+                if (!ColorEqual(data[i], vec4(0.25f, 0.5f, 0.75f, 1.0f), epsilon))
                 {
                     m_context.getTestContext().getLog()
                         << tcu::TestLog::Message << "Invalid data at texture." << tcu::TestLog::EndMessage;
