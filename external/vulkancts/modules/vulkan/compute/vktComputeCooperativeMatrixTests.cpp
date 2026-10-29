@@ -3710,16 +3710,39 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                             continue;
                         }
 
-                        // Need to find a "matching" property for the other use/type
-                        // and take the max of the granularities
+                        const uint32_t inputMGranularity = MGranularity;
+                        const uint32_t inputNGranularity = NGranularity;
+
+                        // Need to find a matching property for the other use/type.
                         for (auto const &prop2 : properties2)
                         {
                             auto const *p2 = &prop2;
+
+                            if (!flexibleDimensionsSupported)
+                            {
+                                // Without flexible dimensions, properties2 granularities are exact dimensions.
+                                MGranularity = 0;
+                                NGranularity = 0;
+                            }
 
                             SetGranularity(p2, types[1], uses[1]);
 
                             if (ok)
                             {
+                                if (!flexibleDimensionsSupported)
+                                {
+                                    const uint32_t expectedInputMGranularity =
+                                        isReduce2x2(m_data.testType) ? 2U * MGranularity : MGranularity;
+                                    const uint32_t expectedInputNGranularity =
+                                        isReduce2x2(m_data.testType) ? 2U * NGranularity : NGranularity;
+
+                                    if (inputMGranularity != expectedInputMGranularity ||
+                                        inputNGranularity != expectedInputNGranularity)
+                                    {
+                                        ok = false;
+                                        continue;
+                                    }
+                                }
                                 break;
                             }
                         }
@@ -3815,13 +3838,35 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                         typeSizes[j].insert(TestTuple(p->MSize, p->NSize, 0, 0));
                 }
             }
-            // Test those sizes that are supported for both the input and output type.
-            std::set_intersection(typeSizes[0].begin(), typeSizes[0].end(), typeSizes[1].begin(), typeSizes[1].end(),
-                                  std::inserter(testSizes, testSizes.begin()));
+
+            if (isReduce2x2(m_data.testType))
+            {
+                // For a 2x2 reduction, the input and result types must have the same component type and the
+                // result dimensions must be half of the input dimensions.
+                for (const auto &outputSize : typeSizes[1])
+                {
+                    const TestTuple requiredInputSize(2U * outputSize.M, 2U * outputSize.N, 0, 0);
+                    if (typeSizes[0].find(requiredInputSize) != typeSizes[0].end())
+                    {
+                        testSizes.insert(outputSize);
+                    }
+                }
+            }
+            else
+            {
+                // Test those sizes that are supported for both the input and output type.
+                std::set_intersection(typeSizes[0].begin(), typeSizes[0].end(), typeSizes[1].begin(),
+                                      typeSizes[1].end(), std::inserter(testSizes, testSizes.begin()));
+            }
         }
     }
 
     properties.resize(0);
+
+    if (testSizes.empty())
+    {
+        TCU_THROW(NotSupportedError, "No possible test sizes found");
+    }
 
     for (auto &testSize : testSizes)
     {
