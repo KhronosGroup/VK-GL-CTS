@@ -113,9 +113,7 @@ template <HandleType Type>
 class Handle
 {
 public:
-    Handle(void)
-    {
-    } // \note Left uninitialized on purpose
+    Handle(void) = default; // \note Uninitialized when default-initialized; value-initialization zeroes it
     Handle(VkNullHandleType) : m_internal(0)
     {
     }

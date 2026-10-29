@@ -244,19 +244,6 @@ struct TestParams
 
     PipelineConstructionType pipelineConstructionType;
 
-    TestParams()
-        : numFloatColor1Samples{}
-        , numFloatColor2Samples{}
-        , numIntColorSamples{}
-        , numDepthStencilSamples{}
-        , floatColor1Format{}
-        , floatColor2Format{}
-        , intColorFormat{}
-        , depthStencilFormat{}
-        , clearValues{}
-    {
-    }
-
     uint32_t getLayerCount() const
     {
         return (useMultiview || useMultilayer) ? 2u : 1u;
@@ -6987,8 +6974,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                             continue;
                                         }
 
-                                        TestParams testParams;
-                                        deMemset(&testParams, 0, sizeof(testParams));
+                                        TestParams testParams{};
 
                                         testParams.pipelineConstructionType = pipelineConstructionType;
                                         testParams.isMultisampledRenderToSingleSampled =
@@ -7093,8 +7079,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
 
                                 for (const bool renderToWholeFramebuffer : boolRange)
                                 {
-                                    TestParams testParams;
-                                    deMemset(&testParams, 0, sizeof(testParams));
+                                    TestParams testParams{};
 
                                     testParams.pipelineConstructionType = pipelineConstructionType;
                                     testParams.isMultisampledRenderToSingleSampled =
@@ -7157,8 +7142,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
 
         for (uint32_t iteration = 0; iteration < (isMultisampledRenderToSingleSampled ? 1000u : 250u); ++iteration)
         {
-            TestParams testParams;
-            deMemset(&testParams, 0, sizeof(testParams));
+            TestParams testParams{};
 
             const uint32_t color1FormatNdx       = iteration % color1FormatCount;
             const uint32_t color2FormatNdx       = iteration % color2FormatCount;
@@ -7227,8 +7211,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
 
         for (uint32_t iteration = 0; iteration < (isMultisampledRenderToSingleSampled ? 1000u : 250u); ++iteration)
         {
-            TestParams testParams;
-            deMemset(&testParams, 0, sizeof(testParams));
+            TestParams testParams{};
 
             const uint32_t color1FormatNdx       = iteration % color1FormatCount;
             const uint32_t color2FormatNdx       = iteration % color2FormatCount;
@@ -7313,8 +7296,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
 
                                     for (const bool renderToWholeFramebuffer : boolRange)
                                     {
-                                        TestParams testParams;
-                                        deMemset(&testParams, 0, sizeof(testParams));
+                                        TestParams testParams{};
 
                                         testParams.pipelineConstructionType = pipelineConstructionType;
                                         testParams.isMultisampledRenderToSingleSampled =
@@ -7402,8 +7384,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                     for (const VkFormat depthStencilFormat : depthStencilFormatRange)
                         for (const VkSampleCountFlagBits sampleCount : sampleCounts)
                         {
-                            TestParams testParams;
-                            deMemset(&testParams, 0, sizeof(testParams));
+                            TestParams testParams{};
 
                             testParams.pipelineConstructionType            = pipelineConstructionType;
                             testParams.isMultisampledRenderToSingleSampled = isMultisampledRenderToSingleSampled;
@@ -7451,8 +7432,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                 for (const VkFormat color3Format : color3FormatRange)
                     for (const VkSampleCountFlagBits sampleCount : sampleCounts)
                     {
-                        TestParams testParams;
-                        deMemset(&testParams, 0, sizeof(testParams));
+                        TestParams testParams{};
 
                         testParams.pipelineConstructionType            = pipelineConstructionType;
                         testParams.isMultisampledRenderToSingleSampled = false;

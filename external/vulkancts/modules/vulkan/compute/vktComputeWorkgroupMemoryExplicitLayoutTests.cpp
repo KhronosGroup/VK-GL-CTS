@@ -1077,8 +1077,7 @@ void AddPaddingTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructionT
     {
         for (uint32_t j = i + 1; j < 32; j += 4)
         {
-            PaddingTest::CaseDef c;
-            deMemset(&c, 0, sizeof(c));
+            PaddingTest::CaseDef c{};
 
             c.add(TYPE_UINT, 4 * i, "0x1234");
             c.expected[i] = 0x1234;
@@ -1094,8 +1093,7 @@ void AddPaddingTests(tcu::TestCaseGroup *group, vk::ComputePipelineConstructionT
     {
         for (uint32_t j = i + 1; j < 32; j += 16)
         {
-            PaddingTest::CaseDef c;
-            deMemset(&c, 0, sizeof(c));
+            PaddingTest::CaseDef c{};
 
             uint8_t *expected = reinterpret_cast<uint8_t *>(c.expected);
 

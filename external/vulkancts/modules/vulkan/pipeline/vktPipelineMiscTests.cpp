@@ -1764,7 +1764,7 @@ tcu::TestStatus varyingSamplesFragTest(Context &context, VaryingSamplesFragParam
     {
         // Reset data in buffers.
         invocationCount = 0;
-        deMemset(de::dataOrNull(samplePositions), 0, de::dataSize(samplePositions));
+        std::fill(begin(samplePositions), end(samplePositions), tcu::Vec2(0.0f, 0.0f));
 
         deMemcpy(abData, &invocationCount, sizeof(invocationCount));
         flushAlloc(ctx.vkd, ctx.device, abAlloc);

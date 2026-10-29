@@ -246,7 +246,7 @@ struct CellOutput
 
     CellOutput(void)
     {
-        deMemset(this, 0, sizeof(*this));
+        deMemset(static_cast<void *>(this), 0, sizeof(*this));
     }
 };
 

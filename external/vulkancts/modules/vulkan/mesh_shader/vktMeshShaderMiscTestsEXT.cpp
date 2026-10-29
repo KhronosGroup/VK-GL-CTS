@@ -3364,7 +3364,6 @@ tcu::TestStatus ClipInstance::iterate()
     const auto preCopyBarrier0 =
         makeImageMemoryBarrier(colorAccess, transferRead, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), colorSRR);
-    VkImageMemoryBarrier preCopyBarrier1;
     const auto postCopyBarrier = makeMemoryBarrier(transferWrite, hostRead);
     const auto copyRegion0     = makeBufferImageCopy(imageExtent, colorSRL0);
 

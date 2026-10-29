@@ -1739,8 +1739,7 @@ tcu::TestCaseGroup *createSamplerBorderSwizzleTests(tcu::TestContext &testCtx,
                                 if (isDSFormat && useCompute)
                                     continue;
 
-                                TestParams params;
-                                deMemset(&params, 0, sizeof(TestParams));
+                                TestParams params = TestParams();
 
                                 const uint32_t seed = baseSeed + static_cast<uint32_t>(format) +
                                                       static_cast<uint32_t>(mappingIdx) +

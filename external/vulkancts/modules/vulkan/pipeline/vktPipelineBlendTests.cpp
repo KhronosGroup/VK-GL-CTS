@@ -3706,7 +3706,6 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                 };
 
                 MultisampleBlendParams params;
-                deMemset(&params, 0, sizeof(params));
                 params.pipelineConstructionType = pipelineConstructionType;
                 params.colorFormat              = format;
                 params.blendState               = blendState;

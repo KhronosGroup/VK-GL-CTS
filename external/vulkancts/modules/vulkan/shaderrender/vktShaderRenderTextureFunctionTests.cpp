@@ -2801,8 +2801,6 @@ TextureSizeInstance::TextureSizeInstance(Context &context, const bool isVertexCa
     , m_iterationCounter(0)
     , m_resultPassed(true)
 {
-    deMemset(&m_testSize, 0, sizeof(TestSize));
-
     m_renderSize = tcu::UVec2(1, 1);
 }
 
@@ -3481,8 +3479,6 @@ TextureQueryLevelsInstance::TextureQueryLevelsInstance(Context &context, const b
     , m_iterationCounter(0)
     , m_resultPassed(true)
 {
-    deMemset(&m_testSize, 0, sizeof(TestSize));
-
     m_renderSize = tcu::UVec2(1, 1);
 }
 

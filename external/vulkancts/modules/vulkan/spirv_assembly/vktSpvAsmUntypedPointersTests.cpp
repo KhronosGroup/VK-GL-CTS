@@ -11288,7 +11288,7 @@ void addStructAsTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMo
             NestedStruct nested;
         } outputStruct;
 
-        deMemcpy(&outputStruct, &inputStruct, sizeof(inputStruct));
+        deMemcpy(static_cast<void *>(&outputStruct), &inputStruct, sizeof(inputStruct));
 
         Resource inputResource =
             Resource(BufferSp(new Buffer<InputStruct>(std::vector<InputStruct>(1, inputStruct), 0)),

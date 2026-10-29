@@ -1,5 +1,3 @@
-#ifndef _VKTPIPELINEBLENDTESTSCOMMON_HPP
-#define _VKTPIPELINEBLENDTESTSCOMMON_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -381,5 +379,3 @@ tcu::Vec4 getFormatThreshold(const tcu::TextureFormat &format, int scale)
 } // namespace blending_common
 } // namespace pipeline
 } // namespace vkt
-
-#endif // _VKTPIPELINEBLENDTESTSCOMMON_HPP

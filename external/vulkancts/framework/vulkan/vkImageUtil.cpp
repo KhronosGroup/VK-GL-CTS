@@ -4553,21 +4553,17 @@ VkSamplerCreateInfo mapSampler(const tcu::Sampler &sampler, const tcu::TextureFo
 
 rr::GenericVec4 mapVkColor(const VkClearColorValue &color)
 {
-    rr::GenericVec4 value;
-
-    static_assert(sizeof(rr::GenericVec4) == sizeof(VkClearColorValue),
-                  "GenericVec4 and VkClearColorValue size mismatch");
-    deMemcpy(&value, &color, sizeof(rr::GenericVec4));
-    return value;
+    return rr::GenericVec4(tcu::UVec4(color.uint32[0], color.uint32[1], color.uint32[2], color.uint32[3]));
 }
 
 VkClearColorValue mapVkColor(const rr::GenericVec4 &color)
 {
+    const uint32_t *const components = color.getAccess<uint32_t>();
     VkClearColorValue value;
 
-    static_assert(sizeof(rr::GenericVec4) == sizeof(VkClearColorValue),
-                  "GenericVec4 and VkClearColorValue size mismatch");
-    deMemcpy(&value, &color, sizeof(VkClearColorValue));
+    for (int i = 0; i < 4; ++i)
+        value.uint32[i] = components[i];
+
     return value;
 }
 

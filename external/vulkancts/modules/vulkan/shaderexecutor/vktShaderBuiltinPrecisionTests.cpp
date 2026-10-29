@@ -1298,22 +1298,35 @@ public:
     template <typename T>
     void bind(const Variable<T> &variable, const typename Traits<T>::IVal &value)
     {
-        uint8_t *const data = new uint8_t[sizeof(value)];
-
-        deMemcpy(data, &value, sizeof(value));
-        de::insert(m_map, variable.getName(), SharedPtr<uint8_t>(data, de::ArrayDeleter<uint8_t>()));
+        de::insert(m_map, variable.getName(), SharedPtr<ValueBase>(new Value<typename Traits<T>::IVal>(value)));
     }
 
     template <typename T>
     typename Traits<T>::IVal &lookup(const Variable<T> &variable) const
     {
-        uint8_t *const data = de::lookup(m_map, variable.getName()).get();
+        ValueBase *const value = de::lookup(m_map, variable.getName()).get();
 
-        return *reinterpret_cast<typename Traits<T>::IVal *>(data);
+        return static_cast<Value<typename Traits<T>::IVal> *>(value)->value;
     }
 
 private:
-    map<string, SharedPtr<uint8_t>> m_map;
+    // Type-erased holders, so values are copied with their own constructors instead of as raw bytes.
+    struct ValueBase
+    {
+        virtual ~ValueBase() = default;
+    };
+
+    template <typename V>
+    struct Value : public ValueBase
+    {
+        explicit Value(const V &value_) : value(value_)
+        {
+        }
+
+        V value;
+    };
+
+    map<string, SharedPtr<ValueBase>> m_map;
 };
 
 /*--------------------------------------------------------------------*//*!

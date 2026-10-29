@@ -412,7 +412,7 @@ template <typename T>
 T poison()
 {
     T t;
-    deMemset(&t, 0xDE, sizeof(T));
+    deMemset(static_cast<void *>(&t), 0xDE, sizeof(T));
     return t;
 }
 
@@ -503,10 +503,11 @@ void validateArray(tcu::TestLog &log, size_t implementionCount, size_t writtenCo
 
     for (size_t i = 0; i < writtenCount; i++)
     {
-        if (deMemCmp(&array[i], &poisonValue, sizeof(R)) == 0)
+        // The poison is a byte pattern, so comparing object representations, padding included, is intended.
+        if (deMemCmp(static_cast<const void *>(&array[i]), static_cast<const void *>(&poisonValue), sizeof(R)) == 0)
         {
-            TCU_FAIL("Implementation did not write entry " + std::to_string(i) + " in the array");
             log << tcu::TestLog::Message << "array[" << i << "] = " << array[i] << tcu::TestLog::EndMessage;
+            TCU_FAIL("Implementation did not write entry " + std::to_string(i) + " in the array");
         }
     }
 }
@@ -523,10 +524,11 @@ void validateArray(tcu::TestLog &log, size_t implementionCount, size_t writtenCo
     // so only validate between implementationCount and writtenCount
     for (size_t i = implementionCount; i < writtenCount; i++)
     {
-        if (deMemCmp(&array[i], &poisonValue, sizeof(uint8_t)) == 0)
+        if (array[i] == poisonValue)
         {
+            log << tcu::TestLog::Message << "array[" << i << "] = " << static_cast<int>(array[i])
+                << tcu::TestLog::EndMessage;
             TCU_FAIL("Implementation did not write entry " + std::to_string(i) + " in the array");
-            log << tcu::TestLog::Message << "array[" << i << "] = " << array[i] << tcu::TestLog::EndMessage;
         }
     }
 }
@@ -572,9 +574,12 @@ void oversizedArrayTestImpl(Context &context, T handle)
 
     log << tcu::TestLog::Message << "Test array size = " << arraySize << tcu::TestLog::EndMessage;
 
-    // Poison the array, so that we know which entries the implementation has written
+    // Poison the array, so that we know which entries the implementation has written. Copy the poison byte by byte
+    // so padding bytes are poisoned too, as validateArray() compares object representations.
     const R poisonValue = poison<R>();
-    std::vector<R> array(arraySize, poisonValue);
+    std::vector<R> array(arraySize);
+    for (auto &entry : array)
+        deMemcpy(static_cast<void *>(&entry), static_cast<const void *>(&poisonValue), sizeof(R));
 
     // Query 2 which the implementation should only be writting a subset of the array
     size_t writtenCount = arraySize;

@@ -1,5 +1,3 @@
-#ifndef _VKTAPICOPYIMAGETOBUFFERTESTS_HPP
-#define _VKTAPICOPYIMAGETOBUFFERTESTS_HPP
 /*------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
@@ -712,5 +710,3 @@ void addCopyDepthStencilToBufferTests(tcu::TestCaseGroup *group, TestGroupParams
 }
 
 } // namespace vkt::api
-
-#endif // _VKTAPICOPYIMAGETOBUFFERTESTS_HPP

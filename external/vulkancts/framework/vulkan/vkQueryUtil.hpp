@@ -360,7 +360,7 @@ template <typename IterT>
 inline void fillBits(IterT beg, const IterT end, const uint8_t pattern = 0xdeu)
 {
     for (; beg < end; ++beg)
-        deMemset(&(*beg), static_cast<int>(pattern), sizeof(*beg));
+        deMemset(static_cast<void *>(&(*beg)), static_cast<int>(pattern), sizeof(*beg));
 }
 
 template <typename IterT>

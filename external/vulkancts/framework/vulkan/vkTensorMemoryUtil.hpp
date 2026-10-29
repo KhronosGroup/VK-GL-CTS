@@ -28,6 +28,7 @@
 #include "vkDefs.hpp"
 #include "tcuFloat.hpp"
 #include "tcuTestCase.hpp"
+#include "deMemory.h"
 
 #include <limits>
 #include <numeric>
@@ -213,12 +214,12 @@ public:
 
     void clear()
     {
-        deMemset(m_memoryPtr, 0, static_cast<size_t>(m_memorySize));
+        deMemset(static_cast<void *>(m_memoryPtr), 0, static_cast<size_t>(m_memorySize));
     }
 
     void clear(uint8_t clearValue)
     {
-        deMemset(m_memoryPtr, clearValue, static_cast<size_t>(m_memorySize));
+        deMemset(static_cast<void *>(m_memoryPtr), clearValue, static_cast<size_t>(m_memorySize));
     }
 
     void fill()

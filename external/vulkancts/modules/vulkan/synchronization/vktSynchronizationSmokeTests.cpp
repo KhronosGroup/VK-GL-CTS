@@ -514,7 +514,6 @@ void createColorOnlyRenderPass(const DeviceInterface &vkd, VkDevice device,
     VkAttachmentReference stencilAttachmentRef;
     VkSubpassDescription subpassDesc;
     VkRenderPassCreateInfo renderPassParams;
-    VkRenderPass newRenderPass;
 
     colorAttachmentDesc.flags          = 0;
     colorAttachmentDesc.format         = renderPassParameters.colorFormat;

@@ -1754,12 +1754,14 @@ tcu::TestStatus testSemaphoreFdSendOverSocket(Context &context, const SemaphoreT
                                                                      vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT :
                                                                      (vk::VkSemaphoreImportFlagBits)0u;
                         const cmsghdr *const cmsg              = CMSG_FIRSTHDR(&msg);
+                        TCU_CHECK(cmsg != nullptr);
+                        TCU_CHECK(cmsg->cmsg_level == SOL_SOCKET);
+                        TCU_CHECK(cmsg->cmsg_type == SCM_RIGHTS);
+
                         int newFd_;
                         deMemcpy(&newFd_, CMSG_DATA(cmsg), sizeof(int));
                         NativeHandle newFd(newFd_);
 
-                        TCU_CHECK(cmsg->cmsg_level == SOL_SOCKET);
-                        TCU_CHECK(cmsg->cmsg_type == SCM_RIGHTS);
                         TCU_CHECK(cmsg->cmsg_len == CMSG_LEN(sizeof(int)));
                         TCU_CHECK(recvData == sendData);
                         TCU_CHECK_MSG(newFd.getFd() >= 0, "Didn't receive valid fd from socket");
@@ -2830,12 +2832,14 @@ tcu::TestStatus testFenceFdSendOverSocket(Context &context, const FenceTestConfi
                                                                  vk::VK_FENCE_IMPORT_TEMPORARY_BIT :
                                                                  (vk::VkFenceImportFlagBits)0u;
                         const cmsghdr *const cmsg          = CMSG_FIRSTHDR(&msg);
+                        TCU_CHECK(cmsg != nullptr);
+                        TCU_CHECK(cmsg->cmsg_level == SOL_SOCKET);
+                        TCU_CHECK(cmsg->cmsg_type == SCM_RIGHTS);
+
                         int newFd_;
                         deMemcpy(&newFd_, CMSG_DATA(cmsg), sizeof(int));
                         NativeHandle newFd(newFd_);
 
-                        TCU_CHECK(cmsg->cmsg_level == SOL_SOCKET);
-                        TCU_CHECK(cmsg->cmsg_type == SCM_RIGHTS);
                         TCU_CHECK(cmsg->cmsg_len == CMSG_LEN(sizeof(int)));
                         TCU_CHECK(recvData == sendData);
                         TCU_CHECK_MSG(newFd.getFd() >= 0, "Didn't receive valid fd from socket");
@@ -3016,8 +3020,13 @@ tcu::TestStatus testBufferQueriesMaintenance5(Context &context, vk::VkExternalMe
         info.usage                                                       = 0;
         vki.getPhysicalDeviceExternalBufferProperties(physicalDevice, &info, &properties2);
 
-        if (deMemCmp(&properties1, &properties2, sizeof(vk::VkExternalBufferProperties)) != 0)
-            return tcu::TestStatus::pass(std::string("Fail (") + de::toString(usageFlag) + ")");
+        const auto &memProperties1 = properties1.externalMemoryProperties;
+        const auto &memProperties2 = properties2.externalMemoryProperties;
+
+        if (memProperties1.externalMemoryFeatures != memProperties2.externalMemoryFeatures ||
+            memProperties1.exportFromImportedHandleTypes != memProperties2.exportFromImportedHandleTypes ||
+            memProperties1.compatibleHandleTypes != memProperties2.compatibleHandleTypes)
+            TCU_FAIL("External buffer properties differ for usage " + de::toString(usageFlag));
     }
 
     return tcu::TestStatus::pass("Pass");
@@ -3656,12 +3665,14 @@ tcu::TestStatus testMemoryFdSendOverSocket(Context &context, MemoryTestConfig co
                     else
                     {
                         const cmsghdr *const cmsg = CMSG_FIRSTHDR(&msg);
+                        TCU_CHECK(cmsg != nullptr);
+                        TCU_CHECK(cmsg->cmsg_level == SOL_SOCKET);
+                        TCU_CHECK(cmsg->cmsg_type == SCM_RIGHTS);
+
                         int newFd_;
                         deMemcpy(&newFd_, CMSG_DATA(cmsg), sizeof(int));
                         NativeHandle newFd(newFd_);
 
-                        TCU_CHECK(cmsg->cmsg_level == SOL_SOCKET);
-                        TCU_CHECK(cmsg->cmsg_type == SCM_RIGHTS);
                         TCU_CHECK(cmsg->cmsg_len == CMSG_LEN(sizeof(int)));
                         TCU_CHECK(recvData == sendData);
                         TCU_CHECK_MSG(newFd.getFd() >= 0, "Didn't receive valid fd from socket");

@@ -342,7 +342,7 @@ void cmdCopyQueryPoolResultsVector(ResultsVectorWithAvailability &output, const 
         constexpr size_t stride = sizeof(ResultsVectorWithAvailability::value_type);
         const size_t totalSize  = stride * output.size();
         const uint32_t offset   = dstOffset ? 1u : 0u;
-        deMemcpy(output.data(),
+        deMemcpy(static_cast<void *>(output.data()),
                  (reinterpret_cast<ResultsVectorWithAvailability::value_type *>(allocationData) + offset), totalSize);
     }
     else
@@ -362,8 +362,8 @@ void cmdCopyQueryPoolResultsVector(ResultsVectorWithAvailability &output, const 
         const uint32_t offset   = dstOffset ? 1u : 0u;
 
         // Get and copy.
-        deMemcpy(intermediate.data(), (reinterpret_cast<decltype(intermediate)::value_type *>(allocationData) + offset),
-                 totalSize);
+        deMemcpy(static_cast<void *>(intermediate.data()),
+                 (reinterpret_cast<decltype(intermediate)::value_type *>(allocationData) + offset), totalSize);
         std::transform(begin(intermediate), end(intermediate), begin(output),
                        [](const Pair32 &p) {
                            return Pair64{p.first, p.second};

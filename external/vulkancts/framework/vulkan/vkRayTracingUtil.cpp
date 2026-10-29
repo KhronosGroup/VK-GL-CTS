@@ -513,29 +513,6 @@ static inline VkAccelerationStructureGeometryDataKHR makeVkAccelerationStructure
     return result;
 }
 
-static inline VkAccelerationStructureGeometrySpheresDataNV *makeVkAccelerationStructureGeometryDataKHR(
-    const VkAccelerationStructureGeometrySpheresDataNV &spheres)
-{
-    VkAccelerationStructureGeometrySpheresDataNV *result = new VkAccelerationStructureGeometrySpheresDataNV();
-
-    deMemset(result, 0, sizeof(result));
-    memcpy(result, &spheres, sizeof(VkAccelerationStructureGeometrySpheresDataNV));
-
-    return result;
-}
-
-static inline VkAccelerationStructureGeometryLinearSweptSpheresDataNV *makeVkAccelerationStructureGeometryDataKHR(
-    const VkAccelerationStructureGeometryLinearSweptSpheresDataNV &LSS)
-{
-    VkAccelerationStructureGeometryLinearSweptSpheresDataNV *result =
-        new VkAccelerationStructureGeometryLinearSweptSpheresDataNV();
-
-    deMemset(result, 0, sizeof(result));
-    memcpy(result, &LSS, sizeof(VkAccelerationStructureGeometryLinearSweptSpheresDataNV));
-
-    return result;
-}
-
 static inline VkAccelerationStructureGeometryDataKHR makeVkAccelerationStructureInstancesDataKHR(
     const VkAccelerationStructureGeometryInstancesDataKHR &instances)
 {
@@ -1332,6 +1309,8 @@ protected:
         std::vector<VkAccelerationStructureGeometryKHR *> &accelerationStructureGeometriesKHRPointers,
         std::vector<VkAccelerationStructureBuildRangeInfoKHR> &accelerationStructureBuildRangeInfoKHR,
         std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> &accelerationStructureGeometryMicromapsEXT,
+        std::vector<VkAccelerationStructureGeometrySpheresDataNV> &accelerationStructureGeometrySpheresNV,
+        std::vector<VkAccelerationStructureGeometryLinearSweptSpheresDataNV> &accelerationStructureGeometryLssNV,
         std::vector<uint32_t> &maxPrimitiveCounts, VkDeviceSize vertexBufferOffset = 0,
         VkDeviceSize indexBufferOffset = 0, VkDeviceSize transformBufferOffset = 0,
         VkDeviceSize radiusBufferOffset = 0) const;
@@ -1685,6 +1664,8 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
         std::vector<VkAccelerationStructureGeometryKHR *> accelerationStructureGeometriesKHRPointers;
         std::vector<VkAccelerationStructureBuildRangeInfoKHR> accelerationStructureBuildRangeInfoKHR;
         std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
+        std::vector<VkAccelerationStructureGeometrySpheresDataNV> accelerationStructureGeometrySpheresNV;
+        std::vector<VkAccelerationStructureGeometryLinearSweptSpheresDataNV> accelerationStructureGeometryLssNV;
         std::vector<uint32_t> maxPrimitiveCounts;
         if (m_geometriesData[0]->isSpheresType())
         {
@@ -1693,6 +1674,7 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
         }
         prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers,
                           accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT,
+                          accelerationStructureGeometrySpheresNV, accelerationStructureGeometryLssNV,
                           maxPrimitiveCounts);
 
         const VkAccelerationStructureGeometryKHR *accelerationStructureGeometriesKHRPointer =
@@ -2008,10 +1990,13 @@ void BottomLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const
         std::vector<VkAccelerationStructureGeometryKHR *> accelerationStructureGeometriesKHRPointers;
         std::vector<VkAccelerationStructureBuildRangeInfoKHR> accelerationStructureBuildRangeInfoKHR;
         std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
+        std::vector<VkAccelerationStructureGeometrySpheresDataNV> accelerationStructureGeometrySpheresNV;
+        std::vector<VkAccelerationStructureGeometryLinearSweptSpheresDataNV> accelerationStructureGeometryLssNV;
         std::vector<uint32_t> maxPrimitiveCounts;
 
         prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers,
                           accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT,
+                          accelerationStructureGeometrySpheresNV, accelerationStructureGeometryLssNV,
                           maxPrimitiveCounts, getVertexBufferOffset() + m_vertexBufferAddressOffset,
                           getIndexBufferOffset() + m_indexBufferAddressOffset,
                           getTransformBufferOffset() + m_transformBufferAddressOffset);
@@ -2265,6 +2250,8 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
     std::vector<VkAccelerationStructureGeometryKHR *> &accelerationStructureGeometriesKHRPointers,
     std::vector<VkAccelerationStructureBuildRangeInfoKHR> &accelerationStructureBuildRangeInfoKHR,
     std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> &accelerationStructureGeometryMicromapsEXT,
+    std::vector<VkAccelerationStructureGeometrySpheresDataNV> &accelerationStructureGeometrySpheresNV,
+    std::vector<VkAccelerationStructureGeometryLinearSweptSpheresDataNV> &accelerationStructureGeometryLssNV,
     std::vector<uint32_t> &maxPrimitiveCounts, VkDeviceSize vertexBufferOffset, VkDeviceSize indexBufferOffset,
     VkDeviceSize transformBufferOffset, VkDeviceSize radiusBufferOffset) const
 {
@@ -2272,6 +2259,8 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
     accelerationStructureGeometriesKHRPointers.resize(m_geometriesData.size());
     accelerationStructureBuildRangeInfoKHR.resize(m_geometriesData.size());
     accelerationStructureGeometryMicromapsEXT.resize(m_geometriesData.size());
+    accelerationStructureGeometrySpheresNV.resize(m_geometriesData.size());
+    accelerationStructureGeometryLssNV.resize(m_geometriesData.size());
     maxPrimitiveCounts.resize(m_geometriesData.size());
 
     for (size_t geometryNdx = 0; geometryNdx < m_geometriesData.size(); ++geometryNdx)
@@ -2433,9 +2422,7 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
                 VK_RAY_TRACING_LSS_PRIMITIVE_END_CAPS_MODE_CHAINED_NV :
                 VK_RAY_TRACING_LSS_PRIMITIVE_END_CAPS_MODE_NONE_NV};
 
-        VkAccelerationStructureGeometryDataKHR geometry                               = {};
-        VkAccelerationStructureGeometryLinearSweptSpheresDataNV *linearSphereGeometry = nullptr;
-        VkAccelerationStructureGeometrySpheresDataNV *sphereGeometry                  = nullptr;
+        VkAccelerationStructureGeometryDataKHR geometry = {};
         if (VK_GEOMETRY_TYPE_TRIANGLES_KHR == geometryData->getGeometryType())
         {
             geometry = makeVkAccelerationStructureGeometryDataKHR(accelerationStructureGeometryTrianglesDataKHR);
@@ -2446,11 +2433,11 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
         }
         else if (VK_GEOMETRY_TYPE_SPHERES_NV == geometryData->getGeometryType())
         {
-            sphereGeometry = makeVkAccelerationStructureGeometryDataKHR(spheresGeometryData);
+            accelerationStructureGeometrySpheresNV[geometryNdx] = spheresGeometryData;
         }
         else if (VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV == geometryData->getGeometryType())
         {
-            linearSphereGeometry = makeVkAccelerationStructureGeometryDataKHR(lssGeometryData);
+            accelerationStructureGeometryLssNV[geometryNdx] = lssGeometryData;
         }
 
         VkAccelerationStructureGeometryKHR accelerationStructureGeometryKHR = {
@@ -2464,11 +2451,11 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
 
         if (VK_GEOMETRY_TYPE_SPHERES_NV == geometryData->getGeometryType())
         {
-            accelerationStructureGeometryKHR.pNext = sphereGeometry;
+            accelerationStructureGeometryKHR.pNext = &accelerationStructureGeometrySpheresNV[geometryNdx];
         }
         else if (VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV == geometryData->getGeometryType())
         {
-            accelerationStructureGeometryKHR.pNext = linearSphereGeometry;
+            accelerationStructureGeometryKHR.pNext = &accelerationStructureGeometryLssNV[geometryNdx];
         }
         else
         {
@@ -3366,9 +3353,12 @@ auto BottomLevelAccelerationStructurePoolMember::computeBuildSize(const DeviceIn
         std::vector<VkAccelerationStructureGeometryKHR *> accelerationStructureGeometriesKHRPointers;
         std::vector<VkAccelerationStructureBuildRangeInfoKHR> accelerationStructureBuildRangeInfoKHR;
         std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
+        std::vector<VkAccelerationStructureGeometrySpheresDataNV> accelerationStructureGeometrySpheresNV;
+        std::vector<VkAccelerationStructureGeometryLinearSweptSpheresDataNV> accelerationStructureGeometryLssNV;
         std::vector<uint32_t> maxPrimitiveCounts;
         prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers,
                           accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT,
+                          accelerationStructureGeometrySpheresNV, accelerationStructureGeometryLssNV,
                           maxPrimitiveCounts);
 
         const VkAccelerationStructureGeometryKHR *accelerationStructureGeometriesKHRPointer =

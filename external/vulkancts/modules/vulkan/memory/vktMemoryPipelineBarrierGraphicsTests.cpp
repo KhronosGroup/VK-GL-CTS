@@ -35,11 +35,10 @@ namespace pipelinebarrier
 class PrepareRenderPassContext
 {
 public:
-    PrepareRenderPassContext(PrepareContext &context, vk::VkRenderPass renderPass, vk::VkFramebuffer framebuffer,
-                             int32_t targetWidth, int32_t targetHeight)
+    PrepareRenderPassContext(PrepareContext &context, vk::VkRenderPass renderPass, int32_t targetWidth,
+                             int32_t targetHeight)
         : m_context(context)
         , m_renderPass(renderPass)
-        , m_framebuffer(framebuffer)
         , m_targetWidth(targetWidth)
         , m_targetHeight(targetHeight)
     {
@@ -101,7 +100,6 @@ public:
 private:
     PrepareContext &m_context;
     const vk::VkRenderPass m_renderPass;
-    const vk::VkFramebuffer m_framebuffer;
     const int32_t m_targetWidth;
     const int32_t m_targetHeight;
 };
@@ -316,8 +314,7 @@ void SubmitRenderPass::prepare(PrepareContext &context)
     }
 
     {
-        PrepareRenderPassContext renderpassContext(context, *m_renderPass, *m_framebuffer, m_targetWidth,
-                                                   m_targetHeight);
+        PrepareRenderPassContext renderpassContext(context, *m_renderPass, m_targetWidth, m_targetHeight);
 
         for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
         {

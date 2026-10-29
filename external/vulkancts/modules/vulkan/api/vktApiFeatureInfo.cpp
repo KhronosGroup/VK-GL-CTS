@@ -6521,16 +6521,10 @@ tcu::TestStatus deviceFormatProperties2(Context &context)
 
         if (format == vk::VK_FORMAT_UNDEFINED)
         {
-            VkFormatProperties2 formatUndefProperties2;
+            const VkFormatProperties &formatProperties = extProperties.formatProperties;
 
-            deMemset(&formatUndefProperties2, 0xcd, sizeof(VkFormatProperties2));
-            formatUndefProperties2.sType                                  = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
-            formatUndefProperties2.pNext                                  = nullptr;
-            formatUndefProperties2.formatProperties.bufferFeatures        = 0;
-            formatUndefProperties2.formatProperties.linearTilingFeatures  = 0;
-            formatUndefProperties2.formatProperties.optimalTilingFeatures = 0;
-
-            if (deMemCmp(&formatUndefProperties2, &extProperties, sizeof(VkFormatProperties2)) != 0)
+            if (extProperties.pNext != nullptr || formatProperties.bufferFeatures != 0u ||
+                formatProperties.linearTilingFeatures != 0u || formatProperties.optimalTilingFeatures != 0u)
                 TCU_FAIL("vkGetPhysicalDeviceFormatProperties2, with VK_FORMAT_UNDEFINED as input format, is returning "
                          "non-zero properties");
         }

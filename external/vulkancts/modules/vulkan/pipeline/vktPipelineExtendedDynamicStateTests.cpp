@@ -785,7 +785,6 @@ protected:
     {
         VertexData(const tcu::Vec2 &coords_) : coords(coords_), ones(1.0f, 1.0f)
         {
-            deMemset(padding, 0, sizeof(padding));
         }
 
         tcu::Vec2 coords;
