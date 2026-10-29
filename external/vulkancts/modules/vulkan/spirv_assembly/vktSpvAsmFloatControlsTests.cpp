@@ -737,7 +737,6 @@ TypeValues<deFloat16>::TypeValues() : TypeValuesBase()
 
     vm[V_PI_DIV_2]         = deFloat32To16((float)M_PI_2);
     vm[V_DENORM_TIMES_TWO] = 0x07e0;
-    vm[V_DEGREES_DENORM]   = 0x1b0c;
 
     vm[V_ADD_ARG_A] = 0x3c03;
     vm[V_ADD_ARG_B] = vm[V_ONE];
@@ -3330,6 +3329,32 @@ bool isCosResultCorrect(const TYPE &returnedFloat, TestLog &log)
     return false;
 }
 
+template <typename TYPE, typename FLOAT_TYPE>
+bool isDegreesDenormResultCorrect(const TYPE &returnedFloat, TestLog &log)
+{
+    TypeValues<FLOAT_TYPE> typeValues;
+    typedef typename TYPE::StorageType SType;
+    typename RawConvert<FLOAT_TYPE, SType>::Value value;
+    value.fp = typeValues.getValue(V_DEGREES_DENORM);
+
+    if (returnedFloat.bits() == value.ui)
+        return true;
+
+    log << TestLog::Message << "Expected " << toHex(value.ui) << " (" << value.fp << ")" << TestLog::EndMessage;
+    return false;
+}
+
+template <>
+bool isDegreesDenormResultCorrect<Float16, deFloat16>(const Float16 &returnedFloat, TestLog &log)
+{
+    // computing degrees in fp16 gives 0x1b0c, computing it in fp32 and rounding to fp16 gives the more accurate 0x1b0d
+    if ((returnedFloat.bits() == 0x1b0c) || (returnedFloat.bits() == 0x1b0d))
+        return true;
+
+    log << TestLog::Message << "Expected 0x1b0c or 0x1b0d" << TestLog::EndMessage;
+    return false;
+}
+
 template <typename FLOAT_TYPE>
 double getVariableTypeAsDouble(FLOAT_TYPE param)
 {
@@ -3505,6 +3530,9 @@ bool compareBytes(vector<uint8_t> &expectedBytes, AllocationSp outputAlloc, Test
         typename TYPE::StorageType returnedValue = returnedFloat.bits();
         return (returnedValue == 0xbc00) || (returnedValue == 0xbbff);
     }
+
+    if (expectedValueId == V_DEGREES_DENORM)
+        return isDegreesDenormResultCorrect<TYPE, FLOAT_TYPE>(returnedFloat, log);
 
     // handle trigonometric operations precision errors
     if (expectedValueId == V_TRIG_ONE)
