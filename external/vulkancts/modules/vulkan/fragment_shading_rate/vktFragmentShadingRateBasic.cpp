@@ -2495,13 +2495,6 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                     }
 #endif // CTS_USES_VULKANSC
 
-                    de::MovePtr<BufferWithMemory> secVertexBuf;
-                    secVertexBuf = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-                        vk, device, allocator,
-                        makeBufferCreateInfo(vertexBufferSize,
-                                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
-                        MemoryRequirement::HostVisible | MemoryRequirement::Coherent));
-
                     vector<tcu::Vec4> vertices;
                     vertices.push_back(tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f));
                     vertices.push_back(tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f));
@@ -2509,6 +2502,13 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                     vertices.push_back(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f));
 
                     const VkDeviceSize vertexBufferSize2 = vertices.size() * sizeof(vertices[0]);
+
+                    de::MovePtr<BufferWithMemory> secVertexBuf;
+                    secVertexBuf = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+                        vk, device, allocator,
+                        makeBufferCreateInfo(vertexBufferSize2,
+                                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+                        MemoryRequirement::HostVisible | MemoryRequirement::Coherent));
 
                     float *vbuf2 = (float *)secVertexBuf->getAllocation().getHostPtr();
                     deMemcpy(vbuf2, &vertices[0], static_cast<std::size_t>(vertexBufferSize2));
