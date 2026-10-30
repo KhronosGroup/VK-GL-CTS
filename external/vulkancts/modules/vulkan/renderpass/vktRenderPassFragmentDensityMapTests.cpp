@@ -5136,6 +5136,123 @@ public:
     }
 };
 
+class FDMNoDrawsInstance : public vkt::TestInstance
+{
+public:
+    FDMNoDrawsInstance(Context &context, SharedData &sharedData) : vkt::TestInstance(context), m_sharedData(sharedData)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    SharedData &m_sharedData;
+};
+
+tcu::TestStatus FDMNoDrawsInstance::iterate()
+{
+    const auto &vkd    = m_sharedData.getDeviceInterface();
+    const auto device  = m_sharedData.getDevice();
+    const auto qfIndex = m_sharedData.getQueueFamilyIndex();
+    const auto queue   = m_sharedData.getQueue();
+    auto &alloc        = m_sharedData.getAllocator();
+
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto fdmFormat   = VK_FORMAT_R8G8_UNORM;
+    const auto extent      = makeExtent3D(128u, 128u, 1u);
+    const auto colorSRR    = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+    VkImageCreateInfo colorImageInfo = initVulkanStructure();
+    colorImageInfo.flags             = VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
+    colorImageInfo.imageType         = VK_IMAGE_TYPE_2D;
+    colorImageInfo.format            = colorFormat;
+    colorImageInfo.extent            = extent;
+    colorImageInfo.mipLevels         = 1u;
+    colorImageInfo.arrayLayers       = 1u;
+    colorImageInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    colorImageInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    colorImageInfo.usage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    VkImageCreateInfo fdmImageInfo = colorImageInfo;
+    fdmImageInfo.flags             = 0u;
+    fdmImageInfo.format            = fdmFormat;
+    fdmImageInfo.usage             = (VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    ImageWithMemory colorImage(vkd, device, alloc, colorImageInfo, MemoryRequirement::Any);
+    const auto colorView = makeImageView(vkd, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSRR);
+
+    ImageWithMemory fdmImage(vkd, device, alloc, fdmImageInfo, MemoryRequirement::Any);
+    const auto fdmView = makeImageView(vkd, device, *fdmImage, VK_IMAGE_VIEW_TYPE_2D, fdmFormat, colorSRR);
+
+    CommandPoolWithBuffer cmd(vkd, device, qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    const auto colorBarrier =
+        makeImageMemoryBarrier(0u, (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+                               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *colorImage, colorSRR);
+    cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &colorBarrier);
+    const auto preClearBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *fdmImage, colorSRR);
+    cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  &preClearBarrier);
+    const auto density = makeClearValueColorF32(0.5f, 0.5f, 0.0f, 0.0f);
+    vkd.cmdClearColorImage(cmdBuffer, *fdmImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &density.color, 1u, &colorSRR);
+    const auto postClearBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT, *fdmImage, colorSRR);
+    cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT, &postClearBarrier);
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+    VkRenderingFragmentDensityMapAttachmentInfoEXT fdmAttachment = initVulkanStructure();
+    fdmAttachment.imageView                                      = *fdmView;
+    fdmAttachment.imageLayout                                    = VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT;
+
+    VkRenderingAttachmentInfo colorAttachment = initVulkanStructure();
+    colorAttachment.imageView                 = *colorView;
+    colorAttachment.imageLayout               = VK_IMAGE_LAYOUT_GENERAL;
+    colorAttachment.loadOp                    = VK_ATTACHMENT_LOAD_OP_LOAD;
+    colorAttachment.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
+
+    VkRenderingInfo renderingInfo      = initVulkanStructure(&fdmAttachment);
+    renderingInfo.renderArea           = makeRect2D(extent);
+    renderingInfo.layerCount           = 1u;
+    renderingInfo.colorAttachmentCount = 1u;
+    renderingInfo.pColorAttachments    = &colorAttachment;
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
+    vkd.cmdEndRendering(cmdBuffer);
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class FDMNoDrawsCase : public vkt::TestCase
+{
+public:
+    FDMNoDrawsCase(tcu::TestContext &testCtx, const std::string &name) : vkt::TestCase(testCtx, name)
+    {
+    }
+
+    void checkSupport(Context &context) const override
+    {
+        context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
+        context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        auto &sharedData = tcu::retrieveSharedResource<SharedData>(this);
+        sharedData.setup(context);
+        return new FDMNoDrawsInstance(context, sharedData);
+    }
+};
+
 class FDMTestGroup : public tcu::TestCaseGroup
 {
 public:
@@ -5689,6 +5806,11 @@ void FDMTestGroup::init(void)
         }
 
         addChild(offsetGroup.release());
+    }
+    if ((m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) &&
+        (m_groupParams->useSecondaryCmdBuffer == false))
+    {
+        propertiesGroup->addChild(new FDMNoDrawsCase(testCtx, "no_draws"));
     }
 
     addChild(propertiesGroup.release());
