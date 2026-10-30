@@ -33,6 +33,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkBuilderUtil.hpp"
@@ -59,6 +60,7 @@ enum TestType
     TEST_TYPE_DEPTH_STENCIL_RESOLVE,
     TEST_TYPE_MULTISUBPASS,
     TEST_TYPE_DIFFERENT_ATTACHMENTS,
+    TEST_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED,
     TEST_TYPE_LAST
 };
 
@@ -539,6 +541,45 @@ Move<VkRenderPass> makeSingleAttachmentRenderPass(const DeviceInterface &vk, con
     return createRenderPass(vk, device, &renderPassInfo, allocationCallbacks);
 }
 
+#ifndef CTS_USES_VULKANSC
+Move<VkRenderPass> makeMultisampledRenderToSingleSampledRenderPass(const DeviceInterface &vk, const VkDevice device,
+                                                                   const VkFormat colorFormat,
+                                                                   const VkSampleCountFlagBits rasterizationSamples)
+{
+    VkAttachmentDescription2 attachmentDescription = initVulkanStructure();
+    attachmentDescription.format                   = colorFormat;
+    attachmentDescription.samples                  = VK_SAMPLE_COUNT_1_BIT;
+    attachmentDescription.loadOp                   = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachmentDescription.storeOp                  = VK_ATTACHMENT_STORE_OP_STORE;
+    attachmentDescription.stencilLoadOp            = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachmentDescription.stencilStoreOp           = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachmentDescription.initialLayout            = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachmentDescription.finalLayout              = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference2 colorAttachmentRef = initVulkanStructure();
+    colorAttachmentRef.attachment             = 0u;
+    colorAttachmentRef.layout                 = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachmentRef.aspectMask             = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    VkMultisampledRenderToSingleSampledInfoEXT multisampledRenderToSingleSampledInfo = initVulkanStructure();
+    multisampledRenderToSingleSampledInfo.multisampledRenderToSingleSampledEnable    = VK_TRUE;
+    multisampledRenderToSingleSampledInfo.rasterizationSamples                       = rasterizationSamples;
+
+    VkSubpassDescription2 subpassDescription = initVulkanStructure(&multisampledRenderToSingleSampledInfo);
+    subpassDescription.pipelineBindPoint     = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount  = 1u;
+    subpassDescription.pColorAttachments     = &colorAttachmentRef;
+
+    VkRenderPassCreateInfo2 renderPassInfo = initVulkanStructure();
+    renderPassInfo.attachmentCount         = 1u;
+    renderPassInfo.pAttachments            = &attachmentDescription;
+    renderPassInfo.subpassCount            = 1u;
+    renderPassInfo.pSubpasses              = &subpassDescription;
+
+    return createRenderPass2(vk, device, &renderPassInfo);
+}
+#endif // CTS_USES_VULKANSC
+
 VkImageCreateInfo makeImageCreateInfo(const VkFormat format, const VkExtent2D size, const VkImageUsageFlags usage,
                                       VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT)
 {
@@ -568,7 +609,7 @@ Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDevice de
                                     const bool extendedFlags,
                                     const VkImageUsageFlags dsUsage     = static_cast<VkImageUsageFlags>(0),
                                     const AspectFlags resolveAspects    = ASPECT_NONE,
-                                    const uint32_t inputAttachmentCount = 0)
+                                    const uint32_t inputAttachmentCount = 0, const VkImageCreateFlags colorFlags = 0u)
 {
     (void)extendedFlags;
     std::vector<VkFramebufferAttachmentImageInfo> framebufferAttachmentImageInfos;
@@ -584,7 +625,7 @@ Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDevice de
             VkFramebufferAttachmentImageInfo framebufferAttachmentImageInfo = {
                 VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, //  VkStructureType sType;
                 nullptr,                                             //  const void* pNext;
-                (VkImageCreateFlags)0u,                              //  VkImageCreateFlags flags;
+                colorFlags,                                          //  VkImageCreateFlags flags;
                 colorUsage,                                          //  VkImageUsageFlags usage;
                 renderSize.width,                                    //  uint32_t width;
                 renderSize.height,                                   //  uint32_t height;
@@ -1778,6 +1819,124 @@ tcu::TestStatus ColorResolveImagelessTestInstance::iterate(void)
     }
 }
 
+#ifndef CTS_USES_VULKANSC
+class MultisampledRenderToSingleSampledTestInstance : public ColorResolveImagelessTestInstance
+{
+public:
+    MultisampledRenderToSingleSampledTestInstance(Context &context, const TestParameters &parameters);
+
+protected:
+    virtual tcu::TestStatus iterate(void);
+};
+
+MultisampledRenderToSingleSampledTestInstance::MultisampledRenderToSingleSampledTestInstance(
+    Context &context, const TestParameters &parameters)
+    : ColorResolveImagelessTestInstance(context, parameters)
+{
+}
+
+tcu::TestStatus MultisampledRenderToSingleSampledTestInstance::iterate(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+
+    const VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_4_BIT;
+    const VkImageCreateFlags colorFlags     = VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT;
+    const tcu::Vec4 clearColor              = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    const VkFormat colorFormat              = m_parameters.colorFormat;
+    const VkDeviceSize colorBufferSize =
+        m_imageExtent2D.width * m_imageExtent2D.height * tcu::getPixelSize(mapVkFormat(colorFormat));
+    const VkImageSubresourceRange colorSubresRange =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+    VkImageCreateInfo colorImageCreateInfo = makeImageCreateInfo(colorFormat, m_imageExtent2D, m_colorImageUsage);
+    colorImageCreateInfo.flags             = colorFlags;
+
+    const Unique<VkImage> colorImage(makeImage(vk, device, colorImageCreateInfo));
+    const UniquePtr<Allocation> colorImageAlloc(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+    const Unique<VkImageView> colorAttachment(
+        makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubresRange));
+    const Unique<VkBuffer> colorBuffer(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+    const UniquePtr<Allocation> colorBufferAlloc(
+        bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
+
+    const Unique<VkShaderModule> vertModule(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("vert")));
+    const Unique<VkShaderModule> fragModule(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("frag")));
+    const Unique<VkRenderPass> renderPass(
+        makeMultisampledRenderToSingleSampledRenderPass(vk, device, colorFormat, sampleCount));
+    const Unique<VkFramebuffer> framebuffer(
+        makeFramebuffer(vk, device, *renderPass, m_imageExtent2D, &colorFormat, m_colorImageUsage,
+                        &m_parameters.dsFormat, m_parameters.extendedFlags, 0u, ASPECT_NONE, 0u, colorFlags));
+    const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device));
+    const Unique<VkPipeline> pipeline(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertModule,
+                                                           *fragModule, m_imageExtent2D, ASPECT_NONE, sampleCount));
+    const Unique<VkCommandPool> cmdPool(
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    const std::vector<float> vertexArray(getVertices());
+    const uint32_t vertexCount(static_cast<uint32_t>(vertexArray.size() / 4u));
+    const VkDeviceSize vertexArraySize(vertexArray.size() * sizeof(vertexArray[0]));
+    const Unique<VkBuffer> vertexBuffer(makeBuffer(vk, device, vertexArraySize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+    const UniquePtr<Allocation> vertexBufferAlloc(
+        bindBuffer(vk, device, allocator, *vertexBuffer, MemoryRequirement::HostVisible));
+    const VkDeviceSize vertexBufferOffset(0u);
+
+    fillBuffer(vk, device, *vertexBufferAlloc, &vertexArray[0], vertexArraySize);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    {
+        VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo = initVulkanStructure();
+        renderPassAttachmentBeginInfo.attachmentCount                 = 1u;
+        renderPassAttachmentBeginInfo.pAttachments                    = &*colorAttachment;
+
+        beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_imageExtent2D), clearColor,
+                        &renderPassAttachmentBeginInfo);
+        {
+            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+            vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &*vertexBuffer, &vertexBufferOffset);
+
+            vk.cmdDraw(*cmdBuffer, vertexCount, 1u, 0u, 0u);
+        }
+        endRenderPass(vk, *cmdBuffer);
+
+        {
+            const VkImageMemoryBarrier preCopyBarrier =
+                makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                       *colorImage, colorSubresRange);
+            const VkBufferImageCopy region =
+                makeBufferImageCopy(makeExtent3D(m_imageExtent2D.width, m_imageExtent2D.height, 1u),
+                                    makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
+            const VkBufferMemoryBarrier postCopyBarrier = makeBufferMemoryBarrier(
+                VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *colorBuffer, 0ull, VK_WHOLE_SIZE);
+
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &preCopyBarrier);
+            vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, 1u,
+                                    &region);
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
+                                  nullptr, 1u, &postCopyBarrier, 0u, nullptr);
+        }
+    }
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    if (!verifyBuffer(colorBufferAlloc, colorFormat, "Color", ASPECT_COLOR))
+    {
+        return tcu::TestStatus::fail("Fail");
+    }
+    return tcu::TestStatus::pass("Pass");
+}
+#endif // CTS_USES_VULKANSC
+
 class DepthResolveImagelessTestInstance : public DepthImagelessTestInstance
 {
 public:
@@ -2627,7 +2786,9 @@ public:
 protected:
     virtual void checkSupport(Context &context) const;
     void checkImageFormatProperties(Context &context, const VkFormat format, const VkImageUsageFlags imageUsageFlags,
-                                    const VkExtent2D &requiredSize2D) const;
+                                    const VkExtent2D &requiredSize2D,
+                                    const VkImageCreateFlags imageCreateFlags     = static_cast<VkImageCreateFlags>(0u),
+                                    const VkSampleCountFlags requiredSampleCounts = VK_SAMPLE_COUNT_1_BIT) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 
@@ -2680,22 +2841,37 @@ void BaseTestCase::checkSupport(Context &context) const
         }
     }
 #ifndef CTS_USES_VULKANSC
+    else if (m_parameters.testType == TEST_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED)
+    {
+        context.requireDeviceFunctionality("VK_KHR_imageless_framebuffer");
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+        context.requireDeviceFunctionality("VK_EXT_multisampled_render_to_single_sampled");
+
+        if (!context.getDeviceProperties().limits.standardSampleLocations)
+            TCU_THROW(NotSupportedError, "Non-standard sample locations are not supported");
+
+        colorImageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+        checkImageFormatProperties(context, m_parameters.colorFormat, colorImageUsage, imageExtent,
+                                   VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT,
+                                   VK_SAMPLE_COUNT_4_BIT);
+    }
+
     if (m_parameters.extendedFlags)
         context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
 #endif
 }
 
 void BaseTestCase::checkImageFormatProperties(Context &context, const VkFormat format,
-                                              const VkImageUsageFlags imageUsageFlags,
-                                              const VkExtent2D &requiredSize2D) const
+                                              const VkImageUsageFlags imageUsageFlags, const VkExtent2D &requiredSize2D,
+                                              const VkImageCreateFlags imageCreateFlags,
+                                              const VkSampleCountFlags requiredSampleCounts) const
 {
-    const InstanceInterface &vki              = context.getInstanceInterface();
-    const VkPhysicalDevice physDevice         = context.getPhysicalDevice();
-    const VkImageType imageType               = VK_IMAGE_TYPE_2D;
-    const VkImageTiling imageTiling           = VK_IMAGE_TILING_OPTIMAL;
-    const VkImageCreateFlags imageCreateFlags = static_cast<VkImageCreateFlags>(0u);
-    const uint32_t requiredLayers             = 1u;
-    const VkExtent3D requiredSize             = makeExtent3D(requiredSize2D.height, requiredSize2D.width, 1u);
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+    const VkImageType imageType       = VK_IMAGE_TYPE_2D;
+    const VkImageTiling imageTiling   = VK_IMAGE_TILING_OPTIMAL;
+    const uint32_t requiredLayers     = 1u;
+    const VkExtent3D requiredSize     = makeExtent3D(requiredSize2D.height, requiredSize2D.width, 1u);
 
     VkImageFormatProperties imageFormatProperties;
     VkResult result;
@@ -2712,6 +2888,9 @@ void BaseTestCase::checkImageFormatProperties(Context &context, const VkFormat f
     {
         TCU_THROW(NotSupportedError, "Depth/stencil format is not supported");
     }
+
+    if ((imageFormatProperties.sampleCounts & requiredSampleCounts) != requiredSampleCounts)
+        TCU_THROW(NotSupportedError, "Sample count is not supported");
 }
 
 void BaseTestCase::initPrograms(SourceCollections &programCollection) const
@@ -2721,7 +2900,8 @@ void BaseTestCase::initPrograms(SourceCollections &programCollection) const
         std::ostringstream src;
 
         if (m_parameters.testType == TEST_TYPE_COLOR || m_parameters.testType == TEST_TYPE_COLOR_RESOLVE ||
-            m_parameters.testType == TEST_TYPE_DEPTH_STENCIL)
+            m_parameters.testType == TEST_TYPE_DEPTH_STENCIL ||
+            m_parameters.testType == TEST_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED)
         {
             src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
                 << "\n"
@@ -2940,6 +3120,11 @@ TestInstance *BaseTestCase::createInstance(Context &context) const
     if (m_parameters.testType == TEST_TYPE_DIFFERENT_ATTACHMENTS)
         return new DifferentAttachmentsTestInstance(context, m_parameters);
 
+#ifndef CTS_USES_VULKANSC
+    if (m_parameters.testType == TEST_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED)
+        return new MultisampledRenderToSingleSampledTestInstance(context, m_parameters);
+#endif
+
     TCU_THROW(InternalError, "Unknown test type specified");
 }
 
@@ -3021,6 +3206,20 @@ tcu::TestNode *imagelessDifferentAttachments(tcu::TestContext &testCtx, bool ext
     return new BaseTestCase(testCtx, "different_attachments", parameters);
 }
 
+#ifndef CTS_USES_VULKANSC
+tcu::TestNode *imagelessMultisampledRenderToSingleSampled(tcu::TestContext &testCtx, bool extendedFlags)
+{
+    TestParameters parameters = {
+        TEST_TYPE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED, //  TestType testType;
+        VK_FORMAT_R8G8B8A8_UNORM,                        //  VkFormat colorFormat;
+        VK_FORMAT_UNDEFINED,                             //  VkFormat dsFormat;
+        extendedFlags,                                   // bool extendedFlags
+    };
+
+    return new BaseTestCase(testCtx, "multisampled_render_to_single_sampled", parameters);
+}
+#endif
+
 } // namespace
 
 tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &name)
@@ -3041,6 +3240,9 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
         flagsGroup->addChild(imagelessMultisubpass(testCtx, extendedFlags)); // Multi-subpass test
         flagsGroup->addChild(
             imagelessDifferentAttachments(testCtx, extendedFlags)); // Different attachments in multiple render passes
+#ifndef CTS_USES_VULKANSC
+        flagsGroup->addChild(imagelessMultisampledRenderToSingleSampled(testCtx, extendedFlags));
+#endif
 
         imagelessFramebufferGroup->addChild(flagsGroup.release());
     }
