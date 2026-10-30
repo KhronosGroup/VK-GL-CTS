@@ -42,6 +42,12 @@ set(USE_STATIC_SHADERC ON CACHE BOOL "Build shaderc from source and link it stat
 include(FetchContent)
 include(FindShaderc)
 
+# shaderc inherits the CTS warning flags, and it has triggered -Wundef warnings
+# in the past.
+if (TARGET shaderc_util AND (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG))
+    target_compile_options(shaderc_util PRIVATE -Wno-undef)
+endif()
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/common/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../external/vulkancts/framework/vulkan/generated/vulkan
