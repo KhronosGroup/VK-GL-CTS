@@ -50,6 +50,7 @@ tcu::TestCaseGroup *createAmberTests(tcu::TestContext &testCtx)
         const char *const *requirements;
     } amberTests[] = {
         {"workgroup_barrier", "ray_query_workgroup_barrier.amber", rayQueryList},
+        {"as_from_address", "ray_query_as_from_address.amber", rayQueryList},
     };
 
     const char *dataDir = "ray_query";

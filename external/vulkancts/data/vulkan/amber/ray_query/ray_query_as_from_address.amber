@@ -1,0 +1,26 @@
+#!amber
+
+DEVICE_EXTENSION VK_KHR_acceleration_structure
+DEVICE_EXTENSION VK_KHR_ray_query
+DEVICE_EXTENSION VK_KHR_buffer_device_address
+DEVICE_EXTENSION VK_KHR_spirv_1_4
+DEVICE_FEATURE   AccelerationStructureFeaturesKHR.accelerationStructure
+DEVICE_FEATURE   RayQueryFeaturesKHR.rayQuery
+DEVICE_FEATURE   BufferDeviceAddressFeatures.bufferDeviceAddress
+
+SHADER compute ray_query_shader GLSL TARGET_ENV spv1.4
+#version 460 core
+#extension GL_EXT_ray_query : require
+
+void main() {
+    rayQueryEXT query;
+    rayQueryInitializeEXT(query, accelerationStructureEXT(uvec2(0)), 0, 0, vec3(0.0), 0.0, vec3(0.0), 0.0);
+    rayQueryProceedEXT(query);
+}
+END
+
+PIPELINE compute ray_query_pipeline
+  ATTACH ray_query_shader
+END
+
+RUN ray_query_pipeline 1 1 1
