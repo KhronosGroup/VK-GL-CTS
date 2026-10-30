@@ -978,7 +978,7 @@ tcu::TestStatus BlittingImages::checkTestResult(tcu::ConstPixelBufferAccess resu
     const std::string failMessage("Result image is incorrect");
 
     SlicedImageLogGuard slicedImageLogGuard(m_context.getTestContext().getLog());
-    const auto tcuSrcFormat = mapVkFormat(m_params.src.image.format);
+    const auto tcuSrcFormat = m_sourceCompressedTexture ? tcu::TextureFormat() : mapVkFormat(m_params.src.image.format);
 
     if (m_params.filter != VK_FILTER_NEAREST)
     {
