@@ -1093,6 +1093,13 @@ tcu::TestStatus createDeviceWithNullQueuePrioritiesTest(Context &context)
     if (de::contains(context.getDeviceExtensions(), std::string("VK_KHR_maintenance12")))
         enabledExtensions.push_back("VK_KHR_maintenance12");
 
+    void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    VkPhysicalDeviceMaintenance12FeaturesKHR maintenance12Features = initVulkanStructure();
+    maintenance12Features.maintenance12                            = VK_TRUE;
+    pNext                                                          = &maintenance12Features;
+#endif // CTS_USES_VULKANSC
+
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
         nullptr,
@@ -1104,7 +1111,7 @@ tcu::TestStatus createDeviceWithNullQueuePrioritiesTest(Context &context)
 
     const VkDeviceCreateInfo deviceCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
-        nullptr,                              //pNext;
+        pNext,                                //pNext;
         (VkDeviceCreateFlags)0u,
         1,                                  //queueRecordCount;
         &deviceQueueCreateInfo,             //pRequestedQueues;
@@ -1314,6 +1321,13 @@ tcu::TestStatus createDeviceWithNullQueuePrioritiesAndGlobalPriorityTest(Context
         enabledExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
     }
 
+    void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    VkPhysicalDeviceMaintenance12FeaturesKHR maintenance12Features = initVulkanStructure();
+    maintenance12Features.maintenance12                            = VK_TRUE;
+    pNext                                                          = &maintenance12Features;
+#endif // CTS_USES_VULKANSC
+
     for (VkQueueGlobalPriority globalPriority : globalPriorities)
     {
         const VkDeviceQueueGlobalPriorityCreateInfo queueGlobalPriority{
@@ -1333,7 +1347,7 @@ tcu::TestStatus createDeviceWithNullQueuePrioritiesAndGlobalPriorityTest(Context
 
         const VkDeviceCreateInfo deviceCreateInfo = {
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
-            nullptr,                              //pNext;
+            pNext,                                //pNext;
             (VkDeviceCreateFlags)0u,              //flags;
             1,                                    //queueRecordCount;
             &queueCreateInfo,                     //pRequestedQueues;
