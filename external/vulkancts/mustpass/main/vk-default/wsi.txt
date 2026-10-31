@@ -4478,6 +4478,7 @@ dEQP-VK.wsi.android.swapchain.destroy.null_handle
 dEQP-VK.wsi.android.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.android.swapchain.destroy.old_swapchain_acquired_image
 dEQP-VK.wsi.android.swapchain.destroy.retired_swapchain_present
+dEQP-VK.wsi.android.swapchain.destroy.retired_swapchain_present_after
 dEQP-VK.wsi.android.swapchain.extended_flags.clipped
 dEQP-VK.wsi.android.swapchain.extended_flags.composite_alpha
 dEQP-VK.wsi.android.swapchain.extended_flags.exclusive_nonzero_queues
@@ -8128,6 +8129,7 @@ dEQP-VK.wsi.direct.swapchain.destroy.null_handle
 dEQP-VK.wsi.direct.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.direct.swapchain.destroy.old_swapchain_acquired_image
 dEQP-VK.wsi.direct.swapchain.destroy.retired_swapchain_present
+dEQP-VK.wsi.direct.swapchain.destroy.retired_swapchain_present_after
 dEQP-VK.wsi.direct.swapchain.extended_flags.clipped
 dEQP-VK.wsi.direct.swapchain.extended_flags.composite_alpha
 dEQP-VK.wsi.direct.swapchain.extended_flags.exclusive_nonzero_queues
@@ -11777,6 +11779,7 @@ dEQP-VK.wsi.direct_drm.swapchain.destroy.null_handle
 dEQP-VK.wsi.direct_drm.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.direct_drm.swapchain.destroy.old_swapchain_acquired_image
 dEQP-VK.wsi.direct_drm.swapchain.destroy.retired_swapchain_present
+dEQP-VK.wsi.direct_drm.swapchain.destroy.retired_swapchain_present_after
 dEQP-VK.wsi.direct_drm.swapchain.extended_flags.clipped
 dEQP-VK.wsi.direct_drm.swapchain.extended_flags.composite_alpha
 dEQP-VK.wsi.direct_drm.swapchain.extended_flags.exclusive_nonzero_queues
@@ -15820,6 +15823,7 @@ dEQP-VK.wsi.headless.swapchain.destroy.null_handle
 dEQP-VK.wsi.headless.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.headless.swapchain.destroy.old_swapchain_acquired_image
 dEQP-VK.wsi.headless.swapchain.destroy.retired_swapchain_present
+dEQP-VK.wsi.headless.swapchain.destroy.retired_swapchain_present_after
 dEQP-VK.wsi.headless.swapchain.extended_flags.clipped
 dEQP-VK.wsi.headless.swapchain.extended_flags.composite_alpha
 dEQP-VK.wsi.headless.swapchain.extended_flags.exclusive_nonzero_queues
@@ -20714,6 +20718,7 @@ dEQP-VK.wsi.metal.swapchain.destroy.null_handle
 dEQP-VK.wsi.metal.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.metal.swapchain.destroy.old_swapchain_acquired_image
 dEQP-VK.wsi.metal.swapchain.destroy.retired_swapchain_present
+dEQP-VK.wsi.metal.swapchain.destroy.retired_swapchain_present_after
 dEQP-VK.wsi.metal.swapchain.extended_flags.clipped
 dEQP-VK.wsi.metal.swapchain.extended_flags.composite_alpha
 dEQP-VK.wsi.metal.swapchain.extended_flags.exclusive_nonzero_queues
@@ -24742,6 +24747,7 @@ dEQP-VK.wsi.wayland.swapchain.destroy.null_handle
 dEQP-VK.wsi.wayland.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.wayland.swapchain.destroy.old_swapchain_acquired_image
 dEQP-VK.wsi.wayland.swapchain.destroy.retired_swapchain_present
+dEQP-VK.wsi.wayland.swapchain.destroy.retired_swapchain_present_after
 dEQP-VK.wsi.wayland.swapchain.extended_flags.clipped
 dEQP-VK.wsi.wayland.swapchain.extended_flags.composite_alpha
 dEQP-VK.wsi.wayland.swapchain.extended_flags.exclusive_nonzero_queues
@@ -28772,6 +28778,7 @@ dEQP-VK.wsi.win32.swapchain.destroy.null_handle
 dEQP-VK.wsi.win32.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.win32.swapchain.destroy.old_swapchain_acquired_image
 dEQP-VK.wsi.win32.swapchain.destroy.retired_swapchain_present
+dEQP-VK.wsi.win32.swapchain.destroy.retired_swapchain_present_after
 dEQP-VK.wsi.win32.swapchain.extended_flags.clipped
 dEQP-VK.wsi.win32.swapchain.extended_flags.composite_alpha
 dEQP-VK.wsi.win32.swapchain.extended_flags.exclusive_nonzero_queues
@@ -32801,6 +32808,7 @@ dEQP-VK.wsi.xcb.swapchain.destroy.null_handle
 dEQP-VK.wsi.xcb.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.xcb.swapchain.destroy.old_swapchain_acquired_image
 dEQP-VK.wsi.xcb.swapchain.destroy.retired_swapchain_present
+dEQP-VK.wsi.xcb.swapchain.destroy.retired_swapchain_present_after
 dEQP-VK.wsi.xcb.swapchain.extended_flags.clipped
 dEQP-VK.wsi.xcb.swapchain.extended_flags.composite_alpha
 dEQP-VK.wsi.xcb.swapchain.extended_flags.exclusive_nonzero_queues
@@ -36830,6 +36838,7 @@ dEQP-VK.wsi.xlib.swapchain.destroy.null_handle
 dEQP-VK.wsi.xlib.swapchain.destroy.old_swapchain
 dEQP-VK.wsi.xlib.swapchain.destroy.old_swapchain_acquired_image
 dEQP-VK.wsi.xlib.swapchain.destroy.retired_swapchain_present
+dEQP-VK.wsi.xlib.swapchain.destroy.retired_swapchain_present_after
 dEQP-VK.wsi.xlib.swapchain.extended_flags.clipped
 dEQP-VK.wsi.xlib.swapchain.extended_flags.composite_alpha
 dEQP-VK.wsi.xlib.swapchain.extended_flags.exclusive_nonzero_queues

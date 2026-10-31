@@ -37,6 +37,7 @@
 #include "vkWsiUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkObjTypeImpl.inl"
 
 #include "tcuCommandLine.hpp"
@@ -2897,6 +2898,91 @@ tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
     return tcu::TestStatus::pass("");
 }
 
+uint32_t acquireAndTransitionToPresentLayout(const DeviceInterface &vk, VkDevice device, VkQueue queue,
+                                             VkSwapchainKHR swapchain, const vector<VkImage> &images,
+                                             VkCommandBuffer cmdBuffer)
+{
+    const auto fence    = createFence(vk, device);
+    uint32_t imageIndex = 0u;
+    VK_CHECK_WSI(vk.acquireNextImageKHR(device, swapchain, std::numeric_limits<uint64_t>::max(), VK_NULL_HANDLE, *fence,
+                                        &imageIndex));
+    waitForFence(vk, device, *fence);
+
+    const auto barrier =
+        makeImageMemoryBarrier(0u, 0u, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, images[imageIndex],
+                               makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+    beginCommandBuffer(vk, cmdBuffer);
+    cmdPipelineImageMemoryBarrier(vk, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                  VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, &barrier);
+    endCommandBuffer(vk, cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, cmdBuffer);
+
+    return imageIndex;
+}
+
+tcu::TestStatus presentImageFromRetiredSwapchainAfter(Context &context, Type wsiType)
+{
+    const tcu::UVec2 desiredSize(256, 256);
+    const InstanceHelper instHelper(context, wsiType);
+    const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
+                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const DeviceHelper devHelper(context, instHelper, *surface);
+
+    const auto &vk        = devHelper.vkd;
+    const VkDevice device = *devHelper.device;
+    const VkQueue queue   = devHelper.queue;
+
+    const auto cmdPool =
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex);
+    const auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    const uint32_t minImageCount =
+        getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface).minImageCount;
+    VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
+        wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, minImageCount + 1u);
+    const auto oldSwapchain = createWsiSwapchain(wsiType, vk, device, &swapchainInfo);
+    const auto oldImages    = getSwapchainImages(vk, device, *oldSwapchain);
+
+    VkPresentInfoKHR presentInfo = initVulkanStructure();
+    presentInfo.swapchainCount   = 1u;
+    presentInfo.pSwapchains      = &*oldSwapchain;
+
+    for (size_t frameNdx = 0; frameNdx < 2 * oldImages.size(); ++frameNdx)
+    {
+        const uint32_t imageIndex =
+            acquireAndTransitionToPresentLayout(vk, device, queue, *oldSwapchain, oldImages, *cmdBuffer);
+        presentInfo.pImageIndices = &imageIndex;
+        VK_CHECK_WSI(vk.queuePresentKHR(queue, &presentInfo));
+    }
+
+    const uint32_t retiredImageIndex =
+        acquireAndTransitionToPresentLayout(vk, device, queue, *oldSwapchain, oldImages, *cmdBuffer);
+
+    swapchainInfo.oldSwapchain = *oldSwapchain;
+    const auto newSwapchain    = createWsiSwapchain(wsiType, vk, device, &swapchainInfo);
+    const auto newImages       = getSwapchainImages(vk, device, *newSwapchain);
+    presentInfo.pSwapchains    = &*newSwapchain;
+
+    for (size_t frameNdx = 0; frameNdx < 2 * newImages.size(); ++frameNdx)
+    {
+        const uint32_t imageIndex =
+            acquireAndTransitionToPresentLayout(vk, device, queue, *newSwapchain, newImages, *cmdBuffer);
+        presentInfo.pImageIndices = &imageIndex;
+        VK_CHECK_WSI(vk.queuePresentKHR(queue, &presentInfo));
+    }
+
+    presentInfo.pSwapchains   = &*oldSwapchain;
+    presentInfo.pImageIndices = &retiredImageIndex;
+    const VkResult result     = vk.queuePresentKHR(queue, &presentInfo);
+    VK_CHECK(vk.queueWaitIdle(queue));
+
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR)
+        return tcu::TestStatus::fail("vkQueuePresentKHR with image from retired swapchain failed");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestStatus acquireTooManyTest(Context &context, Type wsiType)
 {
     const tcu::UVec2 desiredSize(256, 256);
@@ -3075,6 +3161,9 @@ void populateDestroyGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
     // Present image acquired before retiring swapchain
     addFunctionCase(testGroup, "retired_swapchain_present", commonCheckSupport, presentImageFromRetiredSwapchain,
                     wsiType);
+    // Present image acquired before retiring swapchain after presenting images from the new swapchain
+    addFunctionCase(testGroup, "retired_swapchain_present_after", commonCheckSupport,
+                    presentImageFromRetiredSwapchainAfter, wsiType);
 }
 
 void populateAcquireGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
