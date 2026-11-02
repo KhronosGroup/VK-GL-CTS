@@ -76,7 +76,7 @@ class DebugReportRecorder
 public:
     using MessageList = de::AppendList<DebugUtilsMessage>;
 
-    DebugReportRecorder(bool printValidationErrors);
+    DebugReportRecorder(bool printValidationErrors, bool ignoreLoaderErrors = false);
     ~DebugReportRecorder(void);
 
     MessageList &getMessages(void)
@@ -92,12 +92,16 @@ public:
         return m_print_errors;
     }
 
+    // Loader failure messages are not API usage errors when ignoreLoaderErrors is set
+    bool isApiUsageError(const DebugUtilsMessage &message) const;
+
     VkDebugUtilsMessengerCreateInfoEXT makeCreateInfo(void);
     Move<VkDebugUtilsMessengerEXT> createCallback(const InstanceInterface &vki, VkInstance instance);
 
 private:
     MessageList m_messages;
     const bool m_print_errors;
+    const bool m_ignore_loader_errors;
 };
 
 #endif // CTS_USES_VULKANSC

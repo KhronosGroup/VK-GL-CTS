@@ -126,10 +126,18 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsCallback(VkDebugUtilsMessageSeverityFla
 
 } // namespace
 
-DebugReportRecorder::DebugReportRecorder(bool printValidationErrors)
+DebugReportRecorder::DebugReportRecorder(bool printValidationErrors, bool ignoreLoaderErrors)
     : m_messages(1024)
     , m_print_errors(printValidationErrors)
+    , m_ignore_loader_errors(ignoreLoaderErrors)
 {
+}
+
+bool DebugReportRecorder::isApiUsageError(const DebugUtilsMessage &message) const
+{
+    const bool loaderGeneral =
+        message.vuid == "Loader Message" && (message.type & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) == 0u;
+    return message.isError() && !(m_ignore_loader_errors && loaderGeneral);
 }
 
 DebugReportRecorder::~DebugReportRecorder(void)

@@ -2011,7 +2011,7 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
             if (msg.shouldBeLogged())
                 log << tcu::TestLog::Message << msg << tcu::TestLog::EndMessage;
 
-            if (msg.isError())
+            if (debugReportRecorder.isApiUsageError(msg))
                 numErrors += 1;
         }
 

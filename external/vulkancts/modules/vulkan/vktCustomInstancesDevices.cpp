@@ -586,7 +586,7 @@ CustomInstance createCustomInstanceWithExtensions(Context &context, const std::v
 #ifndef CTS_USES_VULKANSC
     std::unique_ptr<DebugReportRecorder> debugReportRecorder;
     if (validationEnabled)
-        debugReportRecorder.reset(new DebugReportRecorder(printValidationErrors));
+        debugReportRecorder.reset(new DebugReportRecorder(printValidationErrors, true));
 #endif // CTS_USES_VULKANSC
 
     // Create custom instance.
@@ -679,7 +679,7 @@ CustomInstance createCustomInstanceFromInfo(Context &context, const vk::VkInstan
         createInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
 #ifndef CTS_USES_VULKANSC
-        recorder.reset(new DebugReportRecorder(printValidationErrors));
+        recorder.reset(new DebugReportRecorder(printValidationErrors, true));
         callbackInfo       = recorder->makeCreateInfo();
         callbackInfo.pNext = createInfo.pNext;
         createInfo.pNext   = &callbackInfo;
@@ -741,7 +741,7 @@ vk::VkResult createUncheckedInstance(Context &context, const vk::VkInstanceCreat
         createInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
 #ifndef CTS_USES_VULKANSC
-        recorder.reset(new DebugReportRecorder(printValidationErrors));
+        recorder.reset(new DebugReportRecorder(printValidationErrors, true));
         // No need to add VkDebugUtilsMessengerCreateInfoEXT to VkInstanceCreateInfo since we
         // don't want to check for errors at instance creation. This is intended since we use
         // UncheckedInstance to try to create invalid instances for driver stability
