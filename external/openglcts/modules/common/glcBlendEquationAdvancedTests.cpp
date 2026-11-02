@@ -1598,6 +1598,10 @@ void BlendTestCaseGroup::BlendTest::getTestColors(int index, tcu::Vec4 &src, tcu
     // Quantize the destination channels
     // this matches what implementation does on render target write
     dst = QuantizeChannels(pf, dst);
+
+    // Preserve valid premultiplied colors when alpha quantizes to zero.
+    if (dst[3] == 0.f)
+        dst = tcu::Vec4(0.f);
 }
 
 void BlendTestCaseGroup::BlendTest::getCoordinates(int index, int &x, int &y) const
