@@ -28922,6 +28922,7 @@ dEQP-VKSC.spirv_assembly.type.scalar.u32.variable_initializer_geom
 dEQP-VKSC.spirv_assembly.type.scalar.u32.variable_initializer_tessc
 dEQP-VKSC.spirv_assembly.type.scalar.u32.variable_initializer_tesse
 dEQP-VKSC.spirv_assembly.type.scalar.u32.variable_initializer_vert
+dEQP-VKSC.spirv_assembly.type.scalar.u64.bitcast_v2f32_comp
 dEQP-VKSC.spirv_assembly.type.scalar.u64.bitwise_and_comp
 dEQP-VKSC.spirv_assembly.type.scalar.u64.bitwise_and_frag
 dEQP-VKSC.spirv_assembly.type.scalar.u64.bitwise_and_geom

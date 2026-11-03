@@ -4181,6 +4181,62 @@ static void populateSingleVecSizeTests(tcu::TestCaseGroup *group, uint32_t vecSi
         uint16Tests->createSwitchTests();
         uint32Tests->createSwitchTests();
         uint64Tests->createSwitchTests();
+
+        ComputeShaderSpec bitcastSpec;
+        const vector<uint64_t> inU64 = {0x3f8000003fffffffull};
+        const vector<float> expV2F32 = {4.0f, 2.0f};
+
+        bitcastSpec.inputs.push_back(Resource(BufferSp(new Uint64Buffer(inU64)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+        bitcastSpec.outputs.push_back(
+            Resource(BufferSp(new Float32Buffer(expV2F32)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+        bitcastSpec.numWorkGroups                                    = tcu::IVec3(1, 1, 1);
+        bitcastSpec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
+        bitcastSpec.assembly                                         = "OpCapability Shader\n"
+                                                                       "OpCapability Int64\n"
+                                                                       "OpMemoryModel Logical GLSL450\n"
+                                                                       "OpEntryPoint GLCompute %main \"main\"\n"
+                                                                       "OpExecutionMode %main LocalSize 1 1 1\n"
+                                                                       "OpDecorate %u64_arr ArrayStride 8\n"
+                                                                       "OpMemberDecorate %in_block 0 Offset 0\n"
+                                                                       "OpDecorate %in_block BufferBlock\n"
+                                                                       "OpDecorate %v2f32_arr ArrayStride 8\n"
+                                                                       "OpMemberDecorate %out_block 0 Offset 0\n"
+                                                                       "OpDecorate %out_block BufferBlock\n"
+                                                                       "OpDecorate %indata DescriptorSet 0\n"
+                                                                       "OpDecorate %indata Binding 0\n"
+                                                                       "OpDecorate %outdata DescriptorSet 0\n"
+                                                                       "OpDecorate %outdata Binding 1\n"
+                                                                       "%void = OpTypeVoid\n"
+                                                                       "%voidf = OpTypeFunction %void\n"
+                                                                       "%u32 = OpTypeInt 32 0\n"
+                                                                       "%u64 = OpTypeInt 64 0\n"
+                                                                       "%f32 = OpTypeFloat 32\n"
+                                                                       "%v2f32 = OpTypeVector %f32 2\n"
+                                                                       "%u32_0 = OpConstant %u32 0\n"
+                                                                       "%u64_1 = OpConstant %u64 1\n"
+                                                                       "%u64_arr = OpTypeRuntimeArray %u64\n"
+                                                                       "%in_block = OpTypeStruct %u64_arr\n"
+                                                                       "%ptr_in_block = OpTypePointer Uniform %in_block\n"
+                                                                       "%ptr_u64 = OpTypePointer Uniform %u64\n"
+                                                                       "%indata = OpVariable %ptr_in_block Uniform\n"
+                                                                       "%v2f32_arr = OpTypeRuntimeArray %v2f32\n"
+                                                                       "%out_block = OpTypeStruct %v2f32_arr\n"
+                                                                       "%ptr_out_block = OpTypePointer Uniform %out_block\n"
+                                                                       "%ptr_v2f32 = OpTypePointer Uniform %v2f32\n"
+                                                                       "%outdata = OpVariable %ptr_out_block Uniform\n"
+                                                                       "%main = OpFunction %void None %voidf\n"
+                                                                       "%entry = OpLabel\n"
+                                                                       "%in_p = OpAccessChain %ptr_u64 %indata %u32_0 %u32_0\n"
+                                                                       "%val = OpLoad %u64 %in_p\n"
+                                                                       "%sum = OpIAdd %u64 %val %u64_1\n"
+                                                                       "%res = OpBitcast %v2f32 %sum\n"
+                                                                       "%out = OpFAdd %v2f32 %res %res\n"
+                                                                       "%out_p = OpAccessChain %ptr_v2f32 %outdata %u32_0 %u32_0\n"
+                                                                       "OpStore %out_p %out\n"
+                                                                       "OpReturn\n"
+                                                                       "OpFunctionEnd\n";
+
+        uint64Tests->addChild(new SpvAsmComputeShaderCase(testCtx, "bitcast_v2f32_comp", bitcastSpec));
     }
 
     group->addChild(int8Tests.release());

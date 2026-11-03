@@ -13713,6 +13713,7 @@ dEQP-VK.spirv_assembly.type.scalar.u64.bit_reverse_geom
 dEQP-VK.spirv_assembly.type.scalar.u64.bit_reverse_tessc
 dEQP-VK.spirv_assembly.type.scalar.u64.bit_reverse_tesse
 dEQP-VK.spirv_assembly.type.scalar.u64.bit_reverse_vert
+dEQP-VK.spirv_assembly.type.scalar.u64.bitcast_v2f32_comp
 dEQP-VK.spirv_assembly.type.scalar.u8.bit_count_comp
 dEQP-VK.spirv_assembly.type.scalar.u8.bit_count_frag
 dEQP-VK.spirv_assembly.type.scalar.u8.bit_count_geom
