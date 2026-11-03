@@ -756,6 +756,78 @@ void addComputeIndexingNon16BaseAlignmentTests(tcu::TestCaseGroup *group)
     group->addChild(non16BaseAlignmentGroup.release());
 }
 
+void addComputeIndexingFunctionVec4U64Test(tcu::TestCaseGroup *group)
+{
+    tcu::TestContext &testCtx = group->getTestContext();
+    ComputeShaderSpec spec;
+
+    // Input: [vecIdx=1, compIdx=2, val0=0x10, val1=0x22]
+    const vector<uint64_t> inputData   = {1ull, 2ull, 0x10ull, 0x22ull};
+    const vector<uint64_t> expectedOut = {0x22ull};
+
+    spec.inputs.push_back(Resource(BufferSp(new Uint64Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    spec.outputs.push_back(Resource(BufferSp(new Uint64Buffer(expectedOut)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    spec.numWorkGroups                                    = IVec3(1, 1, 1);
+    spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
+
+    spec.assembly = "OpCapability Shader\n"
+                    "OpCapability Int64\n"
+                    "OpMemoryModel Logical GLSL450\n"
+                    "OpEntryPoint GLCompute %main \"main\"\n"
+                    "OpExecutionMode %main LocalSize 1 1 1\n"
+                    "OpDecorate %rt_u64 ArrayStride 8\n"
+                    "OpMemberDecorate %u64_block 0 Offset 0\n"
+                    "OpDecorate %u64_block BufferBlock\n"
+                    "OpDecorate %in_buf DescriptorSet 0\n"
+                    "OpDecorate %in_buf Binding 0\n"
+                    "OpDecorate %out_buf DescriptorSet 0\n"
+                    "OpDecorate %out_buf Binding 1\n"
+                    "%void = OpTypeVoid\n"
+                    "%voidf = OpTypeFunction %void\n"
+                    "%u32 = OpTypeInt 32 0\n"
+                    "%u64 = OpTypeInt 64 0\n"
+                    "%v4u64 = OpTypeVector %u64 4\n"
+                    "%u32_0 = OpConstant %u32 0\n"
+                    "%u32_1 = OpConstant %u32 1\n"
+                    "%u32_2 = OpConstant %u32 2\n"
+                    "%u32_3 = OpConstant %u32 3\n"
+                    "%rt_u64 = OpTypeRuntimeArray %u64\n"
+                    "%u64_block = OpTypeStruct %rt_u64\n"
+                    "%ptr_ub_u64_block = OpTypePointer Uniform %u64_block\n"
+                    "%ptr_ub_u64 = OpTypePointer Uniform %u64\n"
+                    "%in_buf = OpVariable %ptr_ub_u64_block Uniform\n"
+                    "%out_buf = OpVariable %ptr_ub_u64_block Uniform\n"
+                    "%arr_v4u64_2 = OpTypeArray %v4u64 %u32_2\n"
+                    "%ptr_func_arr = OpTypePointer Function %arr_v4u64_2\n"
+                    "%ptr_func_v4u64 = OpTypePointer Function %v4u64\n"
+                    "%ptr_func_u64 = OpTypePointer Function %u64\n"
+                    "%main = OpFunction %void None %voidf\n"
+                    "%entry = OpLabel\n"
+                    "%priv_arr = OpVariable %ptr_func_arr Function\n"
+                    "%p0 = OpAccessChain %ptr_ub_u64 %in_buf %u32_0 %u32_0\n"
+                    "%p1 = OpAccessChain %ptr_ub_u64 %in_buf %u32_0 %u32_1\n"
+                    "%p2 = OpAccessChain %ptr_ub_u64 %in_buf %u32_0 %u32_2\n"
+                    "%p3 = OpAccessChain %ptr_ub_u64 %in_buf %u32_0 %u32_3\n"
+                    "%vi = OpLoad %u64 %p0\n"
+                    "%ci = OpLoad %u64 %p1\n"
+                    "%v0 = OpLoad %u64 %p2\n"
+                    "%v1 = OpLoad %u64 %p3\n"
+                    "%vec0 = OpCompositeConstruct %v4u64 %v0 %v0 %v0 %v0\n"
+                    "%vec1 = OpCompositeConstruct %v4u64 %v0 %v0 %v1 %v0\n"
+                    "%pf0 = OpAccessChain %ptr_func_v4u64 %priv_arr %u32_0\n"
+                    "%pf1 = OpAccessChain %ptr_func_v4u64 %priv_arr %u32_1\n"
+                    "OpStore %pf0 %vec0\n"
+                    "OpStore %pf1 %vec1\n"
+                    "%ep = OpAccessChain %ptr_func_u64 %priv_arr %vi %ci\n"
+                    "%res = OpLoad %u64 %ep\n"
+                    "%out_p = OpAccessChain %ptr_ub_u64 %out_buf %u32_0 %u32_0\n"
+                    "OpStore %out_p %res\n"
+                    "OpReturn\n"
+                    "OpFunctionEnd\n";
+
+    group->addChild(new SpvAsmComputeShaderCase(testCtx, "vec4_u64", spec));
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createIndexingComputeGroup(tcu::TestContext &testCtx)
@@ -764,11 +836,14 @@ tcu::TestCaseGroup *createIndexingComputeGroup(tcu::TestContext &testCtx)
     de::MovePtr<tcu::TestCaseGroup> indexingGroup(new tcu::TestCaseGroup(testCtx, "indexing"));
     // Tests for indexing input data.
     de::MovePtr<tcu::TestCaseGroup> inputGroup(new tcu::TestCaseGroup(testCtx, "input"));
+    de::MovePtr<tcu::TestCaseGroup> functionGroup(new tcu::TestCaseGroup(testCtx, "function"));
 
     addComputeIndexingStructTests(inputGroup.get());
     addComputeIndexingNon16BaseAlignmentTests(inputGroup.get());
+    addComputeIndexingFunctionVec4U64Test(functionGroup.get());
 
     indexingGroup->addChild(inputGroup.release());
+    indexingGroup->addChild(functionGroup.release());
 
     return indexingGroup.release();
 }

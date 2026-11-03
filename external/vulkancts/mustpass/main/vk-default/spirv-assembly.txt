@@ -9075,6 +9075,7 @@ dEQP-VK.spirv_assembly.instruction.compute.image_sampler.imagesample.sampled_ima
 dEQP-VK.spirv_assembly.instruction.compute.image_sampler.imagesample.sampled_image.pass_sampler_to_function_nontemporal.depth_property.depth
 dEQP-VK.spirv_assembly.instruction.compute.image_sampler.imagesample.sampled_image.pass_sampler_to_function_nontemporal.depth_property.non_depth
 dEQP-VK.spirv_assembly.instruction.compute.image_sampler.imagesample.sampled_image.pass_sampler_to_function_nontemporal.depth_property.unknown
+dEQP-VK.spirv_assembly.instruction.compute.indexing.function.vec4_u64
 dEQP-VK.spirv_assembly.instruction.compute.indexing.input.non16basealignment.opaccesschain
 dEQP-VK.spirv_assembly.instruction.compute.indexing.input.non16basealignment.opptraccesschain
 dEQP-VK.spirv_assembly.instruction.compute.indexing.input.struct.opaccesschain_s16
