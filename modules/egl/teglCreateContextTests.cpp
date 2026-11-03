@@ -130,11 +130,21 @@ public:
         if (!eglu::hasExtension(egl, *display, "EGL_KHR_no_config_context"))
             TCU_THROW(NotSupportedError, "EGL_KHR_no_config_context is not supported");
 
+        const EGLint supportedApiBits = eglu::getRenderableAPIsMask(egl, *display);
+
         m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "pass");
 
         for (int apiNdx = 0; apiNdx < (int)DE_LENGTH_OF_ARRAY(s_apis); apiNdx++)
         {
             const EGLenum api = s_apis[apiNdx].api;
+
+            // Skip APIs that no config advertises in EGL_RENDERABLE_TYPE
+            if ((supportedApiBits & s_apis[apiNdx].apiBit) == 0)
+            {
+                log << TestLog::Message << s_apis[apiNdx].name << " is not advertised by any config, skipping"
+                    << TestLog::EndMessage;
+                continue; // Not supported API
+            }
 
             if (egl.bindAPI(api) == EGL_FALSE)
             {
