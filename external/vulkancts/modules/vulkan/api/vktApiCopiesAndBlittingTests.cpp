@@ -236,6 +236,7 @@ void addCoreCopiesAndBlittingTests(tcu::TestCaseGroup *group)
     addIndirectCopyTests(group, ALLOCATION_KIND_SUBALLOCATED);
     addCopyBufferToBufferOffsetTests(group);
     group->addChild(createUseAfterXferGroup(group->getTestContext(), false));
+    group->addChild(createBlittingImageDepthStencilAspectsTests(group->getTestContext()));
 }
 
 void addDedicatedAllocationCopiesAndBlittingTests(tcu::TestCaseGroup *group)

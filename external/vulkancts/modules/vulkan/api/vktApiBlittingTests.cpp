@@ -3,6 +3,7 @@
  * ------------------------
  *
  * Copyright (c) 2025 The Khronos Group Inc.
+ * Copyright (c) 2026 Valve Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4481,12 +4482,568 @@ void addBlittingImageAllFormatsTests(tcu::TestCaseGroup *group, AllocationKind a
     addTestGroup(group, "generate_mipmaps", addBlittingImageAllFormatsMipmapTests, allocationKind, extensionFlags);
 }
 
+// TEST MECHANISM:
+//
+// Check blits from a combined depth/stencil image that copy only one of its aspects, alone or as two consecutive blits
+// where one of them copies only the depth aspect and the other one copies only the stencil aspect. Implementations may
+// look at the aspects of the images instead of the aspects of each blit region.
+//
+// - Fill a combined depth/stencil source image of WxH pixels with non-zero depth and stencil values, different for
+//   each pixel:
+//
+//      depth(x, y)   = (y * W + x + 1) / (W * H + 1)
+//      stencil(x, y) = 1 + (x * 7 + y * 13) % 255
+//
+// - Clear the destination image(s) to depth 0.0 and stencil 0.
+// - Record one vkCmdBlitImage call for a single aspect, or two calls in a row, without barriers between them, one per
+//   aspect:
+//
+//      vkCmdBlitImage(src, dstA, region{aspect=DEPTH, ...});
+//      vkCmdBlitImage(src, dstB, region{aspect=STENCIL, ...});
+//
+//   Blits use VK_FILTER_NEAREST and mirror the image in the X axis, so the implementation cannot treat them as
+//   plain copies: dst(dstOffsetX + x, y) = src(W - 1 - x, y). For example, with W=32 the pixel at x=0 of the
+//   destination area gets the value of the source pixel at x=31.
+// - Read back both aspects of the destination image(s) and compare them against the expected values. Pixels outside
+//   the destination area of each aspect, and every pixel of an aspect that is not blitted, must keep the clear values
+//   (0.0 and 0). 0 in the blitted area means the aspect was not written, and non-zero values elsewhere mean the wrong
+//   aspect or area was written.
+//
+// Variants:
+// - Source format: every combined depth/stencil format.
+// - Destination kind:
+//   - combined: a single destination image with the same format as the source and twice the width. Depth goes to the
+//     left half and stencil to the right half. Requires VK_FORMAT_FEATURE_BLIT_DST_BIT for the combined format.
+//   - separate: depth goes to a depth-only image (with the same depth component format) and stencil goes to an
+//     S8_UINT image. Requires the maintenance12 feature.
+// - Blit sequence:
+//   - depth_only, stencil_only: a single blit for one aspect. Only with the combined destination kind, as it is the
+//     only one where the destination image has the aspect that is not blitted.
+//   - depth_first, stencil_first: two blits, one per aspect, in the given order.
+namespace DepthStencilAspects
+{
+
+enum class DstKind
+{
+    COMBINED = 0,
+    SEPARATE,
+};
+
+enum class BlitSequence
+{
+    DEPTH_ONLY = 0,
+    STENCIL_ONLY,
+    DEPTH_FIRST,
+    STENCIL_FIRST,
+};
+
+constexpr uint32_t kWidth  = 32u;
+constexpr uint32_t kHeight = 32u;
+
+const VkImageUsageFlags kImageUsage = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+std::unique_ptr<VkImageCreateInfo> makeImageCreateInfo(VkFormat format, const VkExtent3D &extent)
+{
+    std::unique_ptr<VkImageCreateInfo> createInfo(new VkImageCreateInfo{
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                             // const void* pNext;
+        0u,                                  // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        format,                              // VkFormat format;
+        extent,                              // VkExtent3D extent;
+        1u,                                  // uint32_t mipLevels;
+        1u,                                  // uint32_t arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+        kImageUsage,                         // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        0u,                                  // uint32_t queueFamilyIndexCount;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+    });
+    return createInfo;
+}
+
+struct Params
+{
+    VkFormat srcFormat;
+    DstKind dstKind;
+    BlitSequence sequence;
+
+    VkExtent3D getSrcExtent() const
+    {
+        return makeExtent3D(kWidth, kHeight, 1u);
+    }
+
+    VkExtent3D getDstExtent() const
+    {
+        const uint32_t width = ((dstKind == DstKind::COMBINED) ? 2u * kWidth : kWidth);
+        return makeExtent3D(width, kHeight, 1u);
+    }
+
+    // Combined: a single image. Separate: depth image (with the same depth component format) followed by stencil image.
+    std::vector<VkFormat> getDstFormats() const
+    {
+        if (dstKind == DstKind::COMBINED)
+            return std::vector<VkFormat>{srcFormat};
+        return std::vector<VkFormat>{mapTextureFormat(getDepthCopyFormat(srcFormat)), VK_FORMAT_S8_UINT};
+    }
+
+    uint32_t getDstImageIndex(VkImageAspectFlagBits aspect) const
+    {
+        return ((dstKind == DstKind::SEPARATE && aspect == VK_IMAGE_ASPECT_STENCIL_BIT) ? 1u : 0u);
+    }
+
+    // X offset of the area each aspect is blitted to in its destination image.
+    int32_t getDstOffsetX(VkImageAspectFlagBits aspect) const
+    {
+        return ((dstKind == DstKind::COMBINED && aspect == VK_IMAGE_ASPECT_STENCIL_BIT) ? static_cast<int32_t>(kWidth) :
+                                                                                          0);
+    }
+
+    std::vector<VkImageAspectFlagBits> getBlitAspects() const
+    {
+        switch (sequence)
+        {
+        case BlitSequence::DEPTH_ONLY:
+            return std::vector<VkImageAspectFlagBits>{VK_IMAGE_ASPECT_DEPTH_BIT};
+        case BlitSequence::STENCIL_ONLY:
+            return std::vector<VkImageAspectFlagBits>{VK_IMAGE_ASPECT_STENCIL_BIT};
+        case BlitSequence::DEPTH_FIRST:
+            return std::vector<VkImageAspectFlagBits>{VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_ASPECT_STENCIL_BIT};
+        case BlitSequence::STENCIL_FIRST:
+            return std::vector<VkImageAspectFlagBits>{VK_IMAGE_ASPECT_STENCIL_BIT, VK_IMAGE_ASPECT_DEPTH_BIT};
+        default:
+            break;
+        }
+
+        DE_ASSERT(false);
+        return std::vector<VkImageAspectFlagBits>();
+    }
+
+    bool isBlitted(VkImageAspectFlagBits aspect) const
+    {
+        const auto aspects = getBlitAspects();
+        return (std::find(aspects.begin(), aspects.end(), aspect) != aspects.end());
+    }
+
+    std::unique_ptr<VkImageCreateInfo> getSrcImageCreateInfo() const
+    {
+        return makeImageCreateInfo(srcFormat, getSrcExtent());
+    }
+
+    std::unique_ptr<VkImageCreateInfo> getDstImageCreateInfo(VkFormat dstFormat) const
+    {
+        return makeImageCreateInfo(dstFormat, getDstExtent());
+    }
+};
+
+using ParamsPtr = std::shared_ptr<const Params>;
+
+// Buffer layout for each aspect when copying to or from images with the given format.
+tcu::TextureFormat getAspectCopyFormat(VkFormat format, VkImageAspectFlagBits aspect)
+{
+    return ((aspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? getDepthCopyFormat(format) : getStencilCopyFormat(format));
+}
+
+class DSAspectsBlitInstance : public vkt::TestInstance
+{
+public:
+    DSAspectsBlitInstance(Context &context, ParamsPtr params) : vkt::TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~DSAspectsBlitInstance() = default;
+
+    tcu::TestStatus iterate() override;
+
+protected:
+    const ParamsPtr m_params;
+};
+
+class DSAspectsBlitCase : public vkt::TestCase
+{
+public:
+    DSAspectsBlitCase(tcu::TestContext &testCtx, const std::string &name, ParamsPtr params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~DSAspectsBlitCase() = default;
+
+    void checkSupport(Context &context) const override;
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DSAspectsBlitInstance(context, m_params);
+    }
+
+protected:
+    const ParamsPtr m_params;
+};
+
+void checkImageSupport(Context &context, const VkImageCreateInfo &createInfo, VkFormatFeatureFlags requiredFeatures)
+{
+    const auto ctx = context.getContextCommonData();
+    VkImageFormatProperties imageFormatProperties;
+
+    const auto result = ctx.vki.getPhysicalDeviceImageFormatProperties(
+        ctx.physicalDevice, createInfo.format, createInfo.imageType, createInfo.tiling, createInfo.usage,
+        createInfo.flags, &imageFormatProperties);
+
+    const auto formatName = getFormatName(createInfo.format);
+
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        TCU_THROW(NotSupportedError, std::string(formatName) + " not supported for this usage");
+    VK_CHECK(result);
+
+    const auto formatProperties = getPhysicalDeviceFormatProperties(ctx.vki, ctx.physicalDevice, createInfo.format);
+    if ((formatProperties.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
+        TCU_THROW(NotSupportedError, std::string(formatName) + ": required format features not supported");
+}
+
+void DSAspectsBlitCase::checkSupport(Context &context) const
+{
+    if (m_params->dstKind == DstKind::SEPARATE)
+    {
+        // Blits between different depth/stencil formats.
+        context.requireDeviceFunctionality("VK_KHR_maintenance12");
+    }
+
+    checkImageSupport(context, *m_params->getSrcImageCreateInfo(), VK_FORMAT_FEATURE_BLIT_SRC_BIT);
+    for (const auto dstFormat : m_params->getDstFormats())
+        checkImageSupport(context, *m_params->getDstImageCreateInfo(dstFormat), VK_FORMAT_FEATURE_BLIT_DST_BIT);
+}
+
+tcu::TestStatus DSAspectsBlitInstance::iterate()
+{
+    const auto ctx           = m_context.getContextCommonData();
+    const auto srcCreateInfo = m_params->getSrcImageCreateInfo();
+    const auto srcExtent     = m_params->getSrcExtent();
+    const auto dstExtent     = m_params->getDstExtent();
+    const auto dstFormats    = m_params->getDstFormats();
+    const auto srcFormat     = m_params->srcFormat;
+    const auto srcWidth      = static_cast<int>(srcExtent.width);
+    const auto srcHeight     = static_cast<int>(srcExtent.height);
+    const auto dstWidth      = static_cast<int>(dstExtent.width);
+    const auto dstHeight     = static_cast<int>(dstExtent.height);
+    const auto bothAspects   = static_cast<VkImageAspectFlags>(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+    const auto srcRange      = makeImageSubresourceRange(bothAspects, 0u, 1u, 0u, 1u);
+    const auto clearDepth    = 0.0f;
+    const auto clearStencil  = 0u;
+    const auto clearValue    = makeClearDepthStencilValue(clearDepth, clearStencil);
+    const std::array<VkImageAspectFlagBits, 2> allAspectFlags{VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_ASPECT_STENCIL_BIT};
+
+    // Images.
+    ImageWithMemory srcImage(ctx.vkd, ctx.device, ctx.allocator, *srcCreateInfo, MemoryRequirement::Any);
+
+    using ImageWithMemoryPtr = std::unique_ptr<ImageWithMemory>;
+    std::vector<ImageWithMemoryPtr> dstImages;
+    std::vector<VkImageSubresourceRange> dstRanges;
+    for (const auto dstFormat : dstFormats)
+    {
+        const auto createInfo = m_params->getDstImageCreateInfo(dstFormat);
+        dstImages.emplace_back(
+            new ImageWithMemory(ctx.vkd, ctx.device, ctx.allocator, *createInfo, MemoryRequirement::Any));
+        dstRanges.push_back(makeImageSubresourceRange(getImageAspectFlags(mapVkFormat(dstFormat)), 0u, 1u, 0u, 1u));
+    }
+
+    // Source data, one buffer per aspect.
+    tcu::TextureLevel srcDepth(getAspectCopyFormat(srcFormat, VK_IMAGE_ASPECT_DEPTH_BIT), srcWidth, srcHeight);
+    tcu::TextureLevel srcStencil(getAspectCopyFormat(srcFormat, VK_IMAGE_ASPECT_STENCIL_BIT), srcWidth, srcHeight);
+    {
+        const auto depthAccess   = srcDepth.getAccess();
+        const auto stencilAccess = srcStencil.getAccess();
+
+        // Non-zero values, different for each pixel.
+        const auto getSrcDepth = [srcWidth, srcHeight](int x, int y)
+        { return static_cast<float>(y * srcWidth + x + 1) / static_cast<float>(srcWidth * srcHeight + 1); };
+        const auto getSrcStencil = [](int x, int y) { return 1 + (x * 7 + y * 13) % 255; };
+
+        for (int y = 0; y < srcHeight; ++y)
+            for (int x = 0; x < srcWidth; ++x)
+            {
+                depthAccess.setPixDepth(getSrcDepth(x, y), x, y);
+                stencilAccess.setPixStencil(getSrcStencil(x, y), x, y);
+            }
+    }
+
+    using BufferWithMemoryPtr = std::unique_ptr<BufferWithMemory>;
+    const auto makeHostBuffer = [&ctx](const tcu::TextureLevel &level, VkBufferUsageFlags usage, HostIntent intent)
+    {
+        const auto bufferSize =
+            static_cast<VkDeviceSize>(level.getWidth() * level.getHeight() * tcu::getPixelSize(level.getFormat()));
+        const auto createInfo = makeBufferCreateInfo(bufferSize, usage);
+        return BufferWithMemoryPtr(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, createInfo, intent));
+    };
+
+    const auto srcDepthBuffer   = makeHostBuffer(srcDepth, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, HostIntent::W);
+    const auto srcStencilBuffer = makeHostBuffer(srcStencil, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, HostIntent::W);
+
+    const auto fillBuffer = [&ctx](const tcu::TextureLevel &level, BufferWithMemory &buffer)
+    {
+        auto &alloc     = buffer.getAllocation();
+        const auto size = level.getWidth() * level.getHeight() * tcu::getPixelSize(level.getFormat());
+
+        std::memcpy(alloc.getHostPtr(), level.getAccess().getDataPtr(), static_cast<size_t>(size));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    };
+
+    fillBuffer(srcDepth, *srcDepthBuffer);
+    fillBuffer(srcStencil, *srcStencilBuffer);
+
+    // Readback levels and buffers, one per aspect, from the destination image that aspect is blitted to.
+    std::vector<tcu::TextureLevel> resultLevels;
+    std::vector<BufferWithMemoryPtr> resultBuffers;
+    resultLevels.reserve(allAspectFlags.size());
+    resultBuffers.reserve(allAspectFlags.size());
+    for (const auto aspect : allAspectFlags)
+    {
+        const auto dstFormat = dstFormats.at(m_params->getDstImageIndex(aspect));
+        resultLevels.emplace_back(getAspectCopyFormat(dstFormat, aspect), dstWidth, dstHeight);
+        resultBuffers.emplace_back(
+            makeHostBuffer(resultLevels.back(), VK_BUFFER_USAGE_TRANSFER_DST_BIT, HostIntent::R));
+    }
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Prepare images for the transfer operations: upload source data and clear destination images.
+    {
+        std::vector<VkImageMemoryBarrier> barriers;
+        barriers.push_back(makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, srcImage.get(), srcRange));
+        for (size_t i = 0; i < dstImages.size(); ++i)
+            barriers.push_back(makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstImages.at(i)->get(),
+                                                      dstRanges.at(i)));
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(barriers), barriers.size());
+    }
+
+    for (const auto aspect : allAspectFlags)
+    {
+        const auto &buffer = ((aspect == VK_IMAGE_ASPECT_DEPTH_BIT) ? srcDepthBuffer : srcStencilBuffer);
+        const auto region  = makeBufferImageCopy(srcExtent, makeImageSubresourceLayers(aspect, 0u, 0u, 1u));
+        ctx.vkd.cmdCopyBufferToImage(cmdBuffer, buffer->get(), srcImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
+                                     &region);
+    }
+
+    for (size_t i = 0; i < dstImages.size(); ++i)
+        ctx.vkd.cmdClearDepthStencilImage(cmdBuffer, dstImages.at(i)->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                          &clearValue, 1u, &dstRanges.at(i));
+
+    {
+        std::vector<VkImageMemoryBarrier> barriers;
+        barriers.push_back(makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, srcImage.get(), srcRange));
+        for (size_t i = 0; i < dstImages.size(); ++i)
+            barriers.push_back(makeImageMemoryBarrier(
+                VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dstImages.at(i)->get(), dstRanges.at(i)));
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(barriers), barriers.size());
+    }
+
+    // The two consecutive blits, one per aspect, mirrored in the X axis.
+    for (const auto aspect : m_params->getBlitAspects())
+    {
+        const auto subresource = makeImageSubresourceLayers(aspect, 0u, 0u, 1u);
+        const auto dstOffsetX  = m_params->getDstOffsetX(aspect);
+        const auto &dstImage   = *dstImages.at(m_params->getDstImageIndex(aspect));
+
+        const VkImageBlit region{
+            subresource, // VkImageSubresourceLayers srcSubresource;
+            {
+                makeOffset3D(0, 0, 0),
+                makeOffset3D(srcWidth, srcHeight, 1),
+            },           // VkOffset3D srcOffsets[2];
+            subresource, // VkImageSubresourceLayers dstSubresource;
+            {
+                makeOffset3D(dstOffsetX + srcWidth, 0, 0),
+                makeOffset3D(dstOffsetX, srcHeight, 1),
+            }, // VkOffset3D dstOffsets[2];
+        };
+
+        ctx.vkd.cmdBlitImage(cmdBuffer, srcImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstImage.get(),
+                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region, VK_FILTER_NEAREST);
+    }
+
+    // Read back the destination images.
+    {
+        std::vector<VkImageMemoryBarrier> barriers;
+        for (size_t i = 0; i < dstImages.size(); ++i)
+            barriers.push_back(makeImageMemoryBarrier(
+                VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstImages.at(i)->get(), dstRanges.at(i)));
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(barriers), barriers.size());
+    }
+
+    for (size_t aspectIdx = 0; aspectIdx < allAspectFlags.size(); ++aspectIdx)
+    {
+        const auto aspect    = allAspectFlags.at(aspectIdx);
+        const auto &dstImage = *dstImages.at(m_params->getDstImageIndex(aspect));
+        const auto region    = makeBufferImageCopy(dstExtent, makeImageSubresourceLayers(aspect, 0u, 0u, 1u));
+        ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, dstImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                     resultBuffers.at(aspectIdx)->get(), 1u, &region);
+    }
+
+    {
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &barrier);
+    }
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Verify results.
+    auto &log                  = m_context.getTestContext().getLog();
+    const auto depthCopyFormat = resultLevels.at(0).getFormat();
+    const auto depthBits       = tcu::getTextureFormatBitDepth(depthCopyFormat).x();
+    const bool depthIsFloat    = (depthCopyFormat.type == tcu::TextureFormat::FLOAT);
+    // Allow a few ULPs of the depth format. Errors we look for (writing the wrong aspect or area) produce differences of at
+    // least 1 / (W * H + 1) between the clear value (0.0) and the source values, which is much larger.
+    constexpr float kDepthUlps = 4.0f;
+    const float depthUlp       = (depthIsFloat ? std::ldexp(1.0f, -23) : // Values are in (0, 1).
+                                           1.0f / static_cast<float>((1u << depthBits) - 1u));
+    const float depthThreshold = kDepthUlps * depthUlp;
+    DE_ASSERT(depthThreshold < 1.0f / static_cast<float>(srcWidth * srcHeight + 1));
+    std::vector<std::string> failedAspects;
+
+    for (size_t aspectIdx = 0; aspectIdx < allAspectFlags.size(); ++aspectIdx)
+    {
+        const auto aspect   = allAspectFlags.at(aspectIdx);
+        auto &resultLevel   = resultLevels.at(aspectIdx);
+        auto &resultAlloc   = resultBuffers.at(aspectIdx)->getAllocation();
+        const auto result   = resultLevel.getAccess();
+        const auto dataSize = result.getWidth() * result.getHeight() * tcu::getPixelSize(result.getFormat());
+        const auto offsetX  = m_params->getDstOffsetX(aspect);
+        const bool isDepth  = (aspect == VK_IMAGE_ASPECT_DEPTH_BIT);
+        const auto name     = (isDepth ? "Depth" : "Stencil");
+
+        invalidateAlloc(ctx.vkd, ctx.device, resultAlloc);
+        std::memcpy(result.getDataPtr(), resultAlloc.getHostPtr(), static_cast<size_t>(dataSize));
+
+        // Reference: clear values, plus the source mirrored in the X axis inside the destination area, if the aspect is
+        // blitted at all.
+        tcu::TextureLevel referenceLevel(result.getFormat(), dstWidth, dstHeight);
+        const auto reference = referenceLevel.getAccess();
+
+        if (isDepth)
+            tcu::clearDepth(reference, clearDepth);
+        else
+            tcu::clearStencil(reference, static_cast<int>(clearStencil));
+
+        if (m_params->isBlitted(aspect))
+        {
+            for (int y = 0; y < srcHeight; ++y)
+                for (int x = 0; x < srcWidth; ++x)
+                {
+                    const int dstX = offsetX + srcWidth - 1 - x;
+                    if (isDepth)
+                        reference.setPixDepth(srcDepth.getAccess().getPixDepth(x, y), dstX, y);
+                    else
+                        reference.setPixStencil(srcStencil.getAccess().getPixStencil(x, y), dstX, y);
+                }
+        }
+
+        // The threshold is only used for depth.
+        if (!tcu::dsThresholdCompare(log, name, "", reference, result, depthThreshold, tcu::COMPARE_LOG_ON_ERROR))
+            failedAspects.push_back(name);
+    }
+
+    if (!failedAspects.empty())
+    {
+        std::ostringstream msg;
+        msg << "Unexpected values found in:";
+        for (const auto &aspectName : failedAspects)
+            msg << " " << aspectName;
+        msg << "; check log for details --";
+        TCU_FAIL(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void addSequenceTests(tcu::TestCaseGroup *group, VkFormat srcFormat, DstKind dstKind)
+{
+    const struct
+    {
+        BlitSequence sequence;
+        const char *name;
+    } sequenceCases[] = {
+        {BlitSequence::DEPTH_ONLY, "depth_only"},
+        {BlitSequence::STENCIL_ONLY, "stencil_only"},
+        {BlitSequence::DEPTH_FIRST, "depth_first"},
+        {BlitSequence::STENCIL_FIRST, "stencil_first"},
+    };
+
+    for (const auto &sequenceCase : sequenceCases)
+    {
+        const bool singleBlit =
+            (sequenceCase.sequence == BlitSequence::DEPTH_ONLY || sequenceCase.sequence == BlitSequence::STENCIL_ONLY);
+
+        // With separate destination images, the non-blitted aspect would not be present in the destination image.
+        if (singleBlit && dstKind != DstKind::COMBINED)
+            continue;
+
+        const ParamsPtr params(new Params{srcFormat, dstKind, sequenceCase.sequence});
+        group->addChild(new DSAspectsBlitCase(group->getTestContext(), sequenceCase.name, params));
+    }
+}
+
+void createChildren(tcu::TestCaseGroup *group)
+{
+    struct DstKindCase
+    {
+        DstKind dstKind;
+        const char *name;
+    };
+
+    // Shared with the group lambdas below, which run after this function returns.
+    const auto dstKindCases = std::make_shared<const std::vector<DstKindCase>>(std::vector<DstKindCase>{
+        {DstKind::COMBINED, "combined"},
+        {DstKind::SEPARATE, "separate"},
+    });
+
+    const VkFormat srcFormats[] = {
+        VK_FORMAT_D16_UNORM_S8_UINT,
+        VK_FORMAT_D24_UNORM_S8_UINT,
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+    };
+
+    for (const auto srcFormat : srcFormats)
+    {
+        addTestGroup2(group, getFormatCaseName(srcFormat),
+                      [srcFormat, dstKindCases](tcu::TestCaseGroup *formatGroup)
+                      {
+                          for (const auto &dstKindCase : *dstKindCases)
+                          {
+                              const auto dstKind = dstKindCase.dstKind;
+                              addTestGroup2(formatGroup, dstKindCase.name,
+                                            [srcFormat, dstKind](tcu::TestCaseGroup *dstKindGroup)
+                                            { addSequenceTests(dstKindGroup, srcFormat, dstKind); });
+                          }
+                      });
+    }
+}
+
+} // namespace DepthStencilAspects
+
 } // namespace
 
 void addBlittingImageTests(tcu::TestCaseGroup *group, AllocationKind allocationKind, uint32_t extensionFlags)
 {
     addTestGroup(group, "simple_tests", addBlittingImageSimpleTests, allocationKind, extensionFlags);
     addTestGroup(group, "all_formats", addBlittingImageAllFormatsTests, allocationKind, extensionFlags);
+}
+
+tcu::TestCaseGroup *createBlittingImageDepthStencilAspectsTests(tcu::TestContext &testCtx)
+{
+    return createTestGroup2(testCtx, "blit_image_ds_aspects", DepthStencilAspects::createChildren);
 }
 
 } // namespace vkt::api

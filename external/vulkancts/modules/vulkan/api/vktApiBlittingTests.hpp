@@ -32,6 +32,7 @@ namespace api
 {
 
 void addBlittingImageTests(tcu::TestCaseGroup *group, AllocationKind allocationKind, uint32_t extensionFlags);
+tcu::TestCaseGroup *createBlittingImageDepthStencilAspectsTests(tcu::TestContext &testCtx);
 
 } // namespace api
 } // namespace vkt
