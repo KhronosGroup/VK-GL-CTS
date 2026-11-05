@@ -1128,7 +1128,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
                         << (int)data[i] << ", but data from vkCmdCopyImageToBuffer() (after padding) is "
                         << (int)((uint8_t *)resultBuffer.getDataPtr())[i] << tcu::TestLog::EndMessage;
 
-                    const auto fbExtent = tcu::IVec3(imageSize.width, imageSize.height, imageSize.depth);
+                    // The output buffers hold one mip level of one layer
+                    const auto fbExtent = tcu::IVec3(mipImageSize.width, mipImageSize.height, mipImageSize.depth);
                     const auto testColorAccess =
                         tcu::ConstPixelBufferAccess(mapVkFormat(m_parameters.imageOutputFormat), fbExtent, data.data());
                     const auto outputColorAccess = tcu::ConstPixelBufferAccess(
@@ -1176,7 +1177,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         }
         if (!match)
         {
-            const auto fbExtent = tcu::IVec3(imageSize.width, imageSize.height, imageSize.depth);
+            // The output buffers hold one mip level of one layer
+            const auto fbExtent = tcu::IVec3(mipImageSize.width, mipImageSize.height, mipImageSize.depth);
             const auto testColorAccess =
                 tcu::ConstPixelBufferAccess(mapVkFormat(m_parameters.imageOutputFormat), fbExtent, testData.data());
             const auto outputColorAccess = tcu::ConstPixelBufferAccess(mapVkFormat(m_parameters.imageOutputFormat),
@@ -3283,8 +3285,9 @@ tcu::TestStatus HostImageArrayCopyTestInstance::iterate(void)
                 log << tcu::TestLog::Message << "At byte " << i << " generated data is " << testData[i]
                     << ", but output data is " << (int)outputData[i] << tcu::TestLog::EndMessage;
 
-                const auto fbExtent =
-                    tcu::IVec3(createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth);
+                // testData and outputData hold the copied region of each layer, not the whole image
+                const auto fbExtent = tcu::IVec3(m_params.copyExtent.width, m_params.copyExtent.height,
+                                                 m_params.copyExtent.depth * m_params.arrayLayers);
                 const auto testColorAccess =
                     tcu::ConstPixelBufferAccess(mapVkFormat(m_params.format), fbExtent, testData.data());
                 const auto outputColorAccess =
