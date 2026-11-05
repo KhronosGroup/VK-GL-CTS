@@ -3,7 +3,7 @@
  * ------------------------
  *
  * Copyright (c) 2025 The Khronos Group Inc.
- * Copyright (c) 2025 Valve Corporation.
+ * Copyright (c) 2025-2026 Valve Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "vktMemoryZeroInitializeDeviceMemoryTests.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkDefs.hpp"
 #include "vkMemUtil.hpp"
@@ -42,6 +43,8 @@
 
 #include "deUniquePtr.hpp"
 
+#include <algorithm>
+#include <cstring>
 #include <memory>
 #include <vector>
 #include <string>
@@ -1245,6 +1248,873 @@ tcu::TestStatus DepthFormatTest::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+// TEST MECHANISM for the color_attachment_layouts tests:
+//
+// Images created with VK_IMAGE_LAYOUT_ZERO_INITIALIZED_EXT and bound to zero-initialized memory start with all-zero
+// contents. Implementations using color compression may skip initializing their compression metadata when the image
+// leaves that layout, because zeroed metadata may already mean "cleared to zero". Any other state the implementation
+// tracks for the image must still be initialized as if the image had been cleared. If it is not, a later transition
+// to a layout where the image is kept uncompressed may skip the decompression it needs, writes in that layout go to
+// uncompressed data while the metadata still says "cleared to zero", and reads after going back to a compressed
+// layout return zeros instead of the written data.
+//
+// Steps:
+// - Create a large color image (kExtent) with COLOR_ATTACHMENT usage, initial layout ZERO_INITIALIZED_EXT, and bind it
+//   to zero-initialized memory. Repeat the test for every memory type that can be zero-initialized.
+// - Transition ZERO_INITIALIZED_EXT -> COLOR_ATTACHMENT_OPTIMAL, with no draws or clears.
+// - Transition to the write layout and write a pattern to the whole image (except in partial draws, see below):
+//     exclusive_transfer_dst:  exclusive image, vkCmdCopyBufferToImage in TRANSFER_DST_OPTIMAL on the universal queue.
+//     exclusive_general:       same, but in GENERAL.
+//     concurrent_transfer_dst: concurrent image (universal + compute queue families), vkCmdCopyBufferToImage in
+//                              TRANSFER_DST_OPTIMAL on the universal queue.
+//     concurrent_general:      same, but in GENERAL.
+//     concurrent_transfer_dst_compute_write:
+//                              same as concurrent_transfer_dst, but the transition to TRANSFER_DST_OPTIMAL, the copy
+//                              and the transition to the read layout happen on the compute queue.
+//     qfot_compute:            exclusive image, release to the compute queue family while transitioning to
+//                              TRANSFER_DST_OPTIMAL, copy there, release back to the universal queue family.
+//     feedback_loop:           draw the pattern in ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT.
+//     partial_draw:            draw the pattern in COLOR_ATTACHMENT_OPTIMAL with a scissor covering only the left half
+//                              of the image (rounded up). The right half must still be zero when read back.
+//     concurrent_draw:         concurrent image (universal + compute queue families), draw the pattern in
+//                              COLOR_ATTACHMENT_OPTIMAL and read it back in GENERAL (see below).
+// - Transition to the read layout and read the image back on the universal queue:
+//     read_copy:   vkCmdCopyImageToBuffer from TRANSFER_SRC_OPTIMAL.
+//     read_sample: texelFetch from SHADER_READ_ONLY_OPTIMAL in a compute shader, packing each texel into a storage
+//                  buffer with the same memory layout as the image format.
+//     read_general_copy, read_general_sample: same, but reading in GENERAL.
+//
+// concurrent_draw is general coverage rather than a check for the issue above: when the image is transitioned to
+// GENERAL, a layout implementations may keep uncompressed for concurrent images, it contains compressed data written by
+// the draw instead of untouched zero-initialized contents. Drawing is expected to make implementations track the image
+// as compressed, so the decompression should not be skipped even if the zero-initialized state is mishandled.
+//
+// mip_levels_partial_draw_read_copy covers a related issue with mipmapped images, where some levels may need special
+// metadata initialization when leaving ZERO_INITIALIZED_EXT. The image has a full mip chain, and each level is drawn
+// to as in partial_draw. Every level is copied back and the right half must still be zero.
+//
+// Pattern, the same in copies and draws (x, y: texel coordinates; level: mip level):
+//     R8G8B8A8_UNORM:     (x & 0xFF, y & 0xFF, ((x >> 8) & 0xF) | (((y >> 8) & 0xF) << 4), 0xFF - level) / 255
+//     R16G16B16A16_UINT:  (x, y, x ^ y, 0xFFFF - level)
+//   The alpha channel is never zero, so no texel in the pattern is zero. For example, texel (300, 2) in level 0 is
+//   (44, 2, 1, 255) in R8G8B8A8_UNORM, and (300, 2, 302, 65535) in R16G16B16A16_UINT.
+//
+// Verification: the readback buffer is compared byte by byte with the expected data. Only on mismatch the images are
+// compared with tcu::intThresholdCompare, which decides the result and logs the images along with an error mask. The
+// threshold is 0 except for draws to R8G8B8A8_UNORM images, where it is 1: the fragment shader output k / 255 may not
+// be exactly k after multiplying by 255 (e.g. if the division is implemented with a reciprocal), and the conversion to
+// UNORM may then return either of the two closest integers. The tolerance does not hide the zeros caused by a bug,
+// because the alpha channel of the pattern is never close to zero.
+//
+// Variants: format (R8G8B8A8_UNORM, R16G16B16A16_UINT, since compression may depend on the texel size), write method
+// and read method as described above. Cases using the compute queue family (concurrent_*, qfot_compute) are not
+// supported without a compute-only queue family different from the universal one. The exclusive_* cases cover the same
+// copies on implementations with a single queue family, even if they may keep the image compressed in those layouts.
+namespace ColorLayouts
+{
+
+constexpr VkExtent3D kExtent{1024u, 512u, 1u}; // Large enough for implementations to enable color compression.
+constexpr uint32_t kLocalSize = 64u;           // Compute readback workgroup size.
+
+static_assert(kExtent.width % kLocalSize == 0u, "The compute readback dispatch requires full workgroups");
+
+enum class WriteMethod
+{
+    EXCLUSIVE_TRANSFER_DST = 0, // Copy into TRANSFER_DST_OPTIMAL on the universal queue, exclusive image.
+    EXCLUSIVE_GENERAL,          // Copy into GENERAL on the universal queue, exclusive image.
+    CONCURRENT_TRANSFER_DST,    // Copy into TRANSFER_DST_OPTIMAL on the universal queue, concurrent image.
+    CONCURRENT_GENERAL,         // Copy into GENERAL on the universal queue, concurrent image.
+    CONCURRENT_COMPUTE_WRITE,   // Copy into TRANSFER_DST_OPTIMAL on the compute queue, concurrent image.
+    QFOT_COMPUTE,               // Copy into TRANSFER_DST_OPTIMAL on the compute queue, exclusive image with QFOTs.
+    FEEDBACK_LOOP,              // Draw in ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT on the universal queue.
+    PARTIAL_DRAW,               // Partial draw in COLOR_ATTACHMENT_OPTIMAL.
+    CONCURRENT_DRAW,            // Draw in COLOR_ATTACHMENT_OPTIMAL and read in GENERAL, concurrent image.
+    MIP_LEVELS_DRAW,            // Partial draws to every mip level in COLOR_ATTACHMENT_OPTIMAL.
+};
+
+enum class ReadMethod
+{
+    COPY = 0, // vkCmdCopyImageToBuffer from TRANSFER_SRC_OPTIMAL (GENERAL with concurrent_draw).
+    SAMPLE,   // texelFetch in a compute shader from SHADER_READ_ONLY_OPTIMAL (GENERAL with concurrent_draw).
+};
+
+struct Params
+{
+    VkFormat format;
+    WriteMethod writeMethod;
+    ReadMethod readMethod;
+
+    bool isConcurrent() const
+    {
+        return (writeMethod == WriteMethod::CONCURRENT_TRANSFER_DST || writeMethod == WriteMethod::CONCURRENT_GENERAL ||
+                writeMethod == WriteMethod::CONCURRENT_COMPUTE_WRITE || writeMethod == WriteMethod::CONCURRENT_DRAW);
+    }
+
+    // Cases where the image is written on the compute queue instead of the universal queue.
+    bool isComputeQueueWrite() const
+    {
+        return (writeMethod == WriteMethod::CONCURRENT_COMPUTE_WRITE || writeMethod == WriteMethod::QFOT_COMPUTE);
+    }
+
+    bool needsComputeQueue() const
+    {
+        return (isConcurrent() || writeMethod == WriteMethod::QFOT_COMPUTE);
+    }
+
+    bool isDrawWrite() const
+    {
+        return (writeMethod == WriteMethod::FEEDBACK_LOOP || writeMethod == WriteMethod::PARTIAL_DRAW ||
+                writeMethod == WriteMethod::MIP_LEVELS_DRAW || writeMethod == WriteMethod::CONCURRENT_DRAW);
+    }
+
+    // The rest of the write methods use copies.
+    bool isCopyWrite() const
+    {
+        return !isDrawWrite();
+    }
+
+    // Draws covering only the left half of each mip level.
+    bool isPartialDraw() const
+    {
+        return (writeMethod == WriteMethod::PARTIAL_DRAW || writeMethod == WriteMethod::MIP_LEVELS_DRAW);
+    }
+
+    bool isUint() const
+    {
+        DE_ASSERT(format == VK_FORMAT_R8G8B8A8_UNORM || format == VK_FORMAT_R16G16B16A16_UINT);
+        return (format == VK_FORMAT_R16G16B16A16_UINT);
+    }
+
+    uint32_t getMipLevelCount() const
+    {
+        if (writeMethod != WriteMethod::MIP_LEVELS_DRAW)
+            return 1u;
+
+        const auto maxSize = static_cast<int32_t>(std::max(kExtent.width, kExtent.height));
+        return static_cast<uint32_t>(deLog2Floor32(maxSize)) + 1u;
+    }
+
+    VkImageUsageFlags getImageUsage() const
+    {
+        // Note the write usages: images that are only read may be kept compressed in any layout.
+        VkImageUsageFlags usage = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                   VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+        if (writeMethod == WriteMethod::FEEDBACK_LOOP)
+            usage |= VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        return usage;
+    }
+
+    VkImageLayout getWriteLayout() const
+    {
+        switch (writeMethod)
+        {
+        case WriteMethod::EXCLUSIVE_TRANSFER_DST:
+        case WriteMethod::CONCURRENT_TRANSFER_DST:
+        case WriteMethod::CONCURRENT_COMPUTE_WRITE:
+        case WriteMethod::QFOT_COMPUTE:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        case WriteMethod::EXCLUSIVE_GENERAL:
+        case WriteMethod::CONCURRENT_GENERAL:
+            return VK_IMAGE_LAYOUT_GENERAL;
+        case WriteMethod::FEEDBACK_LOOP:
+            return VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT;
+        case WriteMethod::PARTIAL_DRAW:
+        case WriteMethod::MIP_LEVELS_DRAW:
+        case WriteMethod::CONCURRENT_DRAW:
+            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        default:
+            break;
+        }
+
+        DE_ASSERT(false);
+        return VK_IMAGE_LAYOUT_UNDEFINED;
+    }
+
+    VkImageLayout getReadLayout() const
+    {
+        if (writeMethod == WriteMethod::CONCURRENT_DRAW)
+            return VK_IMAGE_LAYOUT_GENERAL;
+
+        return ((readMethod == ReadMethod::COPY) ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL :
+                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+
+    // The queue family list is only used with concurrent images, and it must outlive the returned structure.
+    std::unique_ptr<VkImageCreateInfo> getImageCreateInfo(const std::vector<uint32_t> &concurrentQueueFamilies) const
+    {
+        const bool concurrent = isConcurrent();
+        DE_ASSERT(!concurrent || concurrentQueueFamilies.size() > 1u);
+
+        return std::make_unique<VkImageCreateInfo>(VkImageCreateInfo{
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            nullptr,
+            0u,
+            VK_IMAGE_TYPE_2D,
+            format,
+            kExtent,
+            getMipLevelCount(),
+            1u,
+            VK_SAMPLE_COUNT_1_BIT,
+            VK_IMAGE_TILING_OPTIMAL,
+            getImageUsage(),
+            (concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE),
+            (concurrent ? de::sizeU32(concurrentQueueFamilies) : 0u),
+            (concurrent ? de::dataOrNull(concurrentQueueFamilies) : nullptr),
+            VK_IMAGE_LAYOUT_ZERO_INITIALIZED_EXT,
+        });
+    }
+};
+
+using ParamsPtr = std::shared_ptr<const Params>;
+
+// Queue families sharing concurrent images, empty for exclusive images. The compute queue family must be supported.
+std::vector<uint32_t> getConcurrentQueueFamilies(Context &context, const Params &params)
+{
+    if (!params.isConcurrent())
+        return std::vector<uint32_t>();
+
+    const auto computeQF = context.getComputeQueueFamilyIndex();
+    DE_ASSERT(computeQF >= 0);
+    return std::vector<uint32_t>{context.getUniversalQueueFamilyIndex(), static_cast<uint32_t>(computeQF)};
+}
+
+// Number of columns drawn to (or written) in each level. The rest of the level must remain zero.
+uint32_t getCoveredWidth(const Params &params, uint32_t level)
+{
+    const auto width = mipLevelExtents(kExtent, level).width;
+    return (params.isPartialDraw() ? (width + 1u) / 2u : width);
+}
+
+// Writes the expected pattern for the given pixel. Must match the fragment shader in initPrograms. Every pixel has a
+// non-zero alpha value, so no pixel in the pattern is zero.
+void writePatternPixel(uint8_t *dst, bool isUint, uint32_t x, uint32_t y, uint32_t level)
+{
+    if (isUint)
+    {
+        const uint16_t pixel[4] = {
+            static_cast<uint16_t>(x),
+            static_cast<uint16_t>(y),
+            static_cast<uint16_t>(x ^ y),
+            static_cast<uint16_t>(0xFFFFu - level),
+        };
+        std::memcpy(dst, pixel, sizeof(pixel));
+    }
+    else
+    {
+        const uint8_t pixel[4] = {
+            static_cast<uint8_t>(x & 0xFFu),
+            static_cast<uint8_t>(y & 0xFFu),
+            static_cast<uint8_t>(((x >> 8) & 0xFu) | (((y >> 8) & 0xFu) << 4)),
+            static_cast<uint8_t>(0xFFu - level),
+        };
+        std::memcpy(dst, pixel, sizeof(pixel));
+    }
+}
+
+void checkSupport(Context &context, ParamsPtr params)
+{
+    checkZeroInitializeDeviceMemorySupport(context);
+
+    if (params->needsComputeQueue())
+    {
+        const auto computeQF = context.getComputeQueueFamilyIndex();
+        if (computeQF < 0)
+            TCU_THROW(NotSupportedError, "No compute-only queue family available");
+        if (static_cast<uint32_t>(computeQF) == context.getUniversalQueueFamilyIndex())
+            TCU_THROW(NotSupportedError, "Compute queue family must differ from the universal queue family");
+    }
+
+    const auto ctx                     = context.getContextCommonData();
+    const auto concurrentQueueFamilies = getConcurrentQueueFamilies(context, *params);
+    const auto imageCreateInfo         = params->getImageCreateInfo(concurrentQueueFamilies);
+    VkImageFormatProperties formatProperties;
+
+    const auto result = ctx.vki.getPhysicalDeviceImageFormatProperties(
+        ctx.physicalDevice, imageCreateInfo->format, imageCreateInfo->imageType, imageCreateInfo->tiling,
+        imageCreateInfo->usage, imageCreateInfo->flags, &formatProperties);
+
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        TCU_THROW(NotSupportedError, "Format not supported for the required usage");
+    VK_CHECK(result);
+
+    const auto &extent = imageCreateInfo->extent;
+    if (extent.width > formatProperties.maxExtent.width || extent.height > formatProperties.maxExtent.height ||
+        extent.depth > formatProperties.maxExtent.depth)
+        TCU_THROW(NotSupportedError, "Image extent not supported");
+
+    if (imageCreateInfo->mipLevels > formatProperties.maxMipLevels)
+        TCU_THROW(NotSupportedError, "Mip level count not supported");
+
+    if (imageCreateInfo->arrayLayers > formatProperties.maxArrayLayers)
+        TCU_THROW(NotSupportedError, "Array layer count not supported");
+
+    if ((formatProperties.sampleCounts & imageCreateInfo->samples) == 0u)
+        TCU_THROW(NotSupportedError, "Sample count not supported");
+
+    if (params->writeMethod == WriteMethod::FEEDBACK_LOOP)
+    {
+        context.requireDeviceFunctionality("VK_EXT_attachment_feedback_loop_layout");
+        if (!context.getAttachmentFeedbackLoopLayoutFeaturesEXT().attachmentFeedbackLoopLayout)
+            TCU_THROW(NotSupportedError, "attachmentFeedbackLoopLayout not supported");
+    }
+}
+
+void initPrograms(SourceCollections &programCollection, ParamsPtr params)
+{
+    const bool isUint = params->isUint();
+
+    if (!params->isCopyWrite())
+    {
+        std::ostringstream vert;
+        vert << "#version 460\n"
+             << "vec2 positions[3] = vec2[](\n"
+             << "    vec2(-1.0, -1.0),\n"
+             << "    vec2( 3.0, -1.0),\n"
+             << "    vec2(-1.0,  3.0)\n"
+             << ");\n"
+             << "void main (void) {\n"
+             << "    gl_Position = vec4(positions[gl_VertexIndex % 3], 0.0, 1.0);\n"
+             << "}\n";
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+        // Must match writePatternPixel.
+        std::ostringstream frag;
+        frag << "#version 460\n"
+             << "layout (push_constant, std430) uniform PCBlock { uint level; } pc;\n"
+             << "layout (location=0) out " << (isUint ? "uvec4" : "vec4") << " outColor;\n"
+             << "void main (void) {\n"
+             << "    const uvec2 c = uvec2(gl_FragCoord.xy);\n";
+        if (isUint)
+            frag << "    outColor = uvec4(c.x, c.y, c.x ^ c.y, 0xFFFFu - pc.level);\n";
+        else
+            frag << "    const uvec4 v = uvec4(c.x & 0xFFu, c.y & 0xFFu, ((c.x >> 8) & 0xFu) | (((c.y >> 8) & 0xFu) << "
+                    "4), 0xFFu - pc.level);\n"
+                 << "    outColor = vec4(v) / 255.0;\n";
+        frag << "}\n";
+        programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+    }
+
+    if (params->readMethod == ReadMethod::SAMPLE)
+    {
+        // Stores texels in the buffer with the same memory layout as the image format, so results can be compared
+        // byte by byte with the expected data. The conversions are exact for both formats.
+        std::ostringstream comp;
+        comp << "#version 460\n"
+             << "layout (local_size_x=" << kLocalSize << ", local_size_y=1, local_size_z=1) in;\n"
+             << "layout (set=0, binding=0) uniform " << (isUint ? "usampler2D" : "sampler2D") << " tex;\n"
+             << "layout (set=0, binding=1, std430) buffer OutBlock { uint data[]; } ssbo;\n"
+             << "void main (void) {\n"
+             << "    const uint width = " << kExtent.width << ";\n"
+             << "    const uvec2 c = gl_GlobalInvocationID.xy;\n"
+             << "    const uint idx = c.y * width + c.x;\n";
+        if (isUint)
+            comp << "    const uvec4 t = texelFetch(tex, ivec2(c), 0);\n"
+                 << "    ssbo.data[idx * 2u + 0u] = (t.x & 0xFFFFu) | (t.y << 16);\n"
+                 << "    ssbo.data[idx * 2u + 1u] = (t.z & 0xFFFFu) | (t.w << 16);\n";
+        else
+            comp << "    ssbo.data[idx] = packUnorm4x8(texelFetch(tex, ivec2(c), 0));\n";
+        comp << "}\n";
+        programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+    }
+}
+
+// Render pass that loads and stores the attachment, keeping it in the same layout all the time.
+Move<VkRenderPass> makeLoadStoreRenderPass(const DeviceInterface &vkd, VkDevice device, VkFormat format,
+                                           VkImageLayout layout)
+{
+    const VkAttachmentDescription attachment = {
+        0u,
+        format,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_ATTACHMENT_LOAD_OP_LOAD,
+        VK_ATTACHMENT_STORE_OP_STORE,
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        layout,
+        layout,
+    };
+
+    const VkAttachmentReference colorRef = {0u, layout};
+
+    const VkSubpassDescription subpass = {
+        0u, VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, nullptr, 1u, &colorRef, nullptr, nullptr, 0u, nullptr,
+    };
+
+    const VkRenderPassCreateInfo createInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, nullptr, 0u, 1u, &attachment, 1u, &subpass, 0u, nullptr,
+    };
+
+    return createRenderPass(vkd, device, &createInfo);
+}
+
+tcu::TestStatus iterate(Context &context, ParamsPtr params)
+{
+    const auto ctx           = context.getContextCommonData();
+    const auto tcuFormat     = mapVkFormat(params->format);
+    const auto pixelSize     = static_cast<uint32_t>(tcu::getPixelSize(tcuFormat));
+    const bool isUint        = params->isUint();
+    const auto mipLevelCount = params->getMipLevelCount();
+    const auto writeLayout   = params->getWriteLayout();
+    const auto readLayout    = params->getReadLayout();
+    const bool isCopyWrite   = params->isCopyWrite();
+    const bool isQfot        = (params->writeMethod == WriteMethod::QFOT_COMPUTE);
+    const bool computeWrite  = params->isComputeQueueWrite();
+    const bool isFeedback    = (params->writeMethod == WriteMethod::FEEDBACK_LOOP);
+    const bool sampleRead    = (params->readMethod == ReadMethod::SAMPLE);
+    const auto colorSRR      = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, mipLevelCount, 0u, 1u);
+    const auto computeQF =
+        (params->needsComputeQueue() ? static_cast<uint32_t>(context.getComputeQueueFamilyIndex()) : ctx.qfIndex);
+    const auto concurrentQueueFamilies = getConcurrentQueueFamilies(context, *params);
+    const auto imageCreateInfo         = params->getImageCreateInfo(concurrentQueueFamilies);
+    auto &log                          = context.getTestContext().getLog();
+
+    DE_ASSERT(!(sampleRead && mipLevelCount > 1u)); // Only level 0 is read in the sampled case.
+
+    // Stages and accesses for the write and read operations.
+    const VkPipelineStageFlags writeStage =
+        (isCopyWrite ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    const VkAccessFlags writeAccess =
+        (isCopyWrite ?
+             static_cast<VkAccessFlags>(VK_ACCESS_TRANSFER_WRITE_BIT) :
+             static_cast<VkAccessFlags>(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT));
+    const VkPipelineStageFlags readStage =
+        (sampleRead ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT);
+    const VkAccessFlags readAccess = (sampleRead ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_TRANSFER_READ_BIT);
+
+    // Expected contents of each level, tightly packed one after the other. Level 0 is also the copy source.
+    std::vector<VkDeviceSize> levelOffsets;
+    VkDeviceSize totalSize = 0ull;
+    for (uint32_t level = 0u; level < mipLevelCount; ++level)
+    {
+        const auto levelExtent = mipLevelExtents(kExtent, level);
+        levelOffsets.push_back(totalSize);
+        totalSize += static_cast<VkDeviceSize>(levelExtent.width * levelExtent.height) * pixelSize;
+    }
+
+    std::vector<uint8_t> expected(static_cast<size_t>(totalSize), uint8_t{0});
+    for (uint32_t level = 0u; level < mipLevelCount; ++level)
+    {
+        const auto levelExtent  = mipLevelExtents(kExtent, level);
+        const auto coveredWidth = getCoveredWidth(*params, level);
+        auto levelData          = expected.data() + levelOffsets.at(level);
+
+        for (uint32_t y = 0u; y < levelExtent.height; ++y)
+            for (uint32_t x = 0u; x < coveredWidth; ++x)
+            {
+                const auto pixelOffset = static_cast<size_t>(y * levelExtent.width + x) * pixelSize;
+                writePatternPixel(levelData + pixelOffset, isUint, x, y, level);
+            }
+    }
+
+    const auto level0Size   = static_cast<VkDeviceSize>(kExtent.width * kExtent.height) * pixelSize;
+    const auto level0Layers = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+
+    // Upload buffer for copy-based writes.
+    using BufferPtr = std::unique_ptr<BufferWithMemory>;
+    BufferPtr uploadBuffer;
+    if (isCopyWrite)
+    {
+        const auto createInfo = makeBufferCreateInfo(level0Size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        uploadBuffer =
+            std::make_unique<BufferWithMemory>(ctx.vkd, ctx.device, ctx.allocator, createInfo, HostIntent::W);
+        auto &alloc = uploadBuffer->getAllocation();
+        std::memcpy(alloc.getHostPtr(), expected.data(), static_cast<size_t>(level0Size));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Readback buffer.
+    const auto readbackSize  = (sampleRead ? level0Size : totalSize);
+    const auto readbackUsage = (sampleRead ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto readbackCreateInfo = makeBufferCreateInfo(readbackSize, readbackUsage);
+    BufferWithMemory readbackBuffer(ctx.vkd, ctx.device, ctx.allocator, readbackCreateInfo, HostIntent::R);
+    auto &readbackAlloc = readbackBuffer.getAllocation();
+
+    // Objects for draw-based writes.
+    Move<VkRenderPass> renderPass;
+    Move<VkPipelineLayout> graphicsPipelineLayout;
+    Move<VkPipeline> graphicsPipeline;
+
+    if (!isCopyWrite)
+    {
+        const auto pcStages = VK_SHADER_STAGE_FRAGMENT_BIT;
+        const auto pcSize   = DE_SIZEOF32(uint32_t);
+        const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+
+        renderPass             = makeLoadStoreRenderPass(ctx.vkd, ctx.device, params->format, writeLayout);
+        graphicsPipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+
+        const auto &binaries  = context.getBinaryCollection();
+        const auto vertShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+        const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+        const VkPipelineVertexInputStateCreateInfo vertexInput = initVulkanStructure();
+
+        // Empty viewport and scissor vectors: both will be dynamic (see the makeGraphicsPipeline implementation in
+        // vkObjUtil.cpp for details).
+        const std::vector<VkViewport> viewports;
+        const std::vector<VkRect2D> scissors;
+
+        const VkPipelineCreateFlags pipelineFlags =
+            (isFeedback ?
+                 static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_COLOR_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT) :
+                 0u);
+
+        graphicsPipeline = makeGraphicsPipeline(
+            ctx.vkd, ctx.device, *graphicsPipelineLayout, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+            *fragShader, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInput,
+            nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, pipelineFlags);
+    }
+
+    // Objects for sampled reads.
+    Move<VkSampler> sampler;
+    Move<VkDescriptorSetLayout> setLayout;
+    Move<VkPipelineLayout> computePipelineLayout;
+    Move<VkPipeline> computePipeline;
+
+    if (sampleRead)
+    {
+        const VkSamplerCreateInfo samplerCreateInfo = {
+            VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            nullptr,
+            0u,
+            VK_FILTER_NEAREST,
+            VK_FILTER_NEAREST,
+            VK_SAMPLER_MIPMAP_MODE_NEAREST,
+            VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            0.0f,
+            VK_FALSE,
+            0.0f,
+            VK_FALSE,
+            VK_COMPARE_OP_NEVER,
+            0.0f,
+            0.0f,
+            VK_BORDER_COLOR_INT_TRANSPARENT_BLACK,
+            VK_FALSE,
+        };
+        sampler = createSampler(ctx.vkd, ctx.device, &samplerCreateInfo);
+
+        const auto stage = VK_SHADER_STAGE_COMPUTE_BIT;
+        DescriptorSetLayoutBuilder setLayoutBuilder;
+        setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stage);
+        setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stage);
+        setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+        computePipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+        const auto compShader = createShaderModule(ctx.vkd, ctx.device, context.getBinaryCollection().get("comp"));
+        computePipeline       = makeComputePipeline(ctx.vkd, ctx.device, *computePipelineLayout, *compShader);
+    }
+
+    // Test every memory type that can be zero-initialized.
+    const auto templateImage = createImage(ctx.vkd, ctx.device, imageCreateInfo.get());
+    const auto imageMemReqs  = getImageMemoryRequirements(ctx.vkd, ctx.device, *templateImage);
+
+    VkPhysicalDeviceMemoryProperties memProperties;
+    ctx.vki.getPhysicalDeviceMemoryProperties(ctx.physicalDevice, &memProperties);
+
+    const auto testedMemTypes =
+        getTestedMemoryTypes(memProperties, imageMemReqs.memoryTypeBits, MemoryRequirement::ZeroInitialize);
+
+    if (testedMemTypes == 0u)
+        TCU_THROW(NotSupportedError, "No memory types can be used to zero-initialize the image");
+
+    bool fail = false;
+
+    for (uint32_t memTypeIdx = 0u; memTypeIdx < memProperties.memoryTypeCount; ++memTypeIdx)
+    {
+        if ((testedMemTypes & (1u << memTypeIdx)) == 0u)
+            continue;
+
+        const auto image = createImage(ctx.vkd, ctx.device, imageCreateInfo.get());
+        const auto alloc = allocateZeroInitMemory(ctx.allocator, imageMemReqs, memTypeIdx);
+        VK_CHECK(ctx.vkd.bindImageMemory(ctx.device, *image, alloc->getMemory(), alloc->getOffset()));
+
+        // One view and framebuffer per mip level for draw-based writes. The level 0 view is also used for sampling.
+        std::vector<Move<VkImageView>> levelViews;
+        std::vector<Move<VkFramebuffer>> framebuffers;
+        const bool needsViews = (!isCopyWrite || sampleRead);
+
+        for (uint32_t level = 0u; needsViews && level < mipLevelCount; ++level)
+        {
+            const auto levelSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, level, 1u, 0u, 1u);
+            levelViews.push_back(
+                makeImageView(ctx.vkd, ctx.device, *image, VK_IMAGE_VIEW_TYPE_2D, params->format, levelSRR));
+
+            if (!isCopyWrite)
+            {
+                const auto levelExtent = mipLevelExtents(kExtent, level);
+                framebuffers.push_back(makeFramebuffer(ctx.vkd, ctx.device, *renderPass, *levelViews.back(),
+                                                       levelExtent.width, levelExtent.height));
+            }
+        }
+
+        Move<VkDescriptorPool> descriptorPool;
+        Move<VkDescriptorSet> descriptorSet;
+
+        if (sampleRead)
+        {
+            DescriptorPoolBuilder poolBuilder;
+            poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            descriptorPool =
+                poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+            descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+            using Location     = DescriptorSetUpdateBuilder::Location;
+            const auto imgInfo = makeDescriptorImageInfo(*sampler, *levelViews.at(0u), readLayout);
+            const auto bufInfo = makeDescriptorBufferInfo(readbackBuffer.get(), 0ull, readbackSize);
+
+            DescriptorSetUpdateBuilder updateBuilder;
+            updateBuilder.writeSingle(*descriptorSet, Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                      &imgInfo);
+            updateBuilder.writeSingle(*descriptorSet, Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                      &bufInfo);
+            updateBuilder.update(ctx.vkd, ctx.device);
+        }
+
+        CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+        const auto cmdBuffer = *cmd.cmdBuffer;
+
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
+        {
+            // Transition to a compressed layout without writing anything to the image.
+            const auto barrier = makeImageMemoryBarrier(
+                0u, (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+                VK_IMAGE_LAYOUT_ZERO_INITIALIZED_EXT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *image, colorSRR);
+            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &barrier);
+        }
+
+        const auto recordCopyWrite = [&](VkCommandBuffer cmdBuf)
+        {
+            const auto region = makeBufferImageCopy(kExtent, level0Layers);
+            ctx.vkd.cmdCopyBufferToImage(cmdBuf, uploadBuffer->get(), *image, writeLayout, 1u, &region);
+        };
+
+        if (computeWrite)
+        {
+            // Write on the compute queue and read the image back on the universal queue. Exclusive images need queue
+            // family ownership transfers, while concurrent images only need the layout transitions.
+            const auto universalQF = (isQfot ? ctx.qfIndex : VK_QUEUE_FAMILY_IGNORED);
+            const auto writeQF     = (isQfot ? computeQF : VK_QUEUE_FAMILY_IGNORED);
+
+            if (isQfot)
+            {
+                const auto release = makeImageMemoryBarrier(0u, 0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                            writeLayout, *image, colorSRR, universalQF, writeQF);
+                cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                              VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, &release);
+            }
+            endCommandBuffer(ctx.vkd, cmdBuffer);
+            submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+            CommandPoolWithBuffer computeCmd(ctx.vkd, ctx.device, computeQF);
+            const auto computeCmdBuffer = *computeCmd.cmdBuffer;
+
+            beginCommandBuffer(ctx.vkd, computeCmdBuffer);
+            {
+                const auto barrier = makeImageMemoryBarrier(0u, writeAccess, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                            writeLayout, *image, colorSRR, universalQF, writeQF);
+                cmdPipelineImageMemoryBarrier(ctx.vkd, computeCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, writeStage,
+                                              &barrier);
+            }
+            recordCopyWrite(computeCmdBuffer);
+            {
+                const auto barrier = makeImageMemoryBarrier(writeAccess, 0u, writeLayout, readLayout, *image, colorSRR,
+                                                            writeQF, universalQF);
+                cmdPipelineImageMemoryBarrier(ctx.vkd, computeCmdBuffer, writeStage,
+                                              VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, &barrier);
+            }
+            endCommandBuffer(ctx.vkd, computeCmdBuffer);
+            submitCommandsAndWait(ctx.vkd, ctx.device, context.getComputeQueue(), computeCmdBuffer);
+
+            // Reuse the universal queue command buffer for the read operations. With exclusive images, this barrier
+            // is the acquire operation. With concurrent images, it only makes the writes visible.
+            beginCommandBuffer(ctx.vkd, cmdBuffer);
+            {
+                const auto oldLayout = (isQfot ? writeLayout : readLayout);
+                const auto barrier   = makeImageMemoryBarrier(0u, readAccess, oldLayout, readLayout, *image, colorSRR,
+                                                              writeQF, universalQF);
+                cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, readStage,
+                                              &barrier);
+            }
+        }
+        else
+        {
+            if (writeLayout != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+            {
+                const auto barrier = makeImageMemoryBarrier(0u, writeAccess, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                            writeLayout, *image, colorSRR);
+                cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                              writeStage, &barrier);
+            }
+
+            if (isCopyWrite)
+                recordCopyWrite(cmdBuffer);
+            else
+            {
+                const auto pcStages = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+                for (uint32_t level = 0u; level < mipLevelCount; ++level)
+                {
+                    const auto levelExtent = mipLevelExtents(kExtent, level);
+                    const auto viewport    = makeViewport(levelExtent);
+                    const auto scissor     = makeRect2D(getCoveredWidth(*params, level), levelExtent.height);
+
+                    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffers.at(level), makeRect2D(levelExtent));
+                    ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+                    ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1u, &viewport);
+                    ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &scissor);
+                    ctx.vkd.cmdPushConstants(cmdBuffer, *graphicsPipelineLayout, pcStages, 0u, DE_SIZEOF32(level),
+                                             &level);
+                    ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+                    endRenderPass(ctx.vkd, cmdBuffer);
+                }
+            }
+
+            const auto barrier =
+                makeImageMemoryBarrier(writeAccess, readAccess, writeLayout, readLayout, *image, colorSRR);
+            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, writeStage, readStage, &barrier);
+        }
+
+        // Read the image back into the readback buffer.
+        if (sampleRead)
+        {
+            ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
+            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipelineLayout, 0u, 1u,
+                                          &descriptorSet.get(), 0u, nullptr);
+            ctx.vkd.cmdDispatch(cmdBuffer, kExtent.width / kLocalSize, kExtent.height, 1u);
+
+            const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+            cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                     VK_PIPELINE_STAGE_HOST_BIT, &barrier);
+        }
+        else
+        {
+            std::vector<VkBufferImageCopy> regions;
+            regions.reserve(mipLevelCount);
+
+            for (uint32_t level = 0u; level < mipLevelCount; ++level)
+            {
+                const auto levelExtent = mipLevelExtents(kExtent, level);
+                const auto levelLayers = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, level, 0u, 1u);
+                auto region            = makeBufferImageCopy(levelExtent, levelLayers);
+                region.bufferOffset    = levelOffsets.at(level);
+                regions.push_back(region);
+            }
+
+            ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, *image, readLayout, readbackBuffer.get(), de::sizeU32(regions),
+                                         de::dataOrNull(regions));
+
+            const auto barrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+            cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                     &barrier);
+        }
+
+        endCommandBuffer(ctx.vkd, cmdBuffer);
+        submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+        invalidateAlloc(ctx.vkd, ctx.device, readbackAlloc);
+
+        // Quick byte comparison first. On mismatch, the threshold comparison decides the result and logs the images.
+        const auto resultData    = reinterpret_cast<const uint8_t *>(readbackAlloc.getHostPtr());
+        const auto checkedLevels = (sampleRead ? 1u : mipLevelCount);
+        const auto threshold     = ((!isCopyWrite && !isUint) ? 1u : 0u); // See the TEST MECHANISM comment.
+
+        for (uint32_t level = 0u; level < checkedLevels; ++level)
+        {
+            const auto levelExtent = mipLevelExtents(kExtent, level);
+            const auto width       = static_cast<int>(levelExtent.width);
+            const auto height      = static_cast<int>(levelExtent.height);
+            const auto offset      = static_cast<size_t>(levelOffsets.at(level));
+            const auto levelSize   = static_cast<size_t>(width * height) * pixelSize;
+
+            if (std::memcmp(resultData + offset, expected.data() + offset, levelSize) == 0)
+                continue;
+
+            const auto setName = "MemType" + std::to_string(memTypeIdx) + "Level" + std::to_string(level);
+            const auto setDesc = "Memory type " + std::to_string(memTypeIdx) + ", mip level " + std::to_string(level);
+
+            log << tcu::TestLog::Message << setDesc
+                << ": results differ from the expected bytes; comparing with threshold " << threshold
+                << tcu::TestLog::EndMessage;
+
+            const tcu::ConstPixelBufferAccess reference(tcuFormat, width, height, 1, expected.data() + offset);
+            const tcu::ConstPixelBufferAccess result(tcuFormat, width, height, 1, resultData + offset);
+
+            if (!tcu::intThresholdCompare(log, setName.c_str(), setDesc.c_str(), reference, result,
+                                          tcu::UVec4(threshold), tcu::COMPARE_LOG_ON_ERROR))
+                fail = true;
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected results in some memory types or mip levels; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void createTests(tcu::TestCaseGroup *group)
+{
+    const VkFormat formatList[] = {
+        VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_R16G16B16A16_UINT,
+    };
+
+    const struct
+    {
+        WriteMethod writeMethod;
+        const char *name;
+    } writeCases[] = {
+        {WriteMethod::EXCLUSIVE_TRANSFER_DST, "exclusive_transfer_dst"},
+        {WriteMethod::EXCLUSIVE_GENERAL, "exclusive_general"},
+        {WriteMethod::CONCURRENT_TRANSFER_DST, "concurrent_transfer_dst"},
+        {WriteMethod::CONCURRENT_GENERAL, "concurrent_general"},
+        {WriteMethod::CONCURRENT_COMPUTE_WRITE, "concurrent_transfer_dst_compute_write"},
+        {WriteMethod::QFOT_COMPUTE, "qfot_compute"},
+        {WriteMethod::FEEDBACK_LOOP, "feedback_loop"},
+        {WriteMethod::PARTIAL_DRAW, "partial_draw"},
+        {WriteMethod::CONCURRENT_DRAW, "concurrent_draw"},
+    };
+
+    const struct
+    {
+        ReadMethod readMethod;
+        const char *name;
+    } readCases[] = {
+        {ReadMethod::COPY, "copy"},
+        {ReadMethod::SAMPLE, "sample"},
+    };
+
+    for (const auto format : formatList)
+    {
+        const auto prefix = getFormatSimpleName(format) + "_";
+
+        for (const auto &writeCase : writeCases)
+            for (const auto &readCase : readCases)
+            {
+                const auto params      = std::make_shared<const Params>(Params{
+                    format,
+                    writeCase.writeMethod,
+                    readCase.readMethod,
+                });
+                const bool readGeneral = (params->getReadLayout() == VK_IMAGE_LAYOUT_GENERAL);
+                const auto testName =
+                    prefix + writeCase.name + (readGeneral ? "_read_general_" : "_read_") + readCase.name;
+                addFunctionCaseWithPrograms(group, testName, checkSupport, initPrograms, iterate, params);
+            }
+
+        const auto params = std::make_shared<const Params>(Params{
+            format,
+            WriteMethod::MIP_LEVELS_DRAW,
+            ReadMethod::COPY,
+        });
+        addFunctionCaseWithPrograms(group, prefix + "mip_levels_partial_draw_read_copy", checkSupport, initPrograms,
+                                    iterate, params);
+    }
+}
+
+} // namespace ColorLayouts
+
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 } // namespace
@@ -1391,6 +2261,7 @@ tcu::TestCaseGroup *createClearedAllocationControlTests(tcu::TestContext &testCt
 
     mainGroup->addChild(bufferGroup.release());
     mainGroup->addChild(imageTransition.release());
+    mainGroup->addChild(createTestGroup2(testCtx, "color_attachment_layouts", ColorLayouts::createTests));
 
     return mainGroup.release();
 }
