@@ -91,7 +91,10 @@ def execBuildPrograms (buildCfg, generator, module, dstPath, vulkanVersion, para
                    "--dst-path", fractionDst,
                    "--target-vulkan-version", vulkanVersion,
                    "--fraction", "%d,%d" % (k, fractions),
-                   "--log-filename", os.path.join(fractionDst, "TestResults-%d-of-%d.qpa" % (k, fractions))]
+                   "--log-filename", os.path.join(fractionDst, "TestResults-%d-of-%d.qpa" % (k, fractions)),
+                   # Processes running at the same time must not share a shader cache file: each one empties
+                   # it when it starts and reads entries the others may have overwritten.
+                   "--shadercache-filename", os.path.join(fractionDst, "shadercache.bin")]
             p = subprocess.Popen(cmd)
             running[p.pid] = (k, p)
 
