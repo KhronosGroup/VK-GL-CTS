@@ -4,6 +4,7 @@
  *
  * Copyright (c) 2023 LunarG, Inc.
  * Copyright (c) 2023 Nintendo
+ * Copyright (c) 2026 Valve Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +43,11 @@
 #include "tcuCommandLine.hpp"
 #include "tcuTextureUtil.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
+
+#include <cstring>
+#include <memory>
+#include <sstream>
 
 namespace vkt
 {
@@ -3518,6 +3524,390 @@ void ShaderObjectPushConstCase::initPrograms(vk::SourceCollections &programColle
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
+// TEST MECHANISM:
+//
+// Push constant values must survive binding a different shader object, as long as the push constant ranges of the
+// new shader are identical to the old one. Descriptor set layouts may differ: a shader using fewer or more sets is
+// still compatible with the sets and push constants bound earlier. An implementation that keeps push constants in
+// per-shader locations (e.g. registers or a constant buffer whose position depends on the shader's resource layout)
+// must re-emit them when the bound shader changes, even if vkCmdPushConstants is not called again.
+//
+// - Two set layouts with one storage buffer each:
+//     set 0: output buffer, written by every shader.
+//     set 1: buffer holding a single zero, read only by shaders created with two set layouts.
+// - Shaders A and B copy the push constants into their own slot of the output buffer:
+//     layout(push_constant) uniform PC { uint values[N]; } pc;
+//     outBuf.data[SLOT * N + i] = pc.values[i] + zero; // zero is 0u or read from set 1
+// - Command sequence, with sets and push constants recorded only once:
+//     vkCmdBindDescriptorSets(sets 0 and 1);
+//     vkCmdPushConstants(values);           // push_before_bind variants
+//     vkCmdBindShadersEXT(A);
+//     vkCmdPushConstants(values);           // push_after_bind variants
+//     dispatch or draw;
+//     vkCmdBindShadersEXT(B); dispatch or draw;
+//   In graphics variants, A and B are fragment shaders. Each one is bound together with its own vertex shader object,
+//   created from the same code with the same set layouts, because graphics shaders bound together must use identical
+//   set layouts. They use a 1x1 render area so a single fragment shader invocation writes the slot.
+// - Expected: both slots contain the pushed values, 0x1000 * (i + 1) + i, and no slot holds the 0xFFFFFFFF sentinel
+//   used to fill the output buffer before the test.
+//
+// Variants:
+// - Stage: compute or graphics (vertex + fragment).
+// - Layout change from A to B: same set layouts (1 set each), more sets (1 to 2) or fewer sets (2 to 1).
+// - Push constant size: small (4 uints, statically indexed) or large (32 uints, 128 bytes, read in a loop).
+//   Implementations may handle small and large blocks differently, e.g. inlined in registers vs. read from memory.
+// - Push order: push constants before binding any shader, or after binding A. Implementations may handle a push
+//   differently when a shader is already bound, e.g. writing the values directly into the bound shader's locations.
+namespace PushConstantsRebind
+{
+
+enum class LayoutChange
+{
+    SAME = 0,
+    MORE_SETS,
+    FEWER_SETS,
+};
+
+constexpr uint32_t kShaderCount = 2u; // Shaders A and B.
+constexpr uint32_t kMaxSetCount = 2u; // Set layouts used by the shader with the most sets.
+constexpr uint32_t kSentinel    = 0xFFFFFFFFu;
+
+struct Params
+{
+    LayoutChange layoutChange;
+    bool graphics;
+    bool largePushConstants;
+    bool pushAfterBind; // Push constants after binding shader A instead of before binding any shader.
+
+    uint32_t getValueCount() const
+    {
+        return (largePushConstants ? 32u : 4u);
+    }
+
+    // Number of set layouts used to create shader A (index 0) or B (index 1).
+    uint32_t getSetCount(uint32_t shaderIdx) const
+    {
+        DE_ASSERT(shaderIdx < kShaderCount);
+        if (layoutChange == LayoutChange::MORE_SETS)
+            return shaderIdx + 1u;
+        if (layoutChange == LayoutChange::FEWER_SETS)
+            return kMaxSetCount - shaderIdx;
+        return 1u;
+    }
+
+    vk::VkShaderStageFlags getStages() const
+    {
+        return (graphics ? static_cast<vk::VkShaderStageFlags>(vk::VK_SHADER_STAGE_VERTEX_BIT |
+                                                               vk::VK_SHADER_STAGE_FRAGMENT_BIT) :
+                           static_cast<vk::VkShaderStageFlags>(vk::VK_SHADER_STAGE_COMPUTE_BIT));
+    }
+};
+
+using ParamsPtr = std::shared_ptr<const Params>;
+
+uint32_t getPushValue(uint32_t idx)
+{
+    return 0x1000u * (idx + 1u) + idx;
+}
+
+std::string getShaderName(uint32_t shaderIdx)
+{
+    return (shaderIdx == 0u ? "a" : "b");
+}
+
+void checkSupport(Context &context, ParamsPtr params)
+{
+    context.requireDeviceFunctionality("VK_EXT_shader_object");
+
+    if (params->graphics)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+}
+
+void initPrograms(vk::SourceCollections &programCollection, ParamsPtr params)
+{
+    const auto valueCount = params->getValueCount();
+
+    for (uint32_t shaderIdx = 0u; shaderIdx < kShaderCount; ++shaderIdx)
+    {
+        const bool extraSet = (params->getSetCount(shaderIdx) > 1u);
+        const auto base     = shaderIdx * valueCount;
+        const auto zero     = (extraSet ? "extraBuf.zero" : "0u");
+
+        std::ostringstream src;
+        src << "#version 450\n"
+            << (params->graphics ? "" : "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n")
+            << "layout (push_constant, std430) uniform PCBlock { uint values[" << valueCount << "]; } pc;\n"
+            << "layout (set=0, binding=0, std430) buffer OutBlock { uint data[]; } outBuf;\n"
+            << (extraSet ? "layout (set=1, binding=0, std430) readonly buffer ExtraBlock { uint zero; } extraBuf;\n" :
+                           "")
+            << "void main (void) {\n"
+            << "    const uint zero = " << zero << ";\n";
+
+        if (params->largePushConstants)
+        {
+            src << "    for (uint i = 0u; i < " << valueCount << "u; ++i)\n"
+                << "        outBuf.data[" << base << "u + i] = pc.values[i] + zero;\n";
+        }
+        else
+        {
+            for (uint32_t i = 0u; i < valueCount; ++i)
+                src << "    outBuf.data[" << base + i << "] = pc.values[" << i << "] + zero;\n";
+        }
+
+        src << "}\n";
+
+        const auto name = getShaderName(shaderIdx);
+        if (params->graphics)
+            programCollection.glslSources.add(name) << glu::FragmentSource(src.str());
+        else
+            programCollection.glslSources.add(name) << glu::ComputeSource(src.str());
+    }
+
+    if (params->graphics)
+    {
+        // Full-screen triangle.
+        std::ostringstream vert;
+        vert << "#version 450\n"
+             << "void main (void) {\n"
+             << "    const vec2 pos = vec2(float((gl_VertexIndex << 1) & 2), float(gl_VertexIndex & 2));\n"
+             << "    gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);\n"
+             << "}\n";
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+    }
+}
+
+tcu::TestStatus iterate(Context &context, ParamsPtr params)
+{
+    const auto ctx        = context.getContextCommonData();
+    const auto &binaries  = context.getBinaryCollection();
+    const auto stages     = params->getStages();
+    const auto valueCount = params->getValueCount();
+    const auto pcSize     = valueCount * DE_SIZEOF32(uint32_t);
+    const auto bindPoint =
+        (params->graphics ? vk::VK_PIPELINE_BIND_POINT_GRAPHICS : vk::VK_PIPELINE_BIND_POINT_COMPUTE);
+    const auto descType          = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto tessFeature       = context.getDeviceFeatures().tessellationShader;
+    const auto geomFeature       = context.getDeviceFeatures().geometryShader;
+    const auto &meshFeatures     = context.getMeshShaderFeaturesEXT();
+    const uint32_t outValueCount = kShaderCount * valueCount;
+
+    // Output buffer, filled with the sentinel value.
+    const auto outBufferSize = static_cast<vk::VkDeviceSize>(outValueCount * DE_SIZEOF32(uint32_t));
+    const auto outBufferInfo = vk::makeBufferCreateInfo(outBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    vk::BufferWithMemory outBuffer(ctx.vkd, ctx.device, ctx.allocator, outBufferInfo, vk::HostIntent::RW);
+    {
+        auto &alloc = outBuffer.getAllocation();
+        const std::vector<uint32_t> sentinels(outValueCount, kSentinel);
+        std::memcpy(alloc.getHostPtr(), de::dataOrNull(sentinels), de::dataSize(sentinels));
+        vk::flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Extra buffer holding a zero, used by shaders with two set layouts.
+    const auto extraBufferSize = static_cast<vk::VkDeviceSize>(DE_SIZEOF32(uint32_t));
+    const auto extraBufferInfo = vk::makeBufferCreateInfo(extraBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    vk::BufferWithMemory extraBuffer(ctx.vkd, ctx.device, ctx.allocator, extraBufferInfo, vk::HostIntent::W);
+    {
+        auto &alloc = extraBuffer.getAllocation();
+        std::memset(alloc.getHostPtr(), 0, sizeof(uint32_t));
+        vk::flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Two identical set layouts with one storage buffer each.
+    std::vector<vk::Move<vk::VkDescriptorSetLayout>> setLayouts;
+    std::vector<vk::VkDescriptorSetLayout> setLayoutHandles;
+    for (uint32_t i = 0u; i < kMaxSetCount; ++i)
+    {
+        vk::DescriptorSetLayoutBuilder builder;
+        builder.addSingleBinding(descType, stages);
+        setLayouts.emplace_back(builder.build(ctx.vkd, ctx.device));
+        setLayoutHandles.push_back(*setLayouts.back());
+    }
+
+    vk::DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, de::sizeU32(setLayoutHandles));
+    const auto descriptorPool = poolBuilder.build(
+        ctx.vkd, ctx.device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, de::sizeU32(setLayoutHandles));
+
+    std::vector<vk::Move<vk::VkDescriptorSet>> descriptorSets;
+    std::vector<vk::VkDescriptorSet> descriptorSetHandles;
+    for (const auto &setLayout : setLayoutHandles)
+    {
+        descriptorSets.emplace_back(vk::makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, setLayout));
+        descriptorSetHandles.push_back(*descriptorSets.back());
+    }
+
+    {
+        const auto binding         = vk::DescriptorSetUpdateBuilder::Location::binding;
+        const auto outBufferDesc   = vk::makeDescriptorBufferInfo(*outBuffer, 0ull, VK_WHOLE_SIZE);
+        const auto extraBufferDesc = vk::makeDescriptorBufferInfo(*extraBuffer, 0ull, VK_WHOLE_SIZE);
+
+        vk::DescriptorSetUpdateBuilder updateBuilder;
+        updateBuilder.writeSingle(descriptorSetHandles.at(0u), binding(0u), descType, &outBufferDesc);
+        updateBuilder.writeSingle(descriptorSetHandles.at(1u), binding(0u), descType, &extraBufferDesc);
+        updateBuilder.update(ctx.vkd, ctx.device);
+    }
+
+    // The same push constant range is used everywhere. The pipeline layout used to bind sets and push constants is
+    // compatible with the set layouts of every shader.
+    const auto pcRange        = vk::makePushConstantRange(stages, 0u, pcSize);
+    const auto pipelineLayout = vk::makePipelineLayout(ctx.vkd, ctx.device, de::sizeU32(setLayoutHandles),
+                                                       de::dataOrNull(setLayoutHandles), 1u, &pcRange);
+
+    const auto mainStage  = (params->graphics ? vk::VK_SHADER_STAGE_FRAGMENT_BIT : vk::VK_SHADER_STAGE_COMPUTE_BIT);
+    const auto makeShader = [&](vk::VkShaderStageFlagBits stage, const std::string &name, uint32_t setCount)
+    {
+        auto createInfo =
+            vk::makeShaderCreateInfo(stage, binaries.get(name), tessFeature, geomFeature, nullptr, &pcRange);
+        createInfo.setLayoutCount = setCount;
+        createInfo.pSetLayouts    = de::dataOrNull(setLayoutHandles);
+        return vk::createShader(ctx.vkd, ctx.device, createInfo);
+    };
+
+    // Graphics shaders bound together must use identical set layouts, so each fragment shader gets its own vertex
+    // shader created from the same code.
+    std::vector<vk::Move<vk::VkShaderEXT>> shaders;
+    std::vector<vk::Move<vk::VkShaderEXT>> vertShaders;
+    for (uint32_t shaderIdx = 0u; shaderIdx < kShaderCount; ++shaderIdx)
+    {
+        const auto setCount = params->getSetCount(shaderIdx);
+        shaders.emplace_back(makeShader(mainStage, getShaderName(shaderIdx), setCount));
+        if (params->graphics)
+            vertShaders.emplace_back(makeShader(vk::VK_SHADER_STAGE_VERTEX_BIT, "vert", setCount));
+    }
+
+    std::vector<uint32_t> pcValues;
+    pcValues.reserve(valueCount);
+    for (uint32_t i = 0u; i < valueCount; ++i)
+        pcValues.push_back(getPushValue(i));
+
+    const vk::CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    vk::beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Sets and push constants are recorded only once. Sets are bound before binding any shader.
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, de::sizeU32(descriptorSetHandles),
+                                  de::dataOrNull(descriptorSetHandles), 0u, nullptr);
+
+    const auto pushConstants = [&]()
+    { ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, stages, 0u, pcSize, de::dataOrNull(pcValues)); };
+
+    if (!params->pushAfterBind)
+        pushConstants();
+
+    if (params->graphics)
+    {
+        // No attachments: the fragment shaders only write to the output buffer.
+        const auto renderArea = vk::makeRect2D(1u, 1u);
+        const vk::VkRenderingInfo renderingInfo{
+            vk::VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType sType;
+            nullptr,                              // const void* pNext;
+            0u,                                   // VkRenderingFlags flags;
+            renderArea,                           // VkRect2D renderArea;
+            1u,                                   // uint32_t layerCount;
+            0u,                                   // uint32_t viewMask;
+            0u,                                   // uint32_t colorAttachmentCount;
+            nullptr,                              // const VkRenderingAttachmentInfo* pColorAttachments;
+            nullptr,                              // const VkRenderingAttachmentInfo* pDepthAttachment;
+            nullptr,                              // const VkRenderingAttachmentInfo* pStencilAttachment;
+        };
+        ctx.vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
+        vk::setDefaultShaderObjectDynamicStates(ctx.vkd, cmdBuffer, context.getDeviceExtensions(),
+                                                vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false, false,
+                                                renderArea.extent.width, renderArea.extent.height);
+
+        vk::bindGraphicsShaders(ctx.vkd, cmdBuffer, *vertShaders.at(0u), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                *shaders.at(0u), meshFeatures.taskShader, meshFeatures.meshShader);
+        if (params->pushAfterBind)
+            pushConstants();
+        ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+
+        const vk::VkShaderStageFlagBits stagesB[] = {vk::VK_SHADER_STAGE_VERTEX_BIT, vk::VK_SHADER_STAGE_FRAGMENT_BIT};
+        const vk::VkShaderEXT shadersB[]          = {*vertShaders.at(1u), *shaders.at(1u)};
+        ctx.vkd.cmdBindShadersEXT(cmdBuffer, DE_LENGTH_OF_ARRAY(stagesB), stagesB, shadersB);
+        ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+
+        vk::endRendering(ctx.vkd, cmdBuffer);
+    }
+    else
+    {
+        vk::bindComputeShader(ctx.vkd, cmdBuffer, *shaders.at(0u));
+        if (params->pushAfterBind)
+            pushConstants();
+        ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+        vk::bindComputeShader(ctx.vkd, cmdBuffer, *shaders.at(1u));
+        ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    }
+
+    {
+        const auto srcStage =
+            (params->graphics ? vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        const auto barrier = vk::makeMemoryBarrier(vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT);
+        vk::cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, srcStage, vk::VK_PIPELINE_STAGE_HOST_BIT, &barrier);
+    }
+
+    vk::endCommandBuffer(ctx.vkd, cmdBuffer);
+    vk::submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    auto &outAlloc = outBuffer.getAllocation();
+    vk::invalidateAlloc(ctx.vkd, ctx.device, outAlloc);
+
+    std::vector<uint32_t> outValues(outValueCount, 0u);
+    std::memcpy(de::dataOrNull(outValues), outAlloc.getHostPtr(), de::dataSize(outValues));
+
+    auto &log = context.getTestContext().getLog();
+    bool fail = false;
+
+    for (uint32_t shaderIdx = 0u; shaderIdx < kShaderCount; ++shaderIdx)
+        for (uint32_t i = 0u; i < valueCount; ++i)
+        {
+            const auto expected = pcValues.at(i);
+            const auto result   = outValues.at(shaderIdx * valueCount + i);
+
+            if (result != expected)
+            {
+                fail = true;
+                log << tcu::TestLog::Message << "Unexpected value for shader " << getShaderName(shaderIdx)
+                    << " at push constant index " << i << ": expected " << tcu::toHex(expected) << " but found "
+                    << tcu::toHex(result) << (result == kSentinel ? " (shader did not write it)" : "")
+                    << tcu::TestLog::EndMessage;
+            }
+        }
+
+    if (fail)
+        TCU_FAIL("Unexpected push constant values found; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void createTests(tcu::TestCaseGroup *group)
+{
+    const struct
+    {
+        LayoutChange layoutChange;
+        const char *name;
+    } layoutChanges[] = {
+        {LayoutChange::SAME, "same_layout"},
+        {LayoutChange::MORE_SETS, "more_sets"},
+        {LayoutChange::FEWER_SETS, "fewer_sets"},
+    };
+
+    for (const bool graphics : {false, true})
+        for (const auto &layoutChange : layoutChanges)
+            for (const bool large : {false, true})
+                for (const bool pushAfterBind : {false, true})
+                {
+                    const auto params = std::make_shared<const Params>(
+                        Params{layoutChange.layoutChange, graphics, large, pushAfterBind});
+                    const auto testName = std::string(graphics ? "graphics" : "compute") + "_" + layoutChange.name +
+                                          "_" + (large ? "large" : "small") +
+                                          (pushAfterBind ? "_push_after_bind" : "_push_before_bind");
+                    addFunctionCaseWithPrograms(group, testName, checkSupport, initPrograms, iterate, params);
+                }
+}
+
+} // namespace PushConstantsRebind
 } // namespace
 
 tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
@@ -4102,6 +4492,8 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
     pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "17_37", 17, 37, false));
     pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "36_37", 36, 37, false));
     miscGroup->addChild(pushConstGroup.release());
+
+    miscGroup->addChild(createTestGroup2(testCtx, "push_constants_rebind", PushConstantsRebind::createTests));
 
     return miscGroup.release();
 }
