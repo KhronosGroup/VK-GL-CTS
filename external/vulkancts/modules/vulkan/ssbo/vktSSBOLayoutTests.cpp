@@ -2207,6 +2207,21 @@ void checkSupportUnsizedArrays(Context &context, UnsizedArrayCaseParams params)
     if ((params.length64 || params.bufferSize > (uint64_t{1} << 32)) &&
         !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+
+    // The input buffer must fit maxBufferSize (VUID-VkBufferCreateInfo-size-06409), and an allocation larger than
+    // maxMemoryAllocationSize may fail. Same size as in ssboUnsizedArrayLengthTest.
+    VkDeviceSize inputBufferSize = params.bufferSize;
+    if (params.useMinBufferOffset && params.bufferBindLength != VK_WHOLE_SIZE)
+        inputBufferSize =
+            de::max(inputBufferSize,
+                    context.getDeviceProperties().limits.minStorageBufferOffsetAlignment + params.bufferBindLength);
+
+    if (inputBufferSize > context.getMaintenance3Properties().maxMemoryAllocationSize)
+        TCU_THROW(NotSupportedError, "maxMemoryAllocationSize is smaller than the input buffer");
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance4") &&
+        inputBufferSize > context.getMaintenance4Properties().maxBufferSize)
+        TCU_THROW(NotSupportedError, "maxBufferSize is smaller than the input buffer");
 #endif
 }
 

@@ -7064,6 +7064,17 @@ void CoopMat64bTest::checkSupport(Context &context) const
     if (!context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
 
+    // The buffer must fit maxBufferSize (VUID-VkBufferCreateInfo-size-06409), and an allocation larger than
+    // maxMemoryAllocationSize may fail.
+    const VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * m_numValues;
+
+    if (bufferSizeBytes > context.getMaintenance3Properties().maxMemoryAllocationSize)
+        TCU_THROW(NotSupportedError, "maxMemoryAllocationSize is smaller than the buffer");
+
+    if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance4") &&
+        bufferSizeBytes > context.getMaintenance4Properties().maxBufferSize)
+        TCU_THROW(NotSupportedError, "maxBufferSize is smaller than the buffer");
+
     // The tensor-layout variant emits coopMatLoadTensorNV/coopMatStoreTensorNV (tensor
     // addressing), so it additionally requires VK_NV_cooperative_matrix2; mirror the gate
     // in CooperativeMatrixTestCase::checkSupport rather than assuming it from 64-bit indexing.

@@ -1285,6 +1285,17 @@ void BufferToBufferInvertTest::checkSupport(Context &context) const
         // >4 GB buffers can't be represented with a 32-bit size_t.
         TCU_THROW(NotSupportedError, "64-bit indexing tests require a 64-bit build");
 #endif
+
+        // The buffers must fit maxBufferSize (VUID-VkBufferCreateInfo-size-06409), and allocations larger than
+        // maxMemoryAllocationSize may fail.
+        const VkDeviceSize bufferSizeBytes = sizeof(tcu::UVec4) * m_numValues;
+
+        if (bufferSizeBytes > context.getMaintenance3Properties().maxMemoryAllocationSize)
+            TCU_THROW(NotSupportedError, "maxMemoryAllocationSize is smaller than the buffers");
+
+        if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance4") &&
+            bufferSizeBytes > context.getMaintenance4Properties().maxBufferSize)
+            TCU_THROW(NotSupportedError, "maxBufferSize is smaller than the buffers");
     }
 #endif
     if (m_doBoundsCheck)

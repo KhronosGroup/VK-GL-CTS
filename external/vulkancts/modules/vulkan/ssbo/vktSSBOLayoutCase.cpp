@@ -2149,16 +2149,15 @@ void initRefDataStorage(const ShaderInterface &interface, const BufferLayout &la
         totalSize += deRoundUp64(*sizeIter, vec4Alignment);
     }
 
-    storage.data = de::SharedPtr(new std::vector<uint8_t>);
 #if (DE_PTR_SIZE == 4)
     // 64-bit indexing cases are skipped on 32-bit; guard against silent truncation.
     DE_ASSERT(totalSize == (uint64_t)(size_t)totalSize);
 #endif
-    storage.data->resize((size_t)totalSize);
+    storage.data = de::SharedPtr(new RefDataBuffer((size_t)totalSize));
 
     // Pointers for each block.
     {
-        uint8_t *basePtr   = storage.data->empty() ? nullptr : &(*storage.data)[0];
+        uint8_t *basePtr   = storage.data->empty() ? nullptr : storage.data->data();
         uint64_t curOffset = 0;
 
         DE_ASSERT(bufferSizes.size() == layout.blocks.size());
@@ -2805,6 +2804,23 @@ void SSBOLayoutCase::checkSupport(Context &context) const
     if (m_use64BitIndexing &&
         !deviceHasHeapForSsbo64bAllocation(context.getInstanceInterface(), context.getPhysicalDevice()))
         TCU_THROW(NotSupportedError, "No device-local memory heap large enough for >4GB SSBO allocation");
+
+    // The buffer must fit maxBufferSize (VUID-VkBufferCreateInfo-size-06409), and an allocation larger than
+    // maxMemoryAllocationSize may fail. The 64-bit indexing cases have one block, so its size is the buffer size.
+    if (m_use64BitIndexing)
+    {
+        // delayedInit built the layout: it skips that only for the cases rejected above
+        uint64_t bufferSize = 0u;
+        for (const uint64_t blockSize : computeBufferSizes(m_interface, m_refLayout))
+            bufferSize += blockSize;
+
+        if (bufferSize > context.getMaintenance3Properties().maxMemoryAllocationSize)
+            TCU_THROW(NotSupportedError, "maxMemoryAllocationSize is smaller than the SSBO");
+
+        if (context.isDeviceFunctionalitySupported("VK_KHR_maintenance4") &&
+            bufferSize > context.getMaintenance4Properties().maxBufferSize)
+            TCU_THROW(NotSupportedError, "maxBufferSize is smaller than the SSBO");
+    }
 #endif
     const vk::VkPhysicalDeviceProperties &properties = context.getDeviceProperties();
     // Shader defines N+1 storage buffers: N to operate and one more to store the number of cases passed.
