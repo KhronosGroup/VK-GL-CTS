@@ -1206,6 +1206,7 @@ tcu::TestStatus Instance::iterate()
                 auto infoItr                     = resources.find(resLoc);
                 if (infoItr != resources.end())
                     resourceInfo = &(infoItr->second);
+                DE_ASSERT(resourceInfo || descInfo.descryptorType == VK_DESCRIPTOR_TYPE_SAMPLER);
 
                 switch (descInfo.descryptorType)
                 {

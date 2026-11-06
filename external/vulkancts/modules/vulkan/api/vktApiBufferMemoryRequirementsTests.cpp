@@ -37,12 +37,12 @@
 
 #include <algorithm>
 #include <array>
-#include <functional>
 #include <iostream>
 #include <set>
 #include <sstream>
 #include <tuple>
 #include <vector>
+#include <limits>
 
 namespace vkt
 {
@@ -872,6 +872,12 @@ TestStatus BufferMemoryRequirementsInstance::iterate(void)
     }
     const DeviceInterface &vkd = device.getDriver();
 
+#ifndef CTS_USES_VULKANSC
+    VkDeviceSize addressSpaceLimit = std::numeric_limits<uint64_t>::max();
+    if (m_config.createBits->contains(VK_BUFFER_CREATE_SPARSE_BINDING_BIT))
+        addressSpaceLimit = m_context.getDeviceProperties().limits.sparseAddressSpaceSize;
+#endif // CTS_USES_VULKANSC
+
     DE_ASSERT(!m_config.createBits->empty());
     const VkBufferCreateFlags infoCreateFlags = *m_config.createBits;
     {
@@ -926,7 +932,8 @@ TestStatus BufferMemoryRequirementsInstance::iterate(void)
                     m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(),
                                                                                   &physicalDeviceProperties2);
 
-                    const VkDeviceSize maxBufferSize = maintenance4Properties.maxBufferSize;
+                    const VkDeviceSize maxBufferSize =
+                        std::min(maintenance4Properties.maxBufferSize, addressSpaceLimit);
                     DE_ASSERT(maxBufferSize > 0);
                     VkDeviceSize N = 0;
 

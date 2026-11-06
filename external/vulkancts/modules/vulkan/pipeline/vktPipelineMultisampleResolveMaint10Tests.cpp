@@ -297,6 +297,9 @@ void Maint10ResolveCase::checkSupport(Context &context) const
 
     if (multiLayer)
     {
+        // Fragment shaders using gl_Layer use OpCapability Geometry in SPIR-V.
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
         if (context.getUsedApiVersion() < VK_API_VERSION_1_2)
             TCU_THROW(NotSupportedError, "Vulkan 1.2 required");
 
@@ -394,7 +397,7 @@ void Maint10ResolveCase::initPrograms(vk::SourceCollections &programCollection) 
     const bool multiLayer      = (layerCount > 1u);
     const auto glslFragOutType = m_params.getGLSLFragOutType();
     const bool resolveDepth    = (m_params.resolveAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
-    const ShaderBuildOptions spv14Options(programCollection.usedVulkanVersion, SPIRV_VERSION_1_4, 0u, true);
+    const ShaderBuildOptions spv15Options(programCollection.usedVulkanVersion, SPIRV_VERSION_1_5, 0u, false);
     const ShaderBuildOptions defaultOptions;
 
     std::ostringstream vert;
@@ -405,7 +408,7 @@ void Maint10ResolveCase::initPrograms(vk::SourceCollections &programCollection) 
          << "    gl_Position = inPos;\n"
          << (multiLayer ? "    gl_Layer = gl_InstanceIndex;\n" : "") << "}\n";
     programCollection.glslSources.add("vert")
-        << glu::VertexSource(vert.str()) << (multiLayer ? spv14Options : defaultOptions);
+        << glu::VertexSource(vert.str()) << (multiLayer ? spv15Options : defaultOptions);
 
     std::ostringstream frag;
     frag << "#version 460\n"

@@ -436,8 +436,8 @@ tcu::TestStatus VideoFormatPropertiesQueryTestInstance<ProfileOperation>::iterat
                     nullptr,
                     (VkImageUsageFlags2KHR)videoFormatProperties[i].imageUsageFlags,
                 };
-                createFlags2Infos.push_back(createFlags2Info);
-                usageFlags2Infos.push_back(usageFlags2Info2);
+                createFlags2Infos[i] = createFlags2Info;
+                usageFlags2Infos[i]  = usageFlags2Info2;
 
                 usageFlags2Infos[i].pNext      = &createFlags2Infos[i];
                 videoFormatProperties[i].pNext = &usageFlags2Infos[i];

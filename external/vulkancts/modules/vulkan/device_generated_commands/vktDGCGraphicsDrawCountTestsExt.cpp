@@ -1110,8 +1110,10 @@ tcu::TestStatus testDrawCountRun(Context &context, TestParams params)
     if (params.unorderedSequences)
         cmdsLayoutFlags |= VK_INDIRECT_COMMANDS_LAYOUT_USAGE_UNORDERED_SEQUENCES_BIT_EXT;
 
-    // We do not pass the pipeline layout because we don't have push constants or sequence index tokens.
-    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(cmdsLayoutFlags, stageFlags, VK_NULL_HANDLE);
+    // There are no push constant or sequence index tokens, but execution sets need a compatible pipeline layout
+    // (VUID-VkGeneratedCommandsInfoEXT-indirectCommandsLayout-11328 and 11330).
+    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(cmdsLayoutFlags, stageFlags,
+                                                       (params.useExecutionSet ? *pipelineLayout : VK_NULL_HANDLE));
 
     if (params.useExecutionSet)
     {

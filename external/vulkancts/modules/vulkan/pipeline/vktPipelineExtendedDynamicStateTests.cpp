@@ -8329,6 +8329,10 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
                     {
                         config.rasterizationSamplesConfig.staticValue  = inactiveSampleCount;
                         config.rasterizationSamplesConfig.dynamicValue = activeSampleCount;
+                        // Shader objects set a static sample mask with the static sample count, which must not be
+                        // lower than the dynamic one (VUID-vkCmdDraw-samples-07473)
+                        if (multisample && vk::isConstructionTypeShaderObject(pipelineConstructionType))
+                            config.sampleMaskConfig.dynamicValue = SampleMaskVec(1u, 0xFFFFFFFFu);
                         // Dynamically set the rasterization sample count
                         orderingGroup->addChild(
                             new ExtendedDynamicStateTest(testCtx, namePrefix + "rasterization_samples", config));
@@ -9940,6 +9944,9 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
                 config.oversizedTriangle                       = true;
                 config.rasterizationSamplesConfig.staticValue  = kSingleSampleCount;
                 config.rasterizationSamplesConfig.dynamicValue = kMultiSampleCount;
+                // See multi_sample_rasterization_samples (VUID-vkCmdDraw-samples-07473)
+                if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+                    config.sampleMaskConfig.dynamicValue = SampleMaskVec(1u, 0xFFFFFFFFu);
                 // Test number of frag shader invocations with sample shading enabled and dynamic sample counts
                 orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_shading_sample_count", config));
             }

@@ -17,6 +17,13 @@ else ()
 	set(VULKAN_VALIDATIONLAYERS_ABS_PATH "${CMAKE_SOURCE_DIR}/${VULKAN_VALIDATIONLAYERS_SRC_PATH}")
 endif ()
 
+# A build configured before fetch_sources.py --include-vvl fetched the layers keeps the fallback path in its cache:
+# use the fetched layers when the cached path has none
+if (NOT EXISTS ${VULKAN_VALIDATIONLAYERS_ABS_PATH}/CMakeLists.txt AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/layers/VkLayer_khronos_validation.def")
+	set(VULKAN_VALIDATIONLAYERS_SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src CACHE STRING "Path to vulkan-validationlayers source tree" FORCE)
+	set(VULKAN_VALIDATIONLAYERS_ABS_PATH ${VULKAN_VALIDATIONLAYERS_SRC_PATH})
+endif ()
+
 # VVL have issues building on Windows caused by build type mismatch in dependencies.
 # We exclude them from the Windows build for now. VK-GL-CTS issue: 5052
 if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS AND NOT DE_OS_IS_WIN32 AND "${SBT_STRIPPED}" STREQUAL "" AND EXISTS ${VULKAN_VALIDATIONLAYERS_ABS_PATH}/external)
