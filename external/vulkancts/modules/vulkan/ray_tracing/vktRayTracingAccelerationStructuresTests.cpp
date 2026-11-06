@@ -4711,11 +4711,10 @@ TestStatus QueryPoolResultsPointersInstance::iterate(void)
     endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
-    const uint32_t queryCount = m_params->blasCount + 1;
-    std::vector<VkAccelerationStructureKHR> handles(queryCount);
-    handles[0] = *tlas.get()->getPtr();
-    std::transform(bottoms.begin(), bottoms.end(), std::next(handles.begin()),
-                   [](const BlasPtr &blas) { return *blas.get()->getPtr(); });
+    // Bottom level pointer counts can only be queried for top level acceleration structures
+    // (VUID-vkCmdWriteAccelerationStructuresPropertiesKHR-pAccelerationStructures-12425)
+    const uint32_t queryCount = 1u;
+    std::vector<VkAccelerationStructureKHR> handles{*tlas.get()->getPtr()};
 
     const VkQueryType queryType       = VK_QUERY_TYPE_ACCELERATION_STRUCTURE_SERIALIZATION_BOTTOM_LEVEL_POINTERS_KHR;
     Move<VkQueryPool> queryPoolCounts = makeQueryPool(vk, device, queryType, queryCount);
@@ -4808,11 +4807,7 @@ TestStatus QueryPoolResultsPointersInstance::iterate(void)
     if (m_params->queryAvailablityBit && !availabilityBitsSet)
         return TestStatus::fail("Availability bits are 0");
 
-    bool pass = (header->handleCount == pointerCounts[0]); // must be the same as bottoms.size()
-    for (uint32_t i = 1; pass && i < queryCount; ++i)
-    {
-        pass = (0 == pointerCounts[i]); // bottoms have no chidren
-    }
+    const bool pass = (header->handleCount == pointerCounts[0]); // must be the same as bottoms.size()
 
     return pass ? TestStatus::pass("") : TestStatus::fail("");
 }

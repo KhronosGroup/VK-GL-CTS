@@ -3663,7 +3663,8 @@ tcu::TestStatus EarlyFragmentTestsRun(Context &context, bool preProcess)
     const auto shaderStages = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
     const auto layoutFlags  = static_cast<VkIndirectCommandsLayoutUsageFlagsEXT>(
         preProcess ? VK_INDIRECT_COMMANDS_LAYOUT_USAGE_EXPLICIT_PREPROCESS_BIT_EXT : 0);
-    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(layoutFlags, shaderStages, VK_NULL_HANDLE /*no push constants*/);
+    // The execution set needs a compatible pipeline layout (VUID-VkGeneratedCommandsInfoEXT-indirectCommandsLayout-11328)
+    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(layoutFlags, shaderStages, *pipelineLayout);
     cmdsLayoutBuilder.addExecutionSetToken(0u, VK_INDIRECT_EXECUTION_SET_INFO_TYPE_PIPELINES_EXT, shaderStages);
     cmdsLayoutBuilder.addDrawToken(cmdsLayoutBuilder.getStreamRange());
     const auto cmdsLayout = cmdsLayoutBuilder.build(ctx.vkd, ctx.device);
