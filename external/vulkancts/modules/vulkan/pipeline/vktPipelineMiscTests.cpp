@@ -1963,7 +1963,14 @@ tcu::TestStatus PipelineNoRenderingTestInstance::iterate()
                                             nullptr,
                                             nullptr};
 
+    const auto attachmentBarrier =
+        makeImageMemoryBarrier(0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR, colorAttachment->get(), subresourceRange);
+
     beginCommandBuffer(vkd, *cmdBuffer);
+    if (m_unusedAttachment)
+        cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &attachmentBarrier);
     vkd.cmdBeginRendering(*cmdBuffer, &render_info);
     pipeline.bind(*cmdBuffer);
     vkd.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
