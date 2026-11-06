@@ -3396,6 +3396,11 @@ tcu::TestStatus vkt::subgroups::allStagesRequiredSubgroupSize(
                               tcu::IVec2(width, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
+            // Make shader-written result buffers available to the host.
+            const auto postShaderBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+            cmdPipelineMemoryBarrier(vk, *cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                     &postShaderBarrier);
+
             endCommandBuffer(vk, *cmdBuffer);
 
             submitCommandsAndWait(vk, device, queue, *cmdBuffer);
