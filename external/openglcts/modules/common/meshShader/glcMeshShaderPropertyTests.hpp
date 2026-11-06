@@ -151,10 +151,12 @@ public:
     }
 
     virtual IterateResult iterate() override;
+    virtual void deinit() override;
 
 protected:
     TaskPayloadShMemSizeParams m_params;
 
+    glw::GLuint m_resultBlock                   = 0;
     uint32_t m_payloadElements                  = 0;
     uint32_t m_sharedMemoryElements             = 0;
     static constexpr uint32_t kElementSize      = static_cast<uint32_t>(sizeof(uint32_t));
@@ -206,6 +208,7 @@ public:
     }
 
     IterateResult iterate() override;
+    void deinit() override;
 
     void init() override;
     bool initProgram() override;
@@ -223,6 +226,9 @@ protected:
     uint32_t m_payloadElements = 0;
     uint32_t m_locationCount   = 0;
     uint32_t m_numViews        = 1;
+
+    glw::GLuint m_arrayTexture = 0;
+    glw::GLuint m_multiviewFbo = 0;
 
     MaxMeshOutputParams m_params;
 };

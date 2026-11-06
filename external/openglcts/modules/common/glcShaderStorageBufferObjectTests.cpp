@@ -8145,7 +8145,7 @@ class AdvancedMatrixVSFS : public ShaderStorageBufferObjectBase
                "  gl_Position = vec4(transpose(g_transform[gl_InstanceID]) * g_position, 1);" NL
                "  g_color[gl_InstanceID] = g_buffer1.color[gl_InstanceID].rgb;" NL
                "  if (gl_VertexID == 0 && gl_InstanceID == 0) {" NL "    g_data0[1][1] = 1.0;" NL
-               "    g_data0[g_index1][g_index2] += 3.0;" NL "  }" NL "  memoryBarrier();" NL
+               "    g_data0[g_index1][g_index2] = 3.0;" NL "  }" NL "  memoryBarrier();" NL
                "  instance_id = gl_InstanceID;" NL "}";
         const char *const glsl_fs =
             NL "flat in int instance_id;" NL "layout(location = 0) out vec4 g_ocolor;" NL

@@ -246,22 +246,20 @@ tcu::TestNode::IterateResult MeshTriangleCase::iterate()
     gl.useProgram(m_params.program);
 
     // bind buffers
-    glw::GLuint coordsBuffer;
-    gl.genBuffers(1, &coordsBuffer);
-    gl.bindBuffer(GL_UNIFORM_BUFFER, coordsBuffer);
+    gl.genBuffers(1, &m_coordsBuffer);
+    gl.bindBuffer(GL_UNIFORM_BUFFER, m_coordsBuffer);
     gl.bufferData(GL_UNIFORM_BUFFER, m_params.vertexCoords.size() * sizeof(tcu::Vec4), m_params.vertexCoords.data(),
                   GL_STATIC_DRAW);
     gl.bindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    glw::GLuint indicesBuffer;
-    gl.genBuffers(1, &indicesBuffer);
-    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, indicesBuffer);
+    gl.genBuffers(1, &m_indicesBuffer);
+    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_indicesBuffer);
     gl.bufferData(GL_SHADER_STORAGE_BUFFER, m_params.vertexIndices.size() * sizeof(uint32_t),
                   m_params.vertexIndices.data(), GL_STATIC_DRAW);
     gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-    gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, coordsBuffer);
-    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, indicesBuffer);
+    gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, m_coordsBuffer);
+    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_indicesBuffer);
 
     // Set pipeline states
     gl.scissor(0, 0, width, height);
@@ -295,6 +293,27 @@ tcu::TestNode::IterateResult MeshTriangleCase::iterate()
     m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
     return tcu::TestNode::STOP;
+}
+
+void MeshTriangleCase::deinit()
+{
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+    gl.useProgram(0);
+    gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, 0);
+    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
+    gl.disable(GL_SCISSOR_TEST);
+
+    if (m_indicesBuffer != 0)
+        gl.deleteBuffers(1, &m_indicesBuffer);
+    if (m_coordsBuffer != 0)
+        gl.deleteBuffers(1, &m_coordsBuffer);
+    if (m_params.program != 0)
+        gl.deleteProgram(m_params.program);
+
+    m_indicesBuffer  = 0;
+    m_coordsBuffer   = 0;
+    m_params.program = 0;
 }
 
 MeshShaderSmokeTestsGroup::MeshShaderSmokeTestsGroup(deqp::Context &context)

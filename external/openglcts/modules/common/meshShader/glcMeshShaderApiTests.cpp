@@ -274,13 +274,12 @@ tcu::TestNode::IterateResult MeshApiCase::iterate()
     }
     blockSizes.push_back(remainingRows);
 
-    GLuint blockSizesBuffer;
-    gl.genBuffers(1, &blockSizesBuffer);
-    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, blockSizesBuffer);
+    gl.genBuffers(1, &m_blockSizesBuffer);
+    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_blockSizesBuffer);
     gl.bufferData(GL_SHADER_STORAGE_BUFFER, de::dataSize(blockSizes), blockSizes.data(), GL_STATIC_DRAW);
     gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, blockSizesBuffer);
+    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_blockSizesBuffer);
 
     // Pipeline layout.
     const auto dimCoord = rnd.getUint32() % 3u;
@@ -290,9 +289,6 @@ tcu::TestNode::IterateResult MeshApiCase::iterate()
     gl.programUniform1ui(m_params.program, 2, height);
 
     // Indirect and count buffers if needed.
-    GLuint indrectBuffer;
-    GLuint countBuffer;
-
     if (m_params.drawType != DrawType::DRAW)
     {
         // Indirect draws.
@@ -313,8 +309,8 @@ tcu::TestNode::IterateResult MeshApiCase::iterate()
 
         const auto indirectBufferSize = indirectArgs.offset + indirectArgs.stride * commands.size() + padding;
 
-        gl.genBuffers(1, &indrectBuffer);
-        gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, indrectBuffer);
+        gl.genBuffers(1, &m_indirectBuffer);
+        gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, m_indirectBuffer);
         gl.bufferStorage(GL_DRAW_INDIRECT_BUFFER, indirectBufferSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
         for (uint32_t i = 0; i < commands.size(); i++)
         {
@@ -338,8 +334,8 @@ tcu::TestNode::IterateResult MeshApiCase::iterate()
             const auto &indirectCountOffset = m_params.indirectCountOffset.get();
             const auto countBufferSize      = indirectCountOffset + de::dataSize(singleCount);
 
-            gl.genBuffers(1, &countBuffer);
-            gl.bindBuffer(GL_PARAMETER_BUFFER, countBuffer);
+            gl.genBuffers(1, &m_countBuffer);
+            gl.bindBuffer(GL_PARAMETER_BUFFER, m_countBuffer);
             gl.bufferStorage(GL_PARAMETER_BUFFER, countBufferSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
             gl.bufferSubData(GL_PARAMETER_BUFFER, indirectCountOffset, de::dataSize(singleCount), singleCount.data());
             gl.bindBuffer(GL_PARAMETER_BUFFER, 0);
@@ -354,34 +350,36 @@ tcu::TestNode::IterateResult MeshApiCase::iterate()
     gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
     gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    bool is_ok = true;
+    if (!ExpectError(GL_NO_ERROR, "test setup", "preparing the draw"))
+    {
+        m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Unexpected error during test setup");
+        return tcu::TestNode::STOP;
+    }
+
+    GLenum expectedError       = GL_NO_ERROR;
+    const GLchar *functionName = nullptr;
+    const GLchar *conditions   = "valid parameters are used";
+
     // Draw triangle.
     if (m_params.drawType == DrawType::DRAW)
     {
         const auto drawArgs = getIndirectCommand(m_params.drawCount, dimCoord);
 
         ext.DrawMeshTasksEXT(drawArgs.x, drawArgs.y, drawArgs.z);
+        functionName = "DrawMeshTasksEXT";
     }
     else if (m_params.drawType == DrawType::DRAW_INDIRECT)
     {
         const auto &indirectArgs = m_params.indirectArgs.get();
 
-        gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, indrectBuffer);
+        gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, m_indirectBuffer);
         ext.MultiDrawMeshTasksIndirectEXT(indirectArgs.offset, m_params.drawCount, indirectArgs.stride);
 
+        functionName = "MultiDrawMeshTasksIndirectEXT";
         if (m_params.drawCount == 0)
         {
-            is_ok &= ExpectError(GL_INVALID_VALUE, "MultiDrawMeshTasksIndirectEXT", "draw count is not positive");
-            if (is_ok)
-            {
-                m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
-            }
-            else
-            {
-                m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Failed");
-            }
-
-            return tcu::TestNode::STOP;
+            expectedError = GL_INVALID_VALUE;
+            conditions    = "draw count is not positive";
         }
     }
     else if (m_params.drawType == DrawType::DRAW_INDIRECT_COUNT)
@@ -392,27 +390,31 @@ tcu::TestNode::IterateResult MeshApiCase::iterate()
         const auto maxCount =
             ((indirectCountLimit == IndirectCountLimitType::MAX_COUNT) ? m_params.drawCount : largeDrawCount);
 
-        gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, indrectBuffer);
-        gl.bindBuffer(GL_PARAMETER_BUFFER, countBuffer);
+        gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, m_indirectBuffer);
+        gl.bindBuffer(GL_PARAMETER_BUFFER, m_countBuffer);
         ext.MultiDrawMeshTasksIndirectCountEXT(indirectArgs.offset, indirectCountOffset, maxCount, indirectArgs.stride);
 
-        if (m_params.drawCount == 0)
+        functionName = "MultiDrawMeshTasksIndirectCountEXT";
+        if (maxCount == 0)
         {
-            is_ok &= ExpectError(GL_INVALID_VALUE, "MultiDrawMeshTasksIndirectEXT", "draw count is not positive");
-            if (is_ok)
-            {
-                m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
-            }
-            else
-            {
-                m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Failed");
-            }
-
-            return tcu::TestNode::STOP;
+            expectedError = GL_INVALID_VALUE;
+            conditions    = "maximum draw count is not positive";
         }
     }
     else
         DE_ASSERT(false);
+
+    if (!ExpectError(expectedError, functionName, conditions))
+    {
+        m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Unexpected draw error");
+        return tcu::TestNode::STOP;
+    }
+
+    if (expectedError != GL_NO_ERROR)
+    {
+        m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+        return tcu::TestNode::STOP;
+    }
 
     // Output buffer.
     GLubyte pixels[width * height * 4];
@@ -464,6 +466,32 @@ void MeshApiCase::init()
     // Extension check
     TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported("GL_EXT_mesh_shader"),
                         "GL_EXT_mesh_shader is not supported");
+}
+
+void MeshApiCase::deinit()
+{
+    const Functions &gl = m_context.getRenderContext().getFunctions();
+
+    gl.useProgram(0);
+    gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+    gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    gl.bindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+    gl.bindBuffer(GL_PARAMETER_BUFFER, 0);
+    gl.disable(GL_SCISSOR_TEST);
+
+    if (m_countBuffer != 0)
+        gl.deleteBuffers(1, &m_countBuffer);
+    if (m_indirectBuffer != 0)
+        gl.deleteBuffers(1, &m_indirectBuffer);
+    if (m_blockSizesBuffer != 0)
+        gl.deleteBuffers(1, &m_blockSizesBuffer);
+    if (m_params.program != 0)
+        gl.deleteProgram(m_params.program);
+
+    m_countBuffer      = 0;
+    m_indirectBuffer   = 0;
+    m_blockSizesBuffer = 0;
+    m_params.program   = 0;
 }
 
 MeshShaderApiTestsGroup::MeshShaderApiTestsGroup(deqp::Context &context)

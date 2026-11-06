@@ -37,7 +37,10 @@ namespace meshShader
 class MeshTriangleCase : public deqp::TestCase
 {
 public:
-    MeshTriangleCase(deqp::Context &context, const char *name, const char *desc) : deqp::TestCase(context, name, desc)
+    MeshTriangleCase(deqp::Context &context, const char *name, const char *desc)
+        : deqp::TestCase(context, name, desc)
+        , m_coordsBuffer(0)
+        , m_indicesBuffer(0)
     {
     }
 
@@ -46,6 +49,7 @@ public:
     }
 
     virtual void init() override;
+    virtual void deinit() override;
 
     virtual bool initProgram() = 0;
 
@@ -60,6 +64,9 @@ protected:
         tcu::Vec4 expectedColor;
         uint32_t program;
     } m_params;
+
+    glw::GLuint m_coordsBuffer;
+    glw::GLuint m_indicesBuffer;
 };
 
 class MeshOnlyTriangleCase : public MeshTriangleCase
