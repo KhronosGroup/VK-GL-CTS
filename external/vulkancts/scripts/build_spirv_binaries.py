@@ -76,9 +76,9 @@ def execBuildPrograms (buildCfg, generator, module, dstPath, vulkanVersion, para
 
         # Run the work as `fractions` disjoint --deqp-fraction pieces, with
         # at most `parallelExecutors` vk-build-programs subprocesses live at
-        # once (a worker pool). Each fraction writes its own dst dir;
-        # outputs are NOT merged. Suitable for sanity-check use where the
-        # registry is discarded.
+        # once (a worker pool). Each fraction writes its log and shader cache
+        # in its own dir and no registry: fraction registries could not be
+        # merged, so this mode is only a sanity check.
         running = {}   # pid -> (fractionIdx, Popen)
         nextFraction = 0
         failed = []
@@ -88,7 +88,7 @@ def execBuildPrograms (buildCfg, generator, module, dstPath, vulkanVersion, para
             if not os.path.exists(fractionDst):
                 os.makedirs(fractionDst)
             cmd = [binPath, "--validate-spv",
-                   "--dst-path", fractionDst,
+                   "--dst-path=",
                    "--target-vulkan-version", vulkanVersion,
                    "--fraction", "%d,%d" % (k, fractions),
                    "--log-filename", os.path.join(fractionDst, "TestResults-%d-of-%d.qpa" % (k, fractions)),

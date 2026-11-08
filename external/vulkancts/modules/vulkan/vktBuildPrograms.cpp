@@ -529,6 +529,8 @@ BuildStats buildPrograms(tcu::TestContext &testCtx, const std::string &dstPath, 
             executor.waitForComplete();
         }
 
+        // An empty destination path writes no registry
+        if (!dstPath.empty())
         {
             vk::BinaryRegistryWriter registryWriter(dstPath);
 
@@ -598,7 +600,7 @@ void registerOptions(de::cmdline::Parser &parser)
 
     DE_STATIC_ASSERT(vk::SPIRV_VERSION_1_6 + 1 == vk::SPIRV_VERSION_LAST);
 
-    parser << Option<opt::DstPath>("d", "dst-path", "Destination path", "out")
+    parser << Option<opt::DstPath>("d", "dst-path", "Destination path (empty: write no registry)", "out")
            << Option<opt::Cases>("n", "deqp-case", "Case path filter (works as in test binaries)")
            << Option<opt::Validate>("v", "validate-spv", "Validate generated SPIR-V binaries")
            << Option<opt::VulkanVersion>("t", "target-vulkan-version", "Target Vulkan version", s_vulkanVersion, "1.2")
