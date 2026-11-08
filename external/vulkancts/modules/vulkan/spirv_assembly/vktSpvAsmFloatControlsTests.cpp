@@ -311,9 +311,13 @@ enum OperationId
 
     // spir-v binary operations
     OID_ADD,
+    OID_ADD_NEG,
     OID_SUB,
+    OID_SUB_SELF,
     OID_MUL,
+    OID_MUL_ZERO,
     OID_DIV,
+    OID_DIV_SELF,
     OID_REM,
     OID_MOD,
     OID_PHI,
@@ -2302,14 +2306,30 @@ void TestCasesBuilder::init()
                 "%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n"),
            "", B_STATEMENT_USAGE_CONSTS_TYPE_FP16 | B_STATEMENT_USAGE_CONSTS_TYPE_FP64);
 
-    mo[OID_ADD]       = Op("add", FLOAT_ARITHMETIC, "%result             = OpFAdd %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_SUB]       = Op("sub", FLOAT_ARITHMETIC, "%result             = OpFSub %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_MUL]       = Op("mul", FLOAT_ARITHMETIC, "%result             = OpFMul %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
-    mo[OID_DIV]       = Op("div", FLOAT_ARITHMETIC, "%result             = OpFDiv %type_valueType %arg1 %arg2\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_ADD]     = Op("add", FLOAT_ARITHMETIC, "%result             = OpFAdd %type_valueType %arg1 %arg2\n",
+                         B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_ADD_NEG] = Op("add_neg", FLOAT_ARITHMETIC,
+                         "OpDecorate %neg NoContraction\n"
+                         "OpDecorate %result NoContraction\n",
+                         "", "", "", "",
+                         "%neg                = OpFNegate %type_valueType %arg1\n"
+                         "%result             = OpFAdd %type_valueType %arg1 %neg\n",
+                         B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SUB]     = Op("sub", FLOAT_ARITHMETIC, "%result             = OpFSub %type_valueType %arg1 %arg2\n",
+                         B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SUB_SELF] =
+        Op("sub_self", FLOAT_ARITHMETIC, "OpDecorate %result NoContraction\n", "", "", "", "",
+           "%result             = OpFSub %type_valueType %arg1 %arg1\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_MUL]      = Op("mul", FLOAT_ARITHMETIC, "%result             = OpFMul %type_valueType %arg1 %arg2\n",
+                          B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_MUL_ZERO] = Op("mul_zero", FLOAT_ARITHMETIC, "OpDecorate %result NoContraction\n", "", "", "", "",
+                          "%result             = OpFMul %type_valueType %arg1 %c_valueType_0\n",
+                          B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_DIV]      = Op("div", FLOAT_ARITHMETIC, "%result             = OpFDiv %type_valueType %arg1 %arg2\n",
+                          B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_DIV_SELF] =
+        Op("div_self", FLOAT_ARITHMETIC, "OpDecorate %result NoContraction\n", "", "", "", "",
+           "%result             = OpFDiv %type_valueType %arg1 %arg1\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
     mo[OID_REM]       = Op("rem", FLOAT_ARITHMETIC, "%result             = OpFRem %type_valueType %arg1 %arg2\n",
                            B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
     mo[OID_MOD]       = Op("mod", FLOAT_ARITHMETIC, "%result             = OpFMod %type_valueType %arg1 %arg2\n",
@@ -2745,6 +2765,7 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         {OID_ADD, true, V_ZERO, V_ZERO, V_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_SUB, true, V_ZERO, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_MUL, true, V_ONE, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
+        {OID_DIV, true, V_ONE, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
     };
 
     const ZINCase unaryOpZINPreserve[]{
@@ -2758,6 +2779,10 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         {OID_COPY, true, V_UNUSED, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_TRANSPOSE, true, V_UNUSED, V_ZERO, V_MINUS_ZERO, V_INF, V_MINUS_INF, V_NAN},
         {OID_NEGATE, true, V_UNUSED, V_MINUS_ZERO, V_ZERO, V_MINUS_INF, V_INF, V_NAN},
+        {OID_ADD_NEG, true, V_UNUSED, V_ZERO, V_ZERO, V_NAN, V_NAN, V_NAN},
+        {OID_SUB_SELF, true, V_UNUSED, V_ZERO, V_ZERO, V_NAN, V_NAN, V_NAN},
+        {OID_MUL_ZERO, true, V_UNUSED, V_ZERO, V_MINUS_ZERO, V_NAN, V_NAN, V_NAN},
+        {OID_DIV_SELF, true, V_UNUSED, V_NAN, V_NAN, V_NAN, V_NAN, V_NAN},
     };
 
     bool isFP64 = typeTestResults->variableType() == FP64;
