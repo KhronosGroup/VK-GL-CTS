@@ -4741,7 +4741,7 @@ struct VkMetalSurfaceCreateInfoEXT
 	VkStructureType					sType;
 	const void*						pNext;
 	VkMetalSurfaceCreateFlagsEXT	flags;
-	const pt::CAMetalLayer*			pLayer;
+	pt::CAMetalLayer*				pLayer;
 };
 
 struct VkMicromapBuildSizesInfoEXT

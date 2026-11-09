@@ -295,6 +295,7 @@ static const std::map<std::string, std::vector<const char*>> deviceDeviceDepende
 	{"VK_EXT_shader_module_identifier",						{"VK_EXT_pipeline_creation_cache_control", }},
 	{"VK_EXT_shader_object",								{"VK_KHR_dynamic_rendering", }},
 	{"VK_EXT_swapchain_maintenance1",						{"VK_KHR_swapchain", }},
+	{"VK_EXT_vertex_address_binding_unrestricted",			{"VK_KHR_device_address_commands", }},
 	{"VK_EXT_ycbcr_2plane_444_formats",						{"VK_KHR_sampler_ycbcr_conversion", }},
 	{"VK_EXT_ycbcr_image_arrays",							{"VK_KHR_sampler_ycbcr_conversion", }},
 	{"VK_FUCHSIA_buffer_collection",						{"VK_FUCHSIA_external_memory", "VK_KHR_sampler_ycbcr_conversion", }},

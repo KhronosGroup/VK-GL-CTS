@@ -1212,6 +1212,18 @@ bool check_VK_EXT_swapchain_maintenance1(const tcu::UVec2& v, const ExtPropVect&
 	return isSupported(vDEP, "VK_KHR_swapchain");
 }
 
+bool check_VK_EXT_vertex_address_binding_unrestricted(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_vertex_address_binding_unrestricted"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_device_address_commands
+	return isSupported(vDEP, "VK_KHR_device_address_commands");
+}
+
 bool check_VK_EXT_ycbcr_2plane_444_formats(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	if (isCompatible(1, 3, v))
@@ -2815,6 +2827,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	{"VK_EXT_shader_tile_image",								&check_VK_EXT_shader_tile_image},
 	{"VK_EXT_subgroup_size_control",							&check_VK_EXT_subgroup_size_control},
 	{"VK_EXT_swapchain_maintenance1",							&check_VK_EXT_swapchain_maintenance1},
+	{"VK_EXT_vertex_address_binding_unrestricted",				&check_VK_EXT_vertex_address_binding_unrestricted},
 	{"VK_EXT_ycbcr_2plane_444_formats",						&check_VK_EXT_ycbcr_2plane_444_formats},
 	{"VK_EXT_ycbcr_image_arrays",								&check_VK_EXT_ycbcr_image_arrays},
 	{"VK_FUCHSIA_buffer_collection",							&check_VK_FUCHSIA_buffer_collection},
@@ -3142,6 +3155,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	{1, 0, "VK_EXT_validation_cache"},
 	{1, 0, "VK_EXT_validation_features"},
 	{1, 0, "VK_EXT_validation_flags"},
+	{1, 0, "VK_EXT_vertex_address_binding_unrestricted"},
 	{1, 0, "VK_EXT_vertex_attribute_divisor"},
 	{1, 0, "VK_EXT_vertex_attribute_robustness"},
 	{1, 0, "VK_EXT_vertex_input_dynamic_state"},
@@ -3368,6 +3382,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	{1, 0, "VK_NV_geometry_shader_passthrough"},
 	{1, 0, "VK_NV_glsl_shader"},
 	{1, 0, "VK_NV_inherited_viewport_scissor"},
+	{1, 0, "VK_NV_internal_handle"},
 	{1, 0, "VK_NV_linear_color_attachment"},
 	{1, 0, "VK_NV_low_latency"},
 	{1, 0, "VK_NV_low_latency2"},
