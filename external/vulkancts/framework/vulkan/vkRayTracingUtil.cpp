@@ -179,10 +179,13 @@ RaytracedGeometryBase::RaytracedGeometryBase(VkGeometryTypeKHR geometryType, VkF
                                              VkIndexType indexType)
     : m_geometryType(geometryType)
     , m_vertexFormat(vertexFormat)
+    , m_radiusFormat(VK_FORMAT_UNDEFINED)
     , m_indexType(indexType)
     , m_geometryFlags((VkGeometryFlagsKHR)0u)
     , m_hasOpacityMicromap(false)
     , m_hasMotionBlur(false)
+    , m_useKHROpacityMicromap(false)
+    , m_indexingMode(VK_RAY_TRACING_LSS_INDEXING_MODE_LIST_NV)
     , m_useEndcaps(false)
     , m_doBLASCopy(false)
 

@@ -28,6 +28,7 @@
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkImageWithMemory.hpp"
@@ -2544,95 +2545,107 @@ tcu::TestStatus depthOnlyRun(Context &context, DepthOnlyParams params)
 
 } // anonymous namespace
 
-tcu::TestCaseGroup *createMeshShaderSmokeTestsEXT(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderSmokeTestsEXT(tcu::TestContext &testContext)
 {
-    struct
-    {
-        PipelineConstructionType constructionType;
-        const char *name;
-    } constructionTypes[] = {
-        {PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, "monolithic"},
-        {PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, "optimized_lib"},
-        {PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "fast_lib"},
-        {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "shader_objects"},
-    };
-
-    GroupPtr smokeTests(new tcu::TestCaseGroup(testCtx, "smoke"));
-
-    for (const auto &constructionCase : constructionTypes)
-    {
-        const auto &cType = constructionCase.constructionType;
-
-        GroupPtr constructionGroup(new tcu::TestCaseGroup(testCtx, constructionCase.name));
-
-        if (!isConstructionTypeShaderObject(cType))
+    return createTestGroup2(
+        testContext, "smoke",
+        [](tcu::TestCaseGroup *smokeTests)
         {
-            constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle", cType));
-            constructionGroup->addChild(new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle_rasterization_disabled",
-                                                                 cType, true /*rasterizationDisabled*/));
-            constructionGroup->addChild(new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle", cType));
-            constructionGroup->addChild(new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle", cType));
-
-            for (int i = 0; i < 2; ++i)
+            struct
             {
-                const bool compaction        = (i == 0);
-                const std::string nameSuffix = (compaction ? "" : "_without_compaction");
-                const PartialUsageParams params{cType, compaction};
+                PipelineConstructionType constructionType;
+                const char *name;
+            } constructionTypes[] = {
+                {PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC, "monolithic"},
+                {PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY, "optimized_lib"},
+                {PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY, "fast_lib"},
+                {PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, "shader_objects"},
+            };
 
-                constructionGroup->addChild(new PartialUsageCase(testCtx, "partial_usage" + nameSuffix, params));
-            }
+            for (const auto &constructionCase : constructionTypes)
+            {
+                const auto &cType = constructionCase.constructionType;
 
-            addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient", checkMeshSupport,
-                                        initGradientPrograms, testFullscreenGradient,
-                                        GradientParams(tcu::nothing<FragmentSize>(), cType));
-            addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x2", checkMeshSupport,
-                                        initGradientPrograms, testFullscreenGradient,
-                                        GradientParams(tcu::just(FragmentSize::SIZE_2X2), cType));
-            addFunctionCaseWithPrograms(constructionGroup.get(), "fullscreen_gradient_fs2x1", checkMeshSupport,
-                                        initGradientPrograms, testFullscreenGradient,
-                                        GradientParams(tcu::just(FragmentSize::SIZE_2X1), cType));
-        }
-
-        if (cType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-        {
-            const bool isESOCase = isConstructionTypeShaderObject(cType);
-
-            for (const auto usePrimitiveID : {false, true})
-                for (const auto meshFirst : {false, true})
-                    for (const auto extraInput : {false, true})
+                addTestGroup2(
+                    smokeTests, constructionCase.name,
+                    [cType](tcu::TestCaseGroup *constructionGroup)
                     {
-                        SharedFragLibraryParams params{cType, usePrimitiveID, meshFirst, extraInput};
-                        const auto testName = std::string() +
-                                              (isESOCase ? "shared_frag_shader" : "shared_frag_library") +
-                                              (usePrimitiveID ? "_primid" : "") + (meshFirst ? "_mesh_first" : "") +
-                                              (extraInput ? "_extra_input" : "");
-                        constructionGroup->addChild(new SharedFragLibraryCase(testCtx, testName, params));
-                    }
-        }
+                        auto &testCtx = constructionGroup->getTestContext();
 
-        {
-            for (const auto geometry : {DepthOnlyParams::Geometry::POINTS, DepthOnlyParams::Geometry::TRIANGLES})
-                for (const auto stepByStepPosition : {false, true})
-                {
-                    const auto testName = std::string("depth_only") +
-                                          ((geometry == DepthOnlyParams::Geometry::POINTS) ? "_points" : "_triangles") +
-                                          (stepByStepPosition ? "_position_components" : "");
+                        if (!isConstructionTypeShaderObject(cType))
+                        {
+                            constructionGroup->addChild(
+                                new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle", cType));
+                            constructionGroup->addChild(
+                                new MeshOnlyTriangleCase(testCtx, "mesh_shader_triangle_rasterization_disabled", cType,
+                                                         true /*rasterizationDisabled*/));
+                            constructionGroup->addChild(
+                                new MeshTaskTriangleCase(testCtx, "mesh_task_shader_triangle", cType));
+                            constructionGroup->addChild(
+                                new TaskOnlyTriangleCase(testCtx, "task_only_shader_triangle", cType));
 
-                    const DepthOnlyParams params{
-                        constructionCase.constructionType,
-                        geometry,
-                        stepByStepPosition,
-                    };
+                            for (int i = 0; i < 2; ++i)
+                            {
+                                const bool compaction        = (i == 0);
+                                const std::string nameSuffix = (compaction ? "" : "_without_compaction");
+                                const PartialUsageParams params{cType, compaction};
 
-                    addFunctionCaseWithPrograms(constructionGroup.get(), testName, depthOnlySupport, depthOnlyPrograms,
-                                                depthOnlyRun, params);
-                }
-        }
+                                constructionGroup->addChild(
+                                    new PartialUsageCase(testCtx, "partial_usage" + nameSuffix, params));
+                            }
 
-        smokeTests->addChild(constructionGroup.release());
-    }
+                            addFunctionCaseWithPrograms(constructionGroup, "fullscreen_gradient", checkMeshSupport,
+                                                        initGradientPrograms, testFullscreenGradient,
+                                                        GradientParams(tcu::nothing<FragmentSize>(), cType));
+                            addFunctionCaseWithPrograms(constructionGroup, "fullscreen_gradient_fs2x2",
+                                                        checkMeshSupport, initGradientPrograms, testFullscreenGradient,
+                                                        GradientParams(tcu::just(FragmentSize::SIZE_2X2), cType));
+                            addFunctionCaseWithPrograms(constructionGroup, "fullscreen_gradient_fs2x1",
+                                                        checkMeshSupport, initGradientPrograms, testFullscreenGradient,
+                                                        GradientParams(tcu::just(FragmentSize::SIZE_2X1), cType));
+                        }
 
-    return smokeTests.release();
+                        if (cType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+                        {
+                            const bool isESOCase = isConstructionTypeShaderObject(cType);
+
+                            for (const auto usePrimitiveID : {false, true})
+                                for (const auto meshFirst : {false, true})
+                                    for (const auto extraInput : {false, true})
+                                    {
+                                        SharedFragLibraryParams params{cType, usePrimitiveID, meshFirst, extraInput};
+                                        const auto testName =
+                                            std::string() + (isESOCase ? "shared_frag_shader" : "shared_frag_library") +
+                                            (usePrimitiveID ? "_primid" : "") + (meshFirst ? "_mesh_first" : "") +
+                                            (extraInput ? "_extra_input" : "");
+                                        constructionGroup->addChild(
+                                            new SharedFragLibraryCase(testCtx, testName, params));
+                                    }
+                        }
+
+                        {
+                            for (const auto geometry :
+                                 {DepthOnlyParams::Geometry::POINTS, DepthOnlyParams::Geometry::TRIANGLES})
+                                for (const auto stepByStepPosition : {false, true})
+                                {
+                                    const auto testName =
+                                        std::string("depth_only") +
+                                        ((geometry == DepthOnlyParams::Geometry::POINTS) ? "_points" : "_triangles") +
+                                        (stepByStepPosition ? "_position_components" : "");
+
+                                    const DepthOnlyParams params{
+                                        cType,
+                                        geometry,
+                                        stepByStepPosition,
+                                    };
+
+                                    addFunctionCaseWithPrograms(constructionGroup, testName, depthOnlySupport,
+                                                                depthOnlyPrograms, depthOnlyRun, params);
+                                }
+                        }
+                    });
+            }
+        });
 }
 
 } // namespace MeshShader

@@ -28,34 +28,26 @@
 
 #include "vkPrograms.hpp"
 
-#include "gluVarType.hpp"
 #include "tcuTestLog.hpp"
-#include "tcuSurface.hpp"
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
-#include "deMath.h"
-
-#include "tcuTextureUtil.hpp"
 #include "deSharedPtr.hpp"
+#include "deMath.h"
 
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
-#include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 
 #include <map>
-#include <set>
 #include <vector>
 #include <iostream>
 #include <iomanip>
 
-namespace vkt
-{
-namespace TransformFeedback
+namespace vkt::TransformFeedback
 {
 
 using namespace vk;
@@ -224,14 +216,6 @@ int InterfaceLayout::getBlockLayoutIndex(int blockNdx, int instanceNdx) const
 }
 
 // ShaderInterface implementation.
-
-ShaderInterface::ShaderInterface(void)
-{
-}
-
-ShaderInterface::~ShaderInterface(void)
-{
-}
 
 StructType &ShaderInterface::allocStruct(const std::string &name)
 {
@@ -1661,16 +1645,14 @@ public:
     InterfaceBlockCaseInstance(Context &context, const InterfaceLayout &layout,
                                const std::map<int, void *> &blockPointers, const std::vector<uint8_t> &data,
                                const std::vector<VkDeviceSize> &tfBufBindingOffsets,
-                               const std::vector<VkDeviceSize> &tfBufBindingSizes, const uint32_t locationsRequired,
-                               const TestStageFlags testStageFlags);
+                               const std::vector<VkDeviceSize> &tfBufBindingSizes, const TestStageFlags testStageFlags);
 
-    virtual ~InterfaceBlockCaseInstance(void);
+    virtual ~InterfaceBlockCaseInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
 
 private:
     Move<VkShaderModule> getGeometryShaderModule(const DeviceInterface &vk, const VkDevice device);
 
-    bool usesFloat64(void);
     std::string validateValue(const InterfaceLayoutEntry &entry, const void *basePtr0, const void *basePtr,
                               const void *receivedBasePtr);
     std::string validateValues(const void *recievedDataPtr);
@@ -1683,7 +1665,6 @@ private:
     const DeviceSizeVector &m_tfBufBindingOffsets;
     const DeviceSizeVector &m_tfBufBindingSizes;
     const std::map<int, void *> &m_blockPointers;
-    const uint32_t m_locationsRequired;
     const TestStageFlags m_testStageFlags;
     const VkExtent2D m_imageExtent2D;
 };
@@ -1693,7 +1674,6 @@ InterfaceBlockCaseInstance::InterfaceBlockCaseInstance(Context &ctx, const Inter
                                                        const std::vector<uint8_t> &data,
                                                        const std::vector<VkDeviceSize> &tfBufBindingOffsets,
                                                        const std::vector<VkDeviceSize> &tfBufBindingSizes,
-                                                       const uint32_t locationsRequired,
                                                        const TestStageFlags testStageFlags)
     : vkt::TestInstance(ctx)
     , m_layout(layout)
@@ -1701,79 +1681,9 @@ InterfaceBlockCaseInstance::InterfaceBlockCaseInstance(Context &ctx, const Inter
     , m_tfBufBindingOffsets(tfBufBindingOffsets)
     , m_tfBufBindingSizes(tfBufBindingSizes)
     , m_blockPointers(blockPointers)
-    , m_locationsRequired(locationsRequired)
     , m_testStageFlags(testStageFlags)
     , m_imageExtent2D(makeExtent2D(256u, 256u))
 {
-    const uint32_t componentsPerLocation = 4u;
-    const uint32_t componentsRequired =
-        m_locationsRequired * componentsPerLocation + 7u; // Add 7 for built-in components
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-    const VkPhysicalDeviceTransformFeedbackFeaturesEXT &transformFeedbackFeatures =
-        m_context.getTransformFeedbackFeaturesEXT();
-    const VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(vki, physDevice).limits;
-    VkPhysicalDeviceTransformFeedbackPropertiesEXT transformFeedbackProperties;
-    VkPhysicalDeviceProperties2 deviceProperties2;
-
-    if (transformFeedbackFeatures.transformFeedback == false)
-        TCU_THROW(NotSupportedError, "transformFeedback feature is not supported");
-
-    deMemset(&deviceProperties2, 0, sizeof(deviceProperties2));
-    deMemset(&transformFeedbackProperties, 0x00, sizeof(transformFeedbackProperties));
-
-    deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    deviceProperties2.pNext = &transformFeedbackProperties;
-
-    transformFeedbackProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT;
-    transformFeedbackProperties.pNext = nullptr;
-
-    vki.getPhysicalDeviceProperties2(physDevice, &deviceProperties2);
-
-    if (transformFeedbackProperties.maxTransformFeedbackBuffers < tfBufBindingSizes.size())
-        TCU_THROW(NotSupportedError, "maxTransformFeedbackBuffers=" +
-                                         de::toString(transformFeedbackProperties.maxTransformFeedbackBuffers) +
-                                         " is less than required (" + de::toString(tfBufBindingSizes.size()) + ")");
-
-    if (transformFeedbackProperties.maxTransformFeedbackBufferDataSize < m_data.size())
-        TCU_THROW(NotSupportedError, "maxTransformFeedbackBufferDataSize=" +
-                                         de::toString(transformFeedbackProperties.maxTransformFeedbackBufferDataSize) +
-                                         " is less than required (" + de::toString(m_data.size()) + ")");
-
-    if (m_testStageFlags == TEST_STAGE_VERTEX)
-    {
-        if (limits.maxVertexOutputComponents < componentsRequired)
-            TCU_THROW(NotSupportedError, "maxVertexOutputComponents=" + de::toString(limits.maxVertexOutputComponents) +
-                                             " is less than required (" + de::toString(componentsRequired) + ")");
-    }
-
-    if (m_testStageFlags == TEST_STAGE_GEOMETRY)
-    {
-        if (!features.geometryShader)
-            TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
-
-        if (limits.maxGeometryOutputComponents < componentsRequired)
-            TCU_THROW(NotSupportedError,
-                      "maxGeometryOutputComponents=" + de::toString(limits.maxGeometryOutputComponents) +
-                          " is less than required (" + de::toString(componentsRequired) + ")");
-    }
-
-    if (usesFloat64())
-        m_context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_FLOAT64);
-}
-
-InterfaceBlockCaseInstance::~InterfaceBlockCaseInstance(void)
-{
-}
-
-bool InterfaceBlockCaseInstance::usesFloat64(void)
-{
-    for (size_t layoutNdx = 0; layoutNdx < m_layout.interfaces.size(); ++layoutNdx)
-        if (isDataTypeDoubleType(m_layout.interfaces[layoutNdx].type))
-            return true;
-
-    return false;
 }
 
 Move<VkShaderModule> InterfaceBlockCaseInstance::getGeometryShaderModule(const DeviceInterface &vk,
@@ -1782,7 +1692,7 @@ Move<VkShaderModule> InterfaceBlockCaseInstance::getGeometryShaderModule(const D
     if (m_testStageFlags == TEST_STAGE_GEOMETRY)
         return createShaderModule(vk, device, m_context.getBinaryCollection().get("geom"), 0u);
 
-    return Move<VkShaderModule>();
+    return {};
 }
 
 tcu::TestStatus InterfaceBlockCaseInstance::iterate(void)
@@ -2013,10 +1923,6 @@ InterfaceBlockCase::InterfaceBlockCase(tcu::TestContext &testCtx, const std::str
 {
 }
 
-InterfaceBlockCase::~InterfaceBlockCase(void)
-{
-}
-
 void InterfaceBlockCase::initPrograms(vk::SourceCollections &programCollection) const
 {
     DE_ASSERT(!m_vertShaderSource.empty());
@@ -2030,7 +1936,59 @@ void InterfaceBlockCase::initPrograms(vk::SourceCollections &programCollection) 
 TestInstance *InterfaceBlockCase::createInstance(Context &context) const
 {
     return new InterfaceBlockCaseInstance(context, m_interfaceLayout, m_blockPointers, m_data, m_tfBufBindingOffsets,
-                                          m_tfBufBindingSizes, m_locationsRequired, m_testStageFlags);
+                                          m_tfBufBindingSizes, m_testStageFlags);
+}
+
+void InterfaceBlockCase::checkSupport(Context &context) const
+{
+    const auto &features                    = context.getDeviceFeatures();
+    const auto limits                       = context.getDeviceProperties().limits;
+    const auto &transformFeedbackFeatures   = context.getTransformFeedbackFeaturesEXT();
+    const auto &transformFeedbackProperties = context.getTransformFeedbackPropertiesEXT();
+
+    const uint32_t componentsPerLocation = 4u;
+    const uint32_t componentsRequired =
+        m_locationsRequired * componentsPerLocation + 7u; // Add 7 for built-in components
+
+    if (!transformFeedbackFeatures.transformFeedback)
+        TCU_THROW(NotSupportedError, "transformFeedback feature is not supported");
+
+    if (transformFeedbackProperties.maxTransformFeedbackBuffers < m_tfBufBindingSizes.size())
+        TCU_THROW(NotSupportedError, "maxTransformFeedbackBuffers=" +
+                                         de::toString(transformFeedbackProperties.maxTransformFeedbackBuffers) +
+                                         " is less than required (" + de::toString(m_tfBufBindingSizes.size()) + ")");
+
+    if (transformFeedbackProperties.maxTransformFeedbackBufferDataSize < m_data.size())
+        TCU_THROW(NotSupportedError, "maxTransformFeedbackBufferDataSize=" +
+                                         de::toString(transformFeedbackProperties.maxTransformFeedbackBufferDataSize) +
+                                         " is less than required (" + de::toString(m_data.size()) + ")");
+
+    if (m_testStageFlags == TEST_STAGE_VERTEX)
+    {
+        if (limits.maxVertexOutputComponents < componentsRequired)
+            TCU_THROW(NotSupportedError, "maxVertexOutputComponents=" + de::toString(limits.maxVertexOutputComponents) +
+                                             " is less than required (" + de::toString(componentsRequired) + ")");
+    }
+
+    if (m_testStageFlags == TEST_STAGE_GEOMETRY)
+    {
+        if (!features.geometryShader)
+            TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
+
+        if (limits.maxGeometryOutputComponents < componentsRequired)
+            TCU_THROW(NotSupportedError,
+                      "maxGeometryOutputComponents=" + de::toString(limits.maxGeometryOutputComponents) +
+                          " is less than required (" + de::toString(componentsRequired) + ")");
+    }
+
+    for (const auto &layout : m_interfaceLayout.interfaces)
+    {
+        if (isDataTypeDoubleType(layout.type))
+        {
+            context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_FLOAT64);
+            break;
+        }
+    }
 }
 
 void InterfaceBlockCase::delayedInit(void)
@@ -2108,5 +2066,4 @@ void InterfaceBlockCase::delayedInit(void)
     }
 }
 
-} // namespace TransformFeedback
-} // namespace vkt
+} // namespace vkt::TransformFeedback

@@ -460,10 +460,8 @@ Move<VkRenderPass> HelperInvocationsTestInstance::setupRenderPass(const DeviceIn
 
     std::array<VkSubpassDescription, 2> subpassDescriptions;
     memset(subpassDescriptions.data(), 0, 2 * sizeof(VkSubpassDescription));
-    subpassDescriptions[0].colorAttachmentCount    = 1;
-    subpassDescriptions[0].pColorAttachments       = &colorAttachmentRefs[0];
-    subpassDescriptions[0].preserveAttachmentCount = m_usingSecondSubpass;
-    subpassDescriptions[0].pPreserveAttachments    = &colorAttachmentRefs[1].attachment;
+    subpassDescriptions[0].colorAttachmentCount = 1;
+    subpassDescriptions[0].pColorAttachments    = &colorAttachmentRefs[0];
 
     subpassDescriptions[1].colorAttachmentCount = 1;
     subpassDescriptions[1].pColorAttachments    = &colorAttachmentRefs[1];

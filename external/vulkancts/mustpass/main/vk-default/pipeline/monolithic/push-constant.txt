@@ -1,3 +1,4 @@
+dEQP-VK.pipeline.monolithic.push_constant.compute_pipeline.non_uniform_index
 dEQP-VK.pipeline.monolithic.push_constant.compute_pipeline.overwrite
 dEQP-VK.pipeline.monolithic.push_constant.compute_pipeline.simple_test
 dEQP-VK.pipeline.monolithic.push_constant.compute_pipeline.uninitialized
@@ -19,6 +20,10 @@ dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.dynamic_index_frag
 dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.dynamic_index_frag_command2
 dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.dynamic_index_vert
 dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.dynamic_index_vert_command2
+dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.non_uniform_index_frag
+dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.non_uniform_index_frag_command2
+dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.non_uniform_index_vert
+dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.non_uniform_index_vert_command2
 dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.overlap_2_shaders_vert_frag
 dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.overlap_2_shaders_vert_frag_command2
 dEQP-VK.pipeline.monolithic.push_constant.graphics_pipeline.overlap_3_shaders_vert_geom_frag

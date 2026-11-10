@@ -742,6 +742,7 @@ tcu::TestStatus SampleReadTestInstance::iterateInternalDynamicRendering()
         });
 
     colorAttachments[1].imageView        = *m_dstMultisampleImageView;
+    colorAttachments[1].imageLayout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorAttachments[1].resolveMode      = VK_RESOLVE_MODE_AVERAGE_BIT;
     colorAttachments[1].resolveImageView = *m_dstSinglesampleImageView;
 

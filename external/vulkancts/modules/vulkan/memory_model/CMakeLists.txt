@@ -1,7 +1,6 @@
 include_directories(
 	..
     ../amber
-	${DEQP_INL_DIR}
 )
 
 set(DEQP_VK_MEMORY_MODEL_SRCS

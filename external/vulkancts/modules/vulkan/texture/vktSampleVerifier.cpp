@@ -388,6 +388,17 @@ void SampleVerifier::getFilteredSample(const IVec3 &texelBase, const Vec3 &weigh
     DE_ASSERT(layer < m_imParams.arrayLayers);
     DE_ASSERT(level < m_imParams.levels);
 
+    for (const FilteredSample &filtered : m_filteredSamples)
+    {
+        if (filtered.level == level && filtered.layer == layer && filtered.texelBase == texelBase &&
+            filtered.weights == weights)
+        {
+            resultMin = filtered.resultMin;
+            resultMax = filtered.resultMax;
+            return;
+        }
+    }
+
     if (m_imParams.dim == IMG_DIM_1D)
     {
         getFilteredSample1D(texelBase, weights.x(), layer, level, resultMin, resultMax);
@@ -400,6 +411,8 @@ void SampleVerifier::getFilteredSample(const IVec3 &texelBase, const Vec3 &weigh
     {
         getFilteredSample3D(texelBase, weights, layer, level, resultMin, resultMax);
     }
+
+    m_filteredSamples.push_back(FilteredSample{texelBase, weights, layer, level, resultMin, resultMax});
 }
 
 void SampleVerifier::getMipmapStepBounds(const Vec2 &lodFracBounds, int32_t &stepMin, int32_t &stepMax) const
@@ -768,6 +781,8 @@ bool SampleVerifier::verifySampleImpl(const SampleArguments &args, const Vec4 &r
     // \todo [2016-07-11 collinbaker] Handle depth and stencil formats
     // \todo [2016-07-06 collinbaker] Handle dRef
     DE_ASSERT(m_samplerParams.isCompare == false);
+
+    m_filteredSamples.clear();
 
     Vec4 coord    = args.coord;
     int coordSize = 0;

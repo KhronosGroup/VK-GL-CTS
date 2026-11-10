@@ -765,6 +765,23 @@ bool hasVaryingEffectiveSubgroupSize(Context &context, SubgroupSizeMode subgroup
            context.getSubgroupSizeControlFeatures().subgroupSizeControl;
 }
 
+// The local workgroup sizes valid with workgroup scope matrices: power of two multiples of the subgroup size the shader
+// runs with (the largest one when it varies), up to cooperativeMatrixWorkgroupScopeMaxWorkgroupSize
+std::vector<uint32_t> getWorkgroupScopeSizes(Context &context, SubgroupSizeMode subgroupSizeMode, TestType testType)
+{
+    const uint32_t subgroupSize = hasVaryingEffectiveSubgroupSize(context, subgroupSizeMode, testType) ?
+                                      context.getSubgroupSizeControlProperties().maxSubgroupSize :
+                                      getSubgroupSizeFromMode(context, subgroupSizeMode);
+    const uint32_t maxSize =
+        context.getCooperativeMatrix2PropertiesNV().cooperativeMatrixWorkgroupScopeMaxWorkgroupSize;
+    std::vector<uint32_t> sizes;
+
+    for (uint32_t size = subgroupSize; size <= maxSize; size *= 2)
+        sizes.push_back(size);
+
+    return sizes;
+}
+
 class CooperativeMatrixTestInstance : public MultiQueueRunnerTestInstance
 {
 public:
@@ -1116,8 +1133,12 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
 
     if (isKhr(m_data.useType) && context.getCooperativeMatrixMaintenance1FeaturesEXT().cooperativeMatrixProperties2)
     {
-        // arbitrary lower/upper limits
-        for (uint32_t workgroupSize = 8; workgroupSize <= 256; workgroupSize *= 2)
+        const std::vector<uint32_t> invocationCounts =
+            (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
+                getWorkgroupScopeSizes(context, m_data.subgroupSizeMode, m_data.testType) :
+                std::vector<uint32_t>{0};
+
+        for (const uint32_t workgroupSize : invocationCounts)
         {
             uint32_t propertyCount = 0;
             std::vector<VkCooperativeMatrixProperties2EXT> properties2;
@@ -2969,6 +2990,29 @@ float getDataFloat(void *base, const VkComponentTypeKHR dt, uint32_t i)
     }
 }
 
+// Round value to the component type using the requested rounding direction,
+// then return the rounded value as a float.
+float roundToComponentType(double value, VkComponentTypeKHR type, tcu::RoundingDirection rounding)
+{
+    switch (type)
+    {
+    case VK_COMPONENT_TYPE_FLOAT32_KHR:
+        return tcu::Float32(value, rounding).asFloat();
+    case VK_COMPONENT_TYPE_FLOAT16_KHR:
+        return tcu::Float16(value, rounding).asFloat();
+#ifndef CTS_USES_VULKANSC
+    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+        return BFloat16(value, rounding).asFloat();
+    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+        return tcu::FloatE5M2(value, rounding).asFloat();
+    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+        return tcu::FloatE4M3(value, rounding).asFloat();
+#endif
+    default:
+        TCU_THROW(InternalError, "Unexpected floating-point component type");
+    }
+}
+
 void setDataInt(void *base, VkComponentTypeKHR dt, uint32_t i, uint32_t value)
 {
     DE_ASSERT(componentTypeInfo.at(dt).bits <= 32);
@@ -3212,8 +3256,8 @@ tcu::Maybe<float> calcB16Threshold(const float origRef)
         const auto exp  = b16Ref.exponent();
         const auto mant = b16Ref.mantissa();
 
-        const BFloat16 refTrunc = BFloat16::construct(sign, exp, (mant & 0xFFFCu)); // Truncate last two bits.
-        const BFloat16 refSat   = BFloat16::construct(sign, exp, (mant | 0x3u));    // Saturate last two bits.
+        const BFloat16 refTrunc = BFloat16::construct(sign, exp, (mant & 0xFFF8u)); // Truncate last 3 bits.
+        const BFloat16 refSat   = BFloat16::construct(sign, exp, (mant | 0x7u));    // Saturate last 3 bits.
 
         // Whatever gives us the largest difference.
         threshold = std::max(fabs(refTrunc.asFloat() - origRef), fabs(refSat.asFloat() - origRef));
@@ -3523,10 +3567,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
             std::vector<uint32_t> invocationCounts;
             if (m_data.scope == VK_SCOPE_WORKGROUP_KHR)
             {
-                for (uint32_t workgroupSize = 8; workgroupSize <= 256; workgroupSize *= 2)
-                {
-                    invocationCounts.push_back(workgroupSize);
-                }
+                invocationCounts = getWorkgroupScopeSizes(m_context, m_data.subgroupSizeMode, m_data.testType);
             }
             else
             {
@@ -4121,11 +4162,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                             setDataInt(ptrs[i], VK_COMPONENT_TYPE_UINT8_KHR, j, value);
                         }
                     }
-                    else if (m_data.outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
-                    {
-                        setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0x7) - 3.0f) / 2.0f);
-                    }
-                    else if (m_data.outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+                    else if (m_data.outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR ||
+                             m_data.outputType == VK_COMPONENT_TYPE_FLOAT16_KHR)
                     {
                         setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0x7) - 3.0f) / 2.0f);
                     }
@@ -4488,34 +4526,17 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                                     output = getDataConvertedToT<int32_t>(ptrs[3], dataTypes[3], ij);
                                     break;
                                 case VK_COMPONENT_TYPE_FLOAT32_KHR:
-                                    output = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
-                                    break;
                                 case VK_COMPONENT_TYPE_FLOAT16_KHR:
-                                {
-                                    output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
-                                    inputAConverted[k] = tcu::Float16(inputAConverted[k], rd[k]).asDouble();
-                                    break;
-                                }
-                                case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
-                                {
-                                    output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
-                                    inputAConverted[k] = tcu::FloatE5M2(inputAConverted[k], rd[k]).asDouble();
-                                    break;
-                                }
-                                case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
-                                {
-                                    output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
-                                    inputAConverted[k] = tcu::FloatE4M3(inputAConverted[k], rd[k]).asDouble();
-                                    break;
-                                }
 #ifndef CTS_USES_VULKANSC
+                                case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                                case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
                                 case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+#endif
                                 {
                                     output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], ij);
-                                    inputAConverted[k] = BFloat16(inputAConverted[k], rd[k]).asDouble();
+                                    inputAConverted[k] = roundToComponentType(inputAConverted[k], dataTypes[3], rd[k]);
                                     break;
                                 }
-#endif //CTS_USES_VULKANSC
                                 default:
                                     TCU_THROW(InternalError, "Unexpected type");
                                 }
@@ -5153,9 +5174,16 @@ tcu::TestStatus CooperativeMatrixTestInstance::queuePass(const vkt::QueueData &q
                         // size) because the expected value would depend on a runtime-chosen size.
                         if (m_data.scope == VK_SCOPE_SUBGROUP_KHR && !varyingEffectiveSubgroupSize)
                         {
-                            // We expect the matrix to be spread evenly across invocations, it is
-                            // surprising (but not necessarily illegal) if not
-                            if (output != (float)(N * M / subgroupSize) && res == QP_TEST_RESULT_PASS)
+                            // The shader converts the integer length to the matrix component type.
+                            // Since the rounding mode is implementation-defined, accept both rounding
+                            // directions.
+                            const float length = (float)(N * M / subgroupSize);
+                            const float lower  = roundToComponentType(length, dataTypes[3], tcu::ROUND_DOWNWARD);
+                            const float upper  = roundToComponentType(length, dataTypes[3], tcu::ROUND_UPWARD);
+
+                            // A different component distribution can be valid, so report an unexpected
+                            // length as a quality warning. Do not overwrite an earlier failure.
+                            if (output != lower && output != upper && res == QP_TEST_RESULT_PASS)
                             {
                                 res = QP_TEST_RESULT_QUALITY_WARNING;
                             }

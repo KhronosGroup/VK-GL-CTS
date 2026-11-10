@@ -2202,14 +2202,15 @@ tcu::TestCaseGroup *createCullRayFlagsTests(tcu::TestContext &testCtx)
          }},
     };
 
-    struct
+    struct BottomTestTypeInfo
     {
         BottomTestType testType;
         const char *name;
-    } bottomTestTypes[] = {
+    };
+    const std::array<BottomTestTypeInfo, 2> bottomTestTypes{{
         {BTT_TRIANGLES, "triangles"},
         {BTT_AABBS, "aabbs"},
-    };
+    }};
 
     for (size_t shaderSourceNdx = 0; shaderSourceNdx < DE_LENGTH_OF_ARRAY(shaderSourceTypes); ++shaderSourceNdx)
     {
@@ -2224,7 +2225,7 @@ tcu::TestCaseGroup *createCullRayFlagsTests(tcu::TestContext &testCtx)
             for (size_t testTypeNdx = 0; testTypeNdx < shaderTestTypes[shaderTestNdx].flag.size(); ++testTypeNdx)
             {
                 de::MovePtr<tcu::TestCaseGroup> bottomTestTypeGroup(
-                    new tcu::TestCaseGroup(group->getTestContext(), bottomTestTypes[testTypeNdx].name));
+                    new tcu::TestCaseGroup(group->getTestContext(), bottomTestTypes.at(testTypeNdx).name));
 
                 const auto &flags = shaderTestTypes[shaderTestNdx].flag[testTypeNdx];
 
@@ -2240,7 +2241,7 @@ tcu::TestCaseGroup *createCullRayFlagsTests(tcu::TestContext &testCtx)
                                           shaderTestTypes[shaderTestNdx].shaderTestType,
                                           flags[flagNdx],
                                           RF_None,
-                                          bottomTestTypes[testTypeNdx].testType};
+                                          bottomTestTypes.at(testTypeNdx).testType};
                     bottomTestTypeGroup->addChild(
                         new RayQueryCullRayFlagsTestCase(group->getTestContext(), testName.str().c_str(), testParams));
                 }

@@ -1429,15 +1429,16 @@ tcu::TestStatus SubpassDependencyTestInstance::iterateInternal(void)
 
     beginCommandBuffer(vkd, *commandBuffer);
 
-    // Transition stencil aspects to the final layout directly.
+    // Transition depth/stencil aspects to the final layout directly
     if (isDepthStencilFormat(m_format))
     {
+        // VUID-VkImageMemoryBarrier-image-03320
         const VkImageSubresourceRange imageSubresourceRange = {
-            VK_IMAGE_ASPECT_STENCIL_BIT, // VkImageAspectFlags    aspectMask
-            0u,                          // uint32_t                baseMipLevel
-            1u,                          // uint32_t                levelCount
-            0u,                          // uint32_t                baseArrayLayer
-            1u                           // uint32_t                layerCount
+            getImageAspectFlags(mapVkFormat(m_format)), // VkImageAspectFlags    aspectMask
+            0u,                                         // uint32_t                baseMipLevel
+            1u,                                         // uint32_t                levelCount
+            0u,                                         // uint32_t                baseArrayLayer
+            1u                                          // uint32_t                layerCount
         };
 
         VkImageMemoryBarrier barrier = {
@@ -3637,7 +3638,8 @@ void SingleAttachmentTestInstance::iterateInternalDynamicRendering(void)
             if (m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
             {
                 beginSecondaryCmdBuffer(vkd, *secCmdBuffer[1], m_format, VK_FORMAT_UNDEFINED, true);
-                beginRendering(vkd, *secCmdBuffer[1], *m_imageViewResult, renderArea, clearValue);
+                beginRendering(vkd, *secCmdBuffer[1], *m_imageViewResult, renderArea, clearValue,
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             }
             else
                 beginSecondaryCmdBuffer(vkd, *secCmdBuffer[1], m_format, VK_FORMAT_UNDEFINED, false);
@@ -3668,8 +3670,9 @@ void SingleAttachmentTestInstance::iterateInternalDynamicRendering(void)
 
         if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         {
-            beginRendering(vkd, *cmdBuffer, *m_imageViewResult, renderArea, clearValue, VK_IMAGE_LAYOUT_GENERAL,
-                           VK_ATTACHMENT_LOAD_OP_LOAD, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
+            beginRendering(vkd, *cmdBuffer, *m_imageViewResult, renderArea, clearValue,
+                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_LOAD,
+                           VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT);
         }
         vkd.cmdExecuteCommands(*cmdBuffer, 1u, &*secCmdBuffer[1]);
         if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
@@ -3690,7 +3693,8 @@ void SingleAttachmentTestInstance::iterateInternalDynamicRendering(void)
 
         inbetweenDrawsRenderBarriers(*cmdBuffer);
 
-        beginRendering(vkd, *cmdBuffer, *m_imageViewResult, renderArea, clearValue);
+        beginRendering(vkd, *cmdBuffer, *m_imageViewResult, renderArea, clearValue,
+                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         drawThatSamplesPreviousResult(*cmdBuffer);
         vkd.cmdEndRendering(*cmdBuffer);
 

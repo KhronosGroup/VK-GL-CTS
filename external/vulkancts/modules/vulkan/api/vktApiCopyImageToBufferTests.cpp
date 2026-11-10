@@ -245,13 +245,18 @@ tcu::TestStatus CopyImageToBuffer::iterate(void)
     {
 #ifndef CTS_USES_VULKANSC
         VkDeviceAddress dstBufferDeviceAddress = getBufferDeviceAddress(vk, vkDevice, *m_destination);
-        int pixelSize                          = m_textureFormat.getPixelSize();
+        VkDeviceSize pixelSize                 = m_textureFormat.getPixelSize();
 
         memoryImageCopies2KHR.reserve(m_params.regions.size());
         for (const auto &r : m_params.regions)
         {
-            auto size = std::max(r.bufferImageCopy.bufferRowLength, r.bufferImageCopy.imageExtent.width) *
-                        std::max(r.bufferImageCopy.bufferImageHeight, r.bufferImageCopy.imageExtent.height) * pixelSize;
+            const auto &subresource = r.bufferImageCopy.imageSubresource;
+            uint32_t layerCount     = subresource.layerCount;
+            if (subresource.layerCount == VK_REMAINING_ARRAY_LAYERS)
+                layerCount = m_params.src.image.extent.depth - subresource.baseArrayLayer;
+
+            const auto size = getMemoryRequiredForImageCopy(r.bufferImageCopy, layerCount, pixelSize);
+
             memoryImageCopies2KHR.push_back(convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
                 r.bufferImageCopy, dstBufferDeviceAddress, size, layout));
         }

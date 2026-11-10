@@ -306,7 +306,7 @@ tcu::TestStatus PushIndexHeapInstance::iterate()
         }
     }
 
-    return tcu::TestStatus::pass("Pass");
+    return tcu::TestStatus::pass(std::string());
 }
 
 } // anonymous namespace
@@ -318,6 +318,8 @@ tcu::TestCaseGroup *createDGCComputePushIndexHeapTestsExt(tcu::TestContext &test
     GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "push_index_heap"));
 
     mainGroup->addChild(new PushIndexHeapCase(testCtx, "stage_compute", TestParams{VK_SHADER_STAGE_COMPUTE_BIT}));
+    mainGroup->addChild(
+        new PushIndexHeapCase(testCtx, "stage_all", TestParams{static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_ALL)}));
 
     return mainGroup.release();
 }

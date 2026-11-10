@@ -79,7 +79,7 @@ void TextureBorderClampSamplerParameterIWithWrongPnameTest::deinit(void)
     }
 
     /* Deinitialize base class instance */
-    TestCaseBase::deinit();
+    TextureBorderClampBase::deinit();
 }
 
 /** Initializes GLES objects used during the test.

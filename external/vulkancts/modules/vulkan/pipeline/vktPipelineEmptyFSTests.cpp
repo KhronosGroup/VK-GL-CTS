@@ -499,10 +499,11 @@ tcu::TestStatus EmptyFSSelectiveDSUpdateInstance::iterate(void)
     if (testPrimitiveDiscard)
     {
         // copy single sampled depth to buffer
+        // VUID-VkImageMemoryBarrier-image-03321
         copyImageToBuffer(vk, *cmdBuffer, dsImageWithBuffer.getImage(), dsImageWithBuffer.getBuffer(),
                           tcu::IVec2(extent.width, extent.height), VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                          VK_IMAGE_LAYOUT_GENERAL, 1u, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_ASPECT_DEPTH_BIT,
-                          VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+                          VK_IMAGE_LAYOUT_GENERAL, 1u, getImageAspectFlags(mapVkFormat(dsFormat)),
+                          VK_IMAGE_ASPECT_DEPTH_BIT, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
     }
     else
     {

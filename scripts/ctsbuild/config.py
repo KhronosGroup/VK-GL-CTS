@@ -100,6 +100,11 @@ class CMakeGenerator:
         return args
 
     def getBinaryPath (self, buildType, basePath):
+        if self.isMultiConfig:
+            binName = os.path.basename(basePath)
+            if sys.platform == 'win32' or self.name.startswith("Visual Studio "):
+                binName += ".exe"
+            return os.path.join(os.path.dirname(basePath), buildType, binName)
         return basePath
 
 class UnixMakefileGenerator(CMakeGenerator):
@@ -197,6 +202,40 @@ class VSProjectGenerator(CMakeGenerator):
             return False
         else:
             return False
+
+def getBuildGenerator (config, defaultGenerator):
+    """Use an existing build directory's generator, including its platform."""
+    cachePath = os.path.join(config.getBuildDir(), "CMakeCache.txt")
+    if not os.path.isfile(cachePath):
+        return defaultGenerator
+
+    cache = {}
+    with open(cachePath, encoding="utf-8") as cacheFile:
+        for line in cacheFile:
+            if line.startswith(("#", "//")):
+                continue
+            key, separator, value = line.rstrip("\r\n").partition("=")
+            if separator:
+                cache[key.split(":", 1)[0]] = value
+
+    name = cache.get("CMAKE_GENERATOR")
+    if not name:
+        raise ValueError("CMAKE_GENERATOR missing from %s" % cachePath)
+
+    if defaultGenerator is not None and defaultGenerator.getName() == name:
+        generator = copy.copy(defaultGenerator)
+    elif name.startswith("Visual Studio "):
+        generator = CMakeGenerator(name, extraBuildArgs = ['/m'])
+    elif name == "Unix Makefiles":
+        generator = UnixMakefileGenerator()
+    else:
+        generator = CMakeGenerator(name)
+
+    generator.isMultiConfig = (name.startswith("Visual Studio ") or
+                               name in ("Xcode", "Ninja Multi-Config"))
+    # An empty cached platform must not become the auto-selected VS platform.
+    generator.platform = cache.get("CMAKE_GENERATOR_PLATFORM") or None
+    return generator
 
 # Pre-defined generators
 

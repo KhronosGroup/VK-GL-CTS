@@ -2224,6 +2224,74 @@ protected:
         VerifyGetProgramResourceiv(program, GL_TESS_CONTROL_SUBROUTINE_UNIFORM, indicesTU["a"], 5, propsU, 5, expectedU,
                                    error);
     }
+
+    virtual void inline VerifyTES(GLuint program, long &error)
+    {
+        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE, GL_ACTIVE_RESOURCES, 1, error);
+        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE, GL_MAX_NAME_LENGTH, 2, error);
+
+        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, GL_ACTIVE_RESOURCES, 1, error);
+        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, GL_MAX_NAME_LENGTH, 2, error);
+        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, GL_MAX_NUM_COMPATIBLE_SUBROUTINES,
+                                    1, error);
+
+        std::map<std::string, GLuint> indicesTS;
+        VerifyGetProgramResourceIndex(program, GL_TESS_EVALUATION_SUBROUTINE, indicesTS, "x", error);
+        std::map<std::string, GLuint> indicesTU;
+        VerifyGetProgramResourceIndex(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, indicesTU, "a", error);
+
+        VerifyGetProgramResourceName(program, GL_TESS_EVALUATION_SUBROUTINE, indicesTS["x"], "x", error);
+        VerifyGetProgramResourceName(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, indicesTU["a"], "a", error);
+
+        VerifyGetProgramResourceLocation(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, "a",
+                                         glGetSubroutineUniformLocation(program, GL_TESS_EVALUATION_SHADER, "a"),
+                                         error);
+
+        GLenum propsS[]   = {GL_NAME_LENGTH};
+        GLint expectedS[] = {2};
+        VerifyGetProgramResourceiv(program, GL_TESS_EVALUATION_SUBROUTINE, indicesTS["x"], 1, propsS, 1, expectedS,
+                                   error);
+
+        GLenum propsU[]   = {GL_NAME_LENGTH, GL_ARRAY_SIZE, GL_NUM_COMPATIBLE_SUBROUTINES, GL_LOCATION,
+                             GL_COMPATIBLE_SUBROUTINES};
+        GLint expectedU[] = {2, 1, 1, glGetSubroutineUniformLocation(program, GL_TESS_EVALUATION_SHADER, "a"),
+                             static_cast<GLint>(indicesTS["x"])};
+        VerifyGetProgramResourceiv(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, indicesTU["a"], 5, propsU, 5,
+                                   expectedU, error);
+    }
+
+    virtual void inline VerifyFS(GLuint program, long &error)
+    {
+        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE, GL_ACTIVE_RESOURCES, 1, error);
+        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE, GL_MAX_NAME_LENGTH, 2, error);
+
+        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, GL_ACTIVE_RESOURCES, 1, error);
+        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, GL_MAX_NAME_LENGTH, 2, error);
+        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, GL_MAX_NUM_COMPATIBLE_SUBROUTINES, 1,
+                                    error);
+
+        std::map<std::string, GLuint> indicesTS;
+        VerifyGetProgramResourceIndex(program, GL_FRAGMENT_SUBROUTINE, indicesTS, "x", error);
+        std::map<std::string, GLuint> indicesTU;
+        VerifyGetProgramResourceIndex(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, indicesTU, "a", error);
+
+        VerifyGetProgramResourceName(program, GL_FRAGMENT_SUBROUTINE, indicesTS["x"], "x", error);
+        VerifyGetProgramResourceName(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, indicesTU["a"], "a", error);
+
+        VerifyGetProgramResourceLocation(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, "a",
+                                         glGetSubroutineUniformLocation(program, GL_FRAGMENT_SHADER, "a"), error);
+
+        GLenum propsS[]   = {GL_NAME_LENGTH};
+        GLint expectedS[] = {2};
+        VerifyGetProgramResourceiv(program, GL_FRAGMENT_SUBROUTINE, indicesTS["x"], 1, propsS, 1, expectedS, error);
+
+        GLenum propsU[]   = {GL_NAME_LENGTH, GL_ARRAY_SIZE, GL_NUM_COMPATIBLE_SUBROUTINES, GL_LOCATION,
+                             GL_COMPATIBLE_SUBROUTINES};
+        GLint expectedU[] = {2, 1, 1, glGetSubroutineUniformLocation(program, GL_FRAGMENT_SHADER, "a"),
+                             static_cast<GLint>(indicesTS["x"])};
+        VerifyGetProgramResourceiv(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, indicesTU["a"], 5, propsU, 5, expectedU,
+                                   error);
+    }
 };
 
 class SubroutinesVertex : public SubroutinesBase
@@ -2292,41 +2360,6 @@ class SubroutinesTessEval : public SubroutinesBase
     virtual std::string PurposeExt()
     {
         return "\n\n Purpose is to verify calls using *TESS_EVALUATION_SUBROUTINE* as an interface params.\n";
-    }
-
-    virtual void inline VerifyTES(GLuint program, long &error)
-    {
-        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE, GL_ACTIVE_RESOURCES, 1, error);
-        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE, GL_MAX_NAME_LENGTH, 2, error);
-
-        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, GL_ACTIVE_RESOURCES, 1, error);
-        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, GL_MAX_NAME_LENGTH, 2, error);
-        VerifyGetProgramInterfaceiv(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, GL_MAX_NUM_COMPATIBLE_SUBROUTINES,
-                                    1, error);
-
-        std::map<std::string, GLuint> indicesTS;
-        VerifyGetProgramResourceIndex(program, GL_TESS_EVALUATION_SUBROUTINE, indicesTS, "x", error);
-        std::map<std::string, GLuint> indicesTU;
-        VerifyGetProgramResourceIndex(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, indicesTU, "a", error);
-
-        VerifyGetProgramResourceName(program, GL_TESS_EVALUATION_SUBROUTINE, indicesTS["x"], "x", error);
-        VerifyGetProgramResourceName(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, indicesTU["a"], "a", error);
-
-        VerifyGetProgramResourceLocation(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, "a",
-                                         glGetSubroutineUniformLocation(program, GL_TESS_EVALUATION_SHADER, "a"),
-                                         error);
-
-        GLenum propsS[]   = {GL_NAME_LENGTH};
-        GLint expectedS[] = {2};
-        VerifyGetProgramResourceiv(program, GL_TESS_EVALUATION_SUBROUTINE, indicesTS["x"], 1, propsS, 1, expectedS,
-                                   error);
-
-        GLenum propsU[]   = {GL_NAME_LENGTH, GL_ARRAY_SIZE, GL_NUM_COMPATIBLE_SUBROUTINES, GL_LOCATION,
-                             GL_COMPATIBLE_SUBROUTINES};
-        GLint expectedU[] = {2, 1, 1, glGetSubroutineUniformLocation(program, GL_TESS_EVALUATION_SHADER, "a"),
-                             static_cast<GLint>(indicesTS["x"])};
-        VerifyGetProgramResourceiv(program, GL_TESS_EVALUATION_SUBROUTINE_UNIFORM, indicesTU["a"], 5, propsU, 5,
-                                   expectedU, error);
     }
 
     virtual long Run()
@@ -2416,39 +2449,6 @@ class SubroutinesFragment : public SubroutinesBase
     virtual std::string PurposeExt()
     {
         return "\n\n Purpose is to verify calls using *FRAGMENT_SUBROUTINE* as an interface params.\n";
-    }
-
-    virtual void inline VerifyFS(GLuint program, long &error)
-    {
-        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE, GL_ACTIVE_RESOURCES, 1, error);
-        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE, GL_MAX_NAME_LENGTH, 2, error);
-
-        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, GL_ACTIVE_RESOURCES, 1, error);
-        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, GL_MAX_NAME_LENGTH, 2, error);
-        VerifyGetProgramInterfaceiv(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, GL_MAX_NUM_COMPATIBLE_SUBROUTINES, 1,
-                                    error);
-
-        std::map<std::string, GLuint> indicesTS;
-        VerifyGetProgramResourceIndex(program, GL_FRAGMENT_SUBROUTINE, indicesTS, "x", error);
-        std::map<std::string, GLuint> indicesTU;
-        VerifyGetProgramResourceIndex(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, indicesTU, "a", error);
-
-        VerifyGetProgramResourceName(program, GL_FRAGMENT_SUBROUTINE, indicesTS["x"], "x", error);
-        VerifyGetProgramResourceName(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, indicesTU["a"], "a", error);
-
-        VerifyGetProgramResourceLocation(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, "a",
-                                         glGetSubroutineUniformLocation(program, GL_FRAGMENT_SHADER, "a"), error);
-
-        GLenum propsS[]   = {GL_NAME_LENGTH};
-        GLint expectedS[] = {2};
-        VerifyGetProgramResourceiv(program, GL_FRAGMENT_SUBROUTINE, indicesTS["x"], 1, propsS, 1, expectedS, error);
-
-        GLenum propsU[]   = {GL_NAME_LENGTH, GL_ARRAY_SIZE, GL_NUM_COMPATIBLE_SUBROUTINES, GL_LOCATION,
-                             GL_COMPATIBLE_SUBROUTINES};
-        GLint expectedU[] = {2, 1, 1, glGetSubroutineUniformLocation(program, GL_FRAGMENT_SHADER, "a"),
-                             static_cast<GLint>(indicesTS["x"])};
-        VerifyGetProgramResourceiv(program, GL_FRAGMENT_SUBROUTINE_UNIFORM, indicesTU["a"], 5, propsU, 5, expectedU,
-                                   error);
     }
 
     virtual long Run()
@@ -4760,7 +4760,7 @@ class QueryNotUsed : public SimpleShaders
         return "Create 2 programs, use one of them and query the other, verify the results.";
     }
 
-    virtual std::string VertexShader2()
+    virtual std::string UsedProgramVertexShader()
     {
         return "#version 430                         \n"
                "in vec4 p;                           \n"
@@ -4770,7 +4770,7 @@ class QueryNotUsed : public SimpleShaders
                "}";
     }
 
-    virtual std::string FragmentShader2()
+    virtual std::string UsedProgramFragmentShader()
     {
         return "#version 430                   \n"
                "out vec4 c;                    \n"
@@ -4786,7 +4786,7 @@ class QueryNotUsed : public SimpleShaders
         glBindFragDataLocation(program, 0, "color");
         LinkProgram(program);
 
-        GLuint program2 = CreateProgram(VertexShader2().c_str(), FragmentShader2().c_str(), false);
+        GLuint program2 = CreateProgram(UsedProgramVertexShader().c_str(), UsedProgramFragmentShader().c_str(), false);
         glBindAttribLocation(program, 0, "p");
         glBindFragDataLocation(program, 0, "c");
         LinkProgram(program2);

@@ -1809,7 +1809,7 @@ void CommonEdgeCase::init(void)
         "layout (vertices = " +
         string(m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? "3" :
                m_primitiveType == TESSPRIMITIVETYPE_QUADS     ? "4" :
-                                                                nullptr) +
+                                                                TCU_THROW(InternalError, "Unexpected case")) +
         ") out;\n"
         "\n"
         "in highp vec2 in_tc_position[];\n"
@@ -2780,7 +2780,7 @@ protected:
                  "    highp float f = (1.0 - length(fromCenter)) * sqrt(1.7 - d);\n"
                  "    pos += 0.75 * f * fromCenter / (length(fromCenter) + 0.3);\n"
                  "    gl_Position = vec4(pos, 0.0, 1.0);\n" :
-                 nullptr) +
+                 TCU_THROW(InternalError, "Unexpected case")) +
             "}\n");
         std::string fragmentShaderTemplate("${GLSL_VERSION_DECL}\n"
                                            "\n"
@@ -2877,7 +2877,7 @@ protected:
                  "    in_f_color = phase == 0 ? vec4(1.0, 0.0, 0.0, 1.0)\n"
                  "               : phase == 1 ? vec4(0.0, 1.0, 0.0, 1.0)\n"
                  "               :              vec4(0.0, 0.0, 1.0, 1.0);\n" :
-                 nullptr) +
+                 TCU_THROW(InternalError, "Unexpected case")) +
             "}\n");
         std::string fragmentShaderTemplate("${GLSL_VERSION_DECL}\n"
                                            "\n"
@@ -3571,7 +3571,7 @@ void PerPatchDataCase::init(void)
          m_caseType == CASETYPE_TESS_LEVEL_OUTER1_TES ? "\tbool ok = abs(gl_TessLevelOuter[1] - 6.0) < 0.1f;\n" :
          m_caseType == CASETYPE_TESS_LEVEL_OUTER2_TES ? "\tbool ok = abs(gl_TessLevelOuter[2] - 5.0) < 0.1f;\n" :
          m_caseType == CASETYPE_TESS_LEVEL_OUTER3_TES ? "\tbool ok = abs(gl_TessLevelOuter[3] - 4.0) < 0.1f;\n" :
-                                                        nullptr) +
+                                                        TCU_THROW(InternalError, "Unexpected case")) +
         "    in_f_color = ok ? vec4(1.0) : vec4(vec3(0.0), 1.0);\n"
         "}\n");
     std::string fragmentShaderTemplate("${GLSL_VERSION_DECL}\n"
@@ -4763,7 +4763,7 @@ void SymmetricOuterEdgeCase::init(void)
              "    // Mirror one half of each outer edge onto the other half\n"
              "    out_te_tessCoord_isMirrored = (x == 0.0 || x == 1.0) && y > 0.5 ? vec4(x, 1.0-y, 0.0, 1.0)\n"
              "                                : vec4(x, y, 0.0, 0.0f);\n" :
-             nullptr) +
+             TCU_THROW(InternalError, "Unexpected case")) +
         "\n"
         "    gl_Position = vec4(gl_TessCoord.xy, 0.0, 1.0);\n"
         "    in_f_color = vec4(1.0);\n"

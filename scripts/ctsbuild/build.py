@@ -22,12 +22,12 @@
 
 import os
 import sys
-import shutil
 
 from . common import *
 from . config import *
 
 def initBuildDir (config, generator):
+    generator = getBuildGenerator(config, generator)
     cfgArgs = []
 
     # Build base configuration args
@@ -43,31 +43,27 @@ def initBuildDir (config, generator):
 
     try:
         execute([config.getCMakePath(), config.getSrcPath()] + cfgArgs)
+    except Exception as e:
+        raise RuntimeError("CMake configuration failed. To retry with a different generator, "
+                           "delete the build directory '%s' and rerun." % config.getBuildDir()) from e
     finally:
         popWorkingDir()
 
 def build (config, generator, targets = None):
-    if os.path.exists(config.buildDir):
-        try:
-            initBuildDir(config, generator)
-        except Exception as e:
-            print(e)
-            print("WARNING: Using existing build directory failed; re-creating build directory")
-            shutil.rmtree(config.buildDir)
-            initBuildDir(config, generator)
-    else:
-        initBuildDir(config, generator)
+    generator = getBuildGenerator(config, generator)
+    initBuildDir(config, generator)
 
     baseCmd = [config.getCMakePath(), '--build', '.']
     buildArgs = generator.getBuildArgs(config.getBuildType())
 
     pushWorkingDir(config.getBuildDir())
 
-    if targets == None:
-        execute(baseCmd + buildArgs)
-    else:
-        for target in targets:
-            execute(baseCmd + ['--target', target] + buildArgs)
-
-    popWorkingDir()
+    try:
+        if targets == None:
+            execute(baseCmd + buildArgs)
+        else:
+            for target in targets:
+                execute(baseCmd + ['--target', target] + buildArgs)
+    finally:
+        popWorkingDir()
     return baseCmd + buildArgs

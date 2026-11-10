@@ -22,6 +22,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "es31cComputeShaderTests.hpp"
+#include "glcMisc.hpp"
 #include "gluContextInfo.hpp"
 #include "gluPlatform.hpp"
 #include "glwEnums.hpp"
@@ -4855,7 +4856,7 @@ class AdvancedPipelinePostXFB : public ComputeShaderBase
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_storage_buffer);
             data = static_cast<float *>(
                 glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, sizeof(float) * 3 * 8, GL_MAP_READ_BIT));
-            if (memcmp(data, in_data, sizeof(float) * 3 * 8) != 0)
+            if (!floatBitsEqual(data, in_data, 3 * 8))
             {
                 m_context.getTestContext().getLog()
                     << tcu::TestLog::Message << "Data in shader storage buffer is incorrect."
@@ -4871,7 +4872,7 @@ class AdvancedPipelinePostXFB : public ComputeShaderBase
             float *data;
             data = static_cast<float *>(
                 glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(float) * 3 * 8, GL_MAP_READ_BIT));
-            if (memcmp(data, ref_data, sizeof(float) * 3 * 8) != 0)
+            if (!floatBitsEqual(data, ref_data, 3 * 8))
             {
                 m_context.getTestContext().getLog()
                     << tcu::TestLog::Message << "Data in xfb buffer is incorrect." << tcu::TestLog::EndMessage;

@@ -244,7 +244,8 @@ void checkSupportImageSamplingInstance(Context &context, ImageSamplingInstancePa
         {
         case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
             reductionModeInfo = reinterpret_cast<const VkSamplerReductionModeCreateInfo *>(pNext);
-            if (params.componentMapping.r != VK_COMPONENT_SWIZZLE_IDENTITY &&
+            if (!context.getSamplerFilterMinmaxProperties().filterMinmaxImageComponentMapping &&
+                params.componentMapping.r != VK_COMPONENT_SWIZZLE_IDENTITY &&
                 params.componentMapping.r != VK_COMPONENT_SWIZZLE_R)
             {
                 TCU_THROW(NotSupportedError,

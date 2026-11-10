@@ -953,6 +953,7 @@ tcu::TestStatus Instance::iterate()
 
     const auto isESO          = isConstructionTypeShaderObject(m_params.constructionType);
     const auto isLib          = isConstructionTypeLibrary(m_params.constructionType);
+    const auto isMonolithic   = (m_params.constructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
     const auto isFastLib      = (m_params.constructionType == PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY);
     const auto setInfos       = m_params.genSetInfos();
     const auto stageIndexMap  = m_params.getSetIndexMap();
@@ -1205,6 +1206,7 @@ tcu::TestStatus Instance::iterate()
                 auto infoItr                     = resources.find(resLoc);
                 if (infoItr != resources.end())
                     resourceInfo = &(infoItr->second);
+                DE_ASSERT(resourceInfo || descInfo.descryptorType == VK_DESCRIPTOR_TYPE_SAMPLER);
 
                 switch (descInfo.descryptorType)
                 {
@@ -1359,8 +1361,12 @@ tcu::TestStatus Instance::iterate()
             trimSetLayoutVec(setLayoutsVec);
 
             // Create and save a pipeline layout for this shader stage.
-            layoutWrapper = PipelineLayoutWrapper(m_params.constructionType, ctx.vkd, ctx.device,
-                                                  de::sizeU32(setLayoutsVec), de::dataOrNull(setLayoutsVec));
+            if (!isMonolithic)
+            {
+                // VUID-VkPipelineLayoutCreateInfo-graphicsPipelineLibrary-06753
+                layoutWrapper = PipelineLayoutWrapper(m_params.constructionType, ctx.vkd, ctx.device,
+                                                      de::sizeU32(setLayoutsVec), de::dataOrNull(setLayoutsVec));
+            }
             shader.setPipelineLayout(m_params.avoidMaintenance11 ? &unionPipelineLayout : &layoutWrapper);
 
             auto &pieceSetLayouts =
@@ -1382,12 +1388,16 @@ tcu::TestStatus Instance::iterate()
     trimSetLayoutVec(fragPieceSetLayouts);
 
     // Avoid using VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT when the driver may not support GPL.
+    // Also, VUID-VkPipelineLayoutCreateInfo-graphicsPipelineLibrary-06753
+    if (!isMonolithic)
     {
         const auto preRasterLayoutFlags = (isLib ? indSetsPipelineLayoutFlags : 0u);
         preRasterPiecePipelineLayout =
             PipelineLayoutWrapper(m_params.constructionType, ctx.vkd, ctx.device, de::sizeU32(preRasterPieceSetLayouts),
                                   de::dataOrNull(preRasterPieceSetLayouts), 0u, nullptr, preRasterLayoutFlags);
     }
+
+    if (!isMonolithic)
     {
         const auto fragLayoutFlags = (isLib ? indSetsPipelineLayoutFlags : 0u);
         fragPiecePipelineLayout =
@@ -1711,7 +1721,16 @@ tcu::TestStatus Instance::iterate()
             descriptorSetHandles.push_back(descSetPtr->get());
 
         std::vector<uint32_t> dynamicOffsets;
+
+        // How many dynamic offsets in each set. This is important if we bind each set independently.
+        std::vector<uint32_t> dynamicOffsetCountPerSet;
+
+        if (m_params.ioFirst)
+            dynamicOffsetCountPerSet.push_back(0u);
+
         for (const auto &setInfo : setInfos)
+        {
+            uint32_t offsetCount = 0u;
             for (const auto &descInfo : setInfo.descriptors)
             {
                 if (descInfo.descryptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
@@ -1720,14 +1739,51 @@ tcu::TestStatus Instance::iterate()
                     const auto strideAndOffset = descInfo.getStrideAndOffset(deviceLimits);
                     const auto offset          = static_cast<uint32_t>(strideAndOffset.second);
                     dynamicOffsets.resize(dynamicOffsets.size() + descInfo.count, offset);
+                    offsetCount += descInfo.count;
                 }
             }
+            dynamicOffsetCountPerSet.push_back(offsetCount);
+        }
+
+        if (!m_params.ioFirst)
+            dynamicOffsetCountPerSet.push_back(0u);
+
+        // Calculate the number of dynamic offset values used by sets below setIndex.
+        const auto priorDynamicOffsetCount = [](const std::vector<uint32_t> &countPerSet, uint32_t setIndex)
+        {
+            uint32_t prior = 0u;
+            for (uint32_t i = 0u; i < de::sizeU32(countPerSet) && i < setIndex; ++i)
+                prior += countPerSet.at(i);
+            return prior;
+        };
 
         if (!descriptorSetHandles.empty() || !dynamicOffsets.empty())
         {
-            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, unionPipelineLayout.get(), 0u,
-                                          de::sizeU32(descriptorSetHandles), de::dataOrNull(descriptorSetHandles),
-                                          de::sizeU32(dynamicOffsets), de::dataOrNull(dynamicOffsets));
+            const bool hasNullSetHandles =
+                de::contains(descriptorSetHandles.begin(), descriptorSetHandles.end(), VK_NULL_HANDLE);
+            if (!isLib && hasNullSetHandles)
+            {
+                // We need to bind them one by one, and juggle the dynamic offsets vector values correctly.
+                for (uint32_t i = 0u; i < de::sizeU32(descriptorSetHandles); ++i)
+                {
+                    const auto handle = descriptorSetHandles.at(i);
+                    if (handle == VK_NULL_HANDLE)
+                        continue;
+
+                    const auto priorDynOffsetCount = priorDynamicOffsetCount(dynamicOffsetCountPerSet, i);
+                    const auto dynamicOffsetCount  = dynamicOffsetCountPerSet.at(i);
+                    const auto dynamicOffsetPtr =
+                        (dynamicOffsetCount == 0u ? nullptr : &dynamicOffsets.at(priorDynOffsetCount));
+                    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, unionPipelineLayout.get(), i, 1u, &handle,
+                                                  dynamicOffsetCount, dynamicOffsetPtr);
+                }
+            }
+            else
+            {
+                ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, unionPipelineLayout.get(), 0u,
+                                              de::sizeU32(descriptorSetHandles), de::dataOrNull(descriptorSetHandles),
+                                              de::sizeU32(dynamicOffsets), de::dataOrNull(dynamicOffsets));
+            }
         }
 
         if (hasPushDescriptors)

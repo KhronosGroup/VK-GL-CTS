@@ -36,21 +36,15 @@
 #include "vkQueryUtil.hpp"
 #include "vkFormatLists.hpp"
 
-#include "tcuInterval.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
 #include "tcuFloatFormat.hpp"
-#include "tcuFloat.hpp"
-#include "tcuCommandLine.hpp"
 
 #include "deRandom.hpp"
-#include "deSTLUtil.hpp"
 #include "deSharedPtr.hpp"
-
-#include "deMath.h"
 
 #include <vector>
 #include <iomanip>
@@ -76,9 +70,7 @@ using std::vector;
 
 using namespace vkt::shaderexecutor;
 
-namespace vkt
-{
-namespace ycbcr
+namespace vkt::ycbcr
 {
 namespace
 {
@@ -93,14 +85,14 @@ ShaderSpec createShaderSpec(uint32_t samplerBinding, const std::vector<vk::VkSam
 {
     ShaderSpec spec;
 
-    spec.inputs.push_back(Symbol("uv", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP)));
+    spec.inputs.emplace_back("uv", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP));
     // shader with single sampler
     if (colorModels.size() == 1)
     {
         spec.globalDeclarations = "layout(set=" + de::toString((int)EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX) +
                                   ", binding=" + de::toString(samplerBinding) + ") uniform highp sampler2D u_sampler;";
 
-        spec.outputs.push_back(Symbol("o_color", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+        spec.outputs.emplace_back("o_color", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP));
 
         spec.source = "o_color = texture(u_sampler, uv);\n";
     }
@@ -112,8 +104,8 @@ ShaderSpec createShaderSpec(uint32_t samplerBinding, const std::vector<vk::VkSam
 
         for (int i = 0; i < (int)colorModels.size(); i++)
         {
-            spec.outputs.push_back(
-                Symbol(string("o_color") + de::toString(i), glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+            spec.outputs.emplace_back("o_color" + de::toString(i),
+                                      glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP));
 
             spec.source +=
                 string("o_color") + de::toString(i) + " = texture(u_sampler[" + de::toString(i) + "], uv);\n";
@@ -136,7 +128,7 @@ void genTexCoords(std::vector<Vec2> &coords, const UVec2 &srcSize, const UVec2 &
             const float s = 1.5f * ((fx * 1.5f * fw + fx) / (1.5f * fw * 1.5f * fw)) - 0.25f;
             const float t = 1.5f * ((fy * 1.5f * fh + fy) / (1.5f * fh * 1.5f * fh)) - 0.25f;
 
-            coords.push_back(Vec2(s, t));
+            coords.emplace_back(s, t);
         }
 }
 
@@ -148,7 +140,7 @@ void genOneToOneTexCoords(std::vector<Vec2> &coords, const UVec2 &size)
             const float s = ((float)x + 0.5f) / (float)size.x();
             const float t = ((float)y + 0.5f) / (float)size.y();
 
-            coords.push_back(Vec2(s, t));
+            coords.emplace_back(s, t);
         }
 }
 
@@ -455,7 +447,7 @@ vk::Move<vk::VkImage> createImage(const vk::DeviceInterface &vkd, vk::VkDevice d
         vk::VK_SHARING_MODE_EXCLUSIVE,
         0u,
         nullptr,
-        vk::VK_IMAGE_LAYOUT_PREINITIALIZED,
+        tiling == vk::VK_IMAGE_TILING_LINEAR ? vk::VK_IMAGE_LAYOUT_PREINITIALIZED : vk::VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
     return vk::createImage(vkd, device, &createInfo);
@@ -810,6 +802,27 @@ void checkSupport(Context &context, const TestConfig config)
             ((features & vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT) == 0))
             TCU_THROW(NotSupportedError, "Format doesn't support midpoint chroma samples");
     }
+
+    {
+        const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo{
+            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            // sType
+            nullptr,                                                              // pNext
+            config.format,                                                        // format
+            vk::VK_IMAGE_TYPE_2D,                                                 // type
+            vk::VK_IMAGE_TILING_OPTIMAL,                                          // tiling
+            vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT | vk::VK_IMAGE_USAGE_SAMPLED_BIT, // usage
+            (vk::VkImageCreateFlags)0u                                            // flags
+        };
+
+        vk::VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = vk::initVulkanStructure();
+        vk::VkImageFormatProperties2 imageFormatProperties = vk::initVulkanStructure(&samplerYcbcrConversionImage);
+
+        vk::VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(),
+                                                                              &imageFormatInfo, &imageFormatProperties);
+        if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+            TCU_THROW(NotSupportedError, "Format not supported.");
+        VK_CHECK(result);
+    }
 #endif
 }
 
@@ -826,37 +839,10 @@ tcu::TestStatus textureConversionTest(Context &context, const TestConfig config)
     const UVec2 srcSize         = config.srcSize;
     const UVec2 dstSize         = config.dstSize;
     bool isOk                   = true;
-    const auto &instInt(context.getInstanceInterface());
 
     logTestCaseInfo(log, config);
 
 #if !defined(FAKE_COLOR_CONVERSION)
-    {
-        const vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
-            vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,            // sType;
-            nullptr,                                                              // pNext;
-            config.format,                                                        // format;
-            vk::VK_IMAGE_TYPE_2D,                                                 // type;
-            vk::VK_IMAGE_TILING_OPTIMAL,                                          // tiling;
-            vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT | vk::VK_IMAGE_USAGE_SAMPLED_BIT, // usage;
-            (vk::VkImageCreateFlags)0u                                            // flags
-        };
-
-        vk::VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
-        samplerYcbcrConversionImage.sType = vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = nullptr;
-
-        vk::VkImageFormatProperties2 imageFormatProperties = {};
-        imageFormatProperties.sType                        = vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
-        imageFormatProperties.pNext                        = &samplerYcbcrConversionImage;
-
-        vk::VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(),
-                                                                              &imageFormatInfo, &imageFormatProperties);
-        if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-            TCU_THROW(NotSupportedError, "Format not supported.");
-        VK_CHECK(result);
-    }
-
     {
         const vk::VkFormatProperties properties(vk::getPhysicalDeviceFormatProperties(
             context.getInstanceInterface(), context.getPhysicalDevice(), config.format));
@@ -2429,5 +2415,4 @@ tcu::TestCaseGroup *createConversionTests(tcu::TestContext &testCtx)
     return createTestGroup(testCtx, "conversion", initTests);
 }
 
-} // namespace ycbcr
-} // namespace vkt
+} // namespace vkt::ycbcr

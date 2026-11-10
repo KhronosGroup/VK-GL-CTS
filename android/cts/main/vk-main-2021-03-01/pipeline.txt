@@ -4821,15 +4821,11 @@ dEQP-VK.pipeline.monolithic.multisample.mixed_count.8_64
 dEQP-VK.pipeline.monolithic.multisample.mixed_count.8_64_unused
 dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r32g32b32a32_sfloat.samples_16
 dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r32g32b32a32_sfloat.samples_2
-dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r32g32b32a32_sfloat.samples_32
 dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r32g32b32a32_sfloat.samples_4
-dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r32g32b32a32_sfloat.samples_64
 dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r32g32b32a32_sfloat.samples_8
 dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r8g8b8a8_unorm.samples_16
 dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r8g8b8a8_unorm.samples_2
-dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r8g8b8a8_unorm.samples_32
 dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r8g8b8a8_unorm.samples_4
-dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r8g8b8a8_unorm.samples_64
 dEQP-VK.pipeline.monolithic.multisample.standardsampleposition.r8g8b8a8_unorm.samples_8
 dEQP-VK.pipeline.monolithic.multisample.variable_rate.16_1
 dEQP-VK.pipeline.monolithic.multisample.variable_rate.16_16_1

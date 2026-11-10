@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceMaintenance12FeaturesKHR": [
+            {
+                "features": [
+                    "maintenance12"
+                ],
+                "requirements": [
+                    "VK_KHR_maintenance12"
+                ]
+            }
+        ]
+    }
+}

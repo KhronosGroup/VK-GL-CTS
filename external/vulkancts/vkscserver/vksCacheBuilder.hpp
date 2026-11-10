@@ -39,7 +39,7 @@ vector<u8> buildOfflinePipelineCache(const VulkanPipelineCacheInput &input, cons
                                      const std::string &pipelineCompilerFilePrefix);
 vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::PlatformInterface &vkp,
                               vk::VkInstance instance, const vk::InstanceInterface &vki,
-                              vk::VkPhysicalDevice physicalDevice, uint32_t queueIndex);
+                              vk::VkPhysicalDevice physicalDevice);
 std::vector<VulkanPipelineSize> extractSizesFromPipelineCache(const VulkanPipelineCacheInput &input,
                                                               const vector<u8> &pipelineCache,
                                                               uint32_t pipelineDefaultSize, bool recyclePipelineMemory);

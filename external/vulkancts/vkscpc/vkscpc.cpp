@@ -390,9 +390,9 @@ int main(int argc, char **argv)
                              de::SharedPtr<vk::ResourceInterface>{new vk::ResourceInterfaceStandard{tcx}});
 
         // create pipeline cache
-        std::vector<uint8_t> binary = vksc_server::buildPipelineCache(
-            input, library->getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-            context.getPhysicalDevice(), context.getUniversalQueueFamilyIndex());
+        std::vector<uint8_t> binary =
+            vksc_server::buildPipelineCache(input, library->getPlatformInterface(), context.getInstance(),
+                                            context.getInstanceInterface(), context.getPhysicalDevice());
 
         // write pipeline cache to output file
         std::ofstream oFile(cmdLine.getOption<opt::CompilerOutputFile>().c_str(), std::ios::out | std::ios::binary);

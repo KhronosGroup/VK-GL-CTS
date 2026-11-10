@@ -215,6 +215,9 @@ BUILD_TARGETS = [
     Build("vs-64-debug",
           VSConfig("Debug"),
           ANY_VS_X64_GENERATOR),
+    Build("vs-64-release",
+          VSConfig("Release"),
+          ANY_VS_X64_GENERATOR),
 ]
 
 EARLY_SPECIAL_RECIPES = [
@@ -228,16 +231,29 @@ EARLY_SPECIAL_RECIPES = [
         ]),
 ]
 
+# Build dir shared by the recipes that configure the tree the same way
+# (target null, Release) and only differ in which targets they build.
+SHARED_BUILD_DIR = "shared-null-release"
+
 LATE_SPECIAL_RECIPES = [
+    # android-mustpass, vulkan-mustpass, spirv-binaries and amber-verify all
+    # configure the tree identically (-DDEQP_TARGET=null, Release,
+    # ANY_GENERATOR) and only build different targets out of it
+    # (deqp-vk / deqp-vksc / deqp-egl / deqp-gles* / vk-build-programs).
+    # Pointing them at one shared build dir lets ninja reuse the already-built
+    # framework/module objects instead of recompiling them once per recipe,
+    # which matters most for the single-machine all-recipes runs done by
+    # auto_merge.py / test_cl.py.  --dst-path stays per-recipe so generated
+    # outputs are not mixed.  See VK-GL-CTS issue 3777.
     ('android-mustpass', [
             RunScript(os.path.join("scripts", "build_android_mustpass.py"),
                       lambda env: ["--build-type", "Release",
-                                    "--build-dir", os.path.join(env.tmpDir, "android-mustpass")] + (["--verbose"] if env.verbose else [])),
+                                    "--build-dir", os.path.join(env.tmpDir, SHARED_BUILD_DIR)] + (["--verbose"] if env.verbose else [])),
         ]),
     ('vulkan-mustpass', [
             RunScript(os.path.join("external", "vulkancts", "scripts", "build_mustpass.py"),
                       lambda env: ["--build-type", "Release",
-                                    "--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")] + (["--verbose"] if env.verbose else [])),
+                                    "--build-dir", os.path.join(env.tmpDir, SHARED_BUILD_DIR)] + (["--verbose"] if env.verbose else [])),
         ]),
     ('spirv-binaries', [
             # Concurrency (-p) drives peak memory: each vk-build-programs fraction can
@@ -246,14 +262,14 @@ LATE_SPECIAL_RECIPES = [
             # --spirv-jobs / --spirv-fractions options (default 4 jobs).
             RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),
                       lambda env: ["--build-type", "Release",
-                                    "--build-dir", os.path.join(env.tmpDir, "spirv-binaries"),
+                                    "--build-dir", os.path.join(env.tmpDir, SHARED_BUILD_DIR),
                                     "--dst-path", os.path.join(env.tmpDir, "spirv-binaries"),
                                     "-p", str(env.spirvJobs), "-f", str(env.spirvFractions)] + (["--verbose"] if env.verbose else [])),
         ]),
     ('amber-verify', [
             RunScript(os.path.join("external", "vulkancts", "scripts", "amber_verify.py"),
                       lambda env: ["--build-type", "Release",
-                                    "--build-dir", os.path.join(env.tmpDir, "amber-verify"),
+                                    "--build-dir", os.path.join(env.tmpDir, SHARED_BUILD_DIR),
                                     "--dst-path", os.path.join(env.tmpDir, "amber-verify")]),
         ]),
     ('check-all', [

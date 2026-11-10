@@ -142,7 +142,7 @@ BufferCreateInfo::BufferCreateInfo(vk::VkDeviceSize _size, vk::VkBufferUsageFlag
     }
 }
 
-BufferCreateInfo::BufferCreateInfo(const BufferCreateInfo &other)
+BufferCreateInfo::BufferCreateInfo(const BufferCreateInfo &other) : vk::VkBufferCreateInfo(other)
 {
     sType                 = other.sType;
     pNext                 = other.pNext;
@@ -500,7 +500,7 @@ SubpassDescription::SubpassDescription(const vk::VkSubpassDescription &rhs)
         pPreserveAttachments = &m_preserveAttachments[0];
 }
 
-SubpassDescription::SubpassDescription(const SubpassDescription &rhs)
+SubpassDescription::SubpassDescription(const SubpassDescription &rhs) : vk::VkSubpassDescription(rhs)
 {
     *this = rhs;
 }
@@ -749,6 +749,7 @@ PipelineCreateInfo::ViewportState::ViewportState(uint32_t _viewportCount, std::v
 }
 
 PipelineCreateInfo::ViewportState::ViewportState(const ViewportState &other)
+    : vk::VkPipelineViewportStateCreateInfo(other)
 {
     sType         = other.sType;
     pNext         = other.pNext;
@@ -820,6 +821,7 @@ PipelineCreateInfo::MultiSampleState::MultiSampleState(vk::VkSampleCountFlagBits
 }
 
 PipelineCreateInfo::MultiSampleState::MultiSampleState(const MultiSampleState &other)
+    : vk::VkPipelineMultisampleStateCreateInfo(other)
 {
     sType                = other.sType;
     pNext                = other.pNext;
@@ -837,12 +839,14 @@ PipelineCreateInfo::MultiSampleState::MultiSampleState(const MultiSampleState &o
 
 PipelineCreateInfo::MultiSampleState &PipelineCreateInfo::MultiSampleState::operator=(const MultiSampleState &other)
 {
-    sType                = other.sType;
-    pNext                = other.pNext;
-    flags                = other.flags;
-    rasterizationSamples = other.rasterizationSamples;
-    sampleShadingEnable  = other.sampleShadingEnable;
-    minSampleShading     = other.minSampleShading;
+    sType                 = other.sType;
+    pNext                 = other.pNext;
+    flags                 = other.flags;
+    rasterizationSamples  = other.rasterizationSamples;
+    sampleShadingEnable   = other.sampleShadingEnable;
+    minSampleShading      = other.minSampleShading;
+    alphaToCoverageEnable = other.alphaToCoverageEnable;
+    alphaToOneEnable      = other.alphaToOneEnable;
 
     const size_t sampleMaskArrayLen =
         (sizeof(vk::VkSampleMask) * 8 + other.rasterizationSamples) / (sizeof(vk::VkSampleMask) * 8);
@@ -898,7 +902,8 @@ PipelineCreateInfo::ColorBlendState::ColorBlendState(const vk::VkPipelineColorBl
 
 PipelineCreateInfo::ColorBlendState::ColorBlendState(const ColorBlendState &createInfo,
                                                      std::vector<float> _blendConstants)
-    : m_attachments(createInfo.pAttachments, createInfo.pAttachments + createInfo.attachmentCount)
+    : vk::VkPipelineColorBlendStateCreateInfo(createInfo)
+    , m_attachments(createInfo.pAttachments, createInfo.pAttachments + createInfo.attachmentCount)
 {
     sType           = createInfo.sType;
     pNext           = createInfo.pNext;
@@ -994,7 +999,7 @@ PipelineCreateInfo::DynamicState::DynamicState(const std::vector<vk::VkDynamicSt
     pDynamicStates    = &m_dynamicStates[0];
 }
 
-PipelineCreateInfo::DynamicState::DynamicState(const DynamicState &other)
+PipelineCreateInfo::DynamicState::DynamicState(const DynamicState &other) : vk::VkPipelineDynamicStateCreateInfo(other)
 {
     sType = other.sType;
     pNext = other.pNext;

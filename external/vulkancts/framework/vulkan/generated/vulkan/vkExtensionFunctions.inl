@@ -817,6 +817,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_vertex_address_binding_unrestricted")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_vertex_attribute_divisor")
 	{
 		return;
@@ -872,6 +876,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_GOOGLE_display_timing")
+	{
+		return;
+	}
+	if (extName == "VK_GOOGLE_hdr_smpte_st_209450_metadata")
 	{
 		return;
 	}
@@ -1193,6 +1201,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_KHR_maintenance11")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance12")
 	{
 		return;
 	}
@@ -1778,6 +1790,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	}
 	if (extName == "VK_NV_inherited_viewport_scissor")
 	{
+		return;
+	}
+	if (extName == "VK_NV_internal_handle")
+	{
+		functions.push_back("vkGetPhysicalDeviceInternalHandleNV");
 		return;
 	}
 	if (extName == "VK_NV_linear_color_attachment")
@@ -3207,6 +3224,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_vertex_address_binding_unrestricted")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_vertex_attribute_divisor")
 	{
 		return;
@@ -3273,6 +3294,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkGetRefreshCycleDurationGOOGLE");
 		functions.push_back("vkGetPastPresentationTimingGOOGLE");
+		return;
+	}
+	if (extName == "VK_GOOGLE_hdr_smpte_st_209450_metadata")
+	{
 		return;
 	}
 	if (extName == "VK_GOOGLE_hlsl_functionality1")
@@ -3712,6 +3737,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_KHR_maintenance11")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance12")
 	{
 		return;
 	}
@@ -4398,6 +4427,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_internal_handle")
+	{
+		functions.push_back("vkGetDeviceInternalHandleNV");
+		functions.push_back("vkGetQueueInternalHandleNV");
+		functions.push_back("vkGetCommandBufferInternalHandleNV");
+		return;
+	}
 	if (extName == "VK_NV_linear_color_attachment")
 	{
 		return;
@@ -4890,6 +4926,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_pipeline_library_group_handles",
 	"VK_KHR_maintenance11",
 	"VK_KHR_extended_flags",
+	"VK_KHR_maintenance12",
 	"VK_NV_glsl_shader",
 	"VK_EXT_depth_range_unrestricted",
 	"VK_IMG_filter_cubic",
@@ -5180,17 +5217,20 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_compute_occupancy_priority",
 	"VK_EXT_cooperative_matrix_maintenance1",
 	"VK_EXT_shader_subgroup_partitioned",
+	"VK_NV_internal_handle",
 	"VK_ARM_cooperative_matrix_layouts",
 	"VK_EXT_shader_ocp_microscaling_types",
 	"VK_VALVE_shader_mixed_float_dot_product",
 	"VK_SEC_throttle_hint",
 	"VK_ARM_data_graph_neural_accelerator_statistics",
 	"VK_EXT_primitive_restart_index",
+	"VK_EXT_vertex_address_binding_unrestricted",
 	"VK_EXT_image_tiling_control",
 	"VK_NV_cooperative_matrix_decode_vector",
 	"VK_NV_private_data_base_handle",
 	"VK_INTEL_device_info",
 	"VK_VALVE_buffer_device_address_allocation_alignment",
+	"VK_GOOGLE_hdr_smpte_st_209450_metadata",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

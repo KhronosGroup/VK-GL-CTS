@@ -31,6 +31,7 @@
 #include "vktPipelineReferenceRenderer.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
@@ -1251,10 +1252,16 @@ void transferLayoutChangePrograms(SourceCollections &dst, TransferLayoutChangePa
     dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
-void transferLayoutChangeSupportCheck(Context &context, TransferLayoutChangeParamsPtr)
+void transferLayoutChangeSupportCheck(Context &context, TransferLayoutChangeParamsPtr params)
 {
     // Will throw NotSupportedError if the queue does not exist.
     context.getTransferQueue();
+
+    // VUID-VkImageMemoryBarrier-image-03320
+    const VkImageAspectFlags dsAspects = (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+    if (params->aspects != dsAspects &&
+        !context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
+        TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
 }
 
 // Find a suitable format for the depth/stencil buffer.
@@ -1473,7 +1480,9 @@ tcu::TestStatus transferLayoutChangeTest(Context &context, TransferLayoutChangeP
     qfotBarrierAcquire.srcAccessMask = 0u;
 
     // Release depth/stencil image to the universal queue.
-    cmdPipelineImageMemoryBarrier(ctx.vkd, xferCmdBuffer, xferStage, 0u, &qfotBarrierRelease);
+    // VUID-vkCmdPipelineBarrier-dstStageMask-03937
+    cmdPipelineImageMemoryBarrier(ctx.vkd, xferCmdBuffer, xferStage, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                  &qfotBarrierRelease);
 
     endCommandBuffer(ctx.vkd, xferCmdBuffer);
 
@@ -1483,7 +1492,9 @@ tcu::TestStatus transferLayoutChangeTest(Context &context, TransferLayoutChangeP
     beginCommandBuffer(ctx.vkd, drawCmdBuffer);
 
     // Acquire depth/stencil image.
-    cmdPipelineImageMemoryBarrier(ctx.vkd, drawCmdBuffer, 0u, dsStage, &qfotBarrierAcquire);
+    // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+    cmdPipelineImageMemoryBarrier(ctx.vkd, drawCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dsStage,
+                                  &qfotBarrierAcquire);
 
     // Clear color image.
     {
@@ -2510,6 +2521,571 @@ tcu::TestStatus DepthOnlyInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+namespace StaleDepth
+{
+
+// Implementation bug:
+//
+// * vkCmdBeginRendering() with clears, which enabled HiZ
+// * vkCmdExecuteCommands(), includes draws which updated the depth buffer and the HiZ data
+// * vkCmdBeginRendering() without clears, which disabled HiZ
+// * vkCmdExecuteCommands(), includes draws which updated the depth buffer, but not the HiZ data
+// * vkCmdBeginRendering() with (non-depth) clears, which enabled HiZ
+// * vkCmdExecuteCommands(), includes draws which used the incorrect HiZ data
+//
+// Test mechanism: depth test enabled and writes enabled, with GREATER THAN. 32x32 framebuffer, one point per pixel,
+// pseudorandom depth. First round: clear depth to zero, draw with depths in range [0.125, 0.25]. Second round without
+// clears, draws with depths in the range [0.75, 1.0]. Third round: clears for the color attachment, draws with depth
+// in range [0.5, 0.625], for example. The third round should not update the framebuffer because values should be
+// less than the existing ones, but with stale HiZ they may get drawn.
+//
+struct Params
+{
+    PipelineConstructionType constructionType;
+    VkFormat depthFormat;
+    bool dynamicRendering;
+    bool inheritFramebuffer; // Only valid if dynamicRendering is false.
+    bool minimalDevice;      // Runs the test on a device with minimal features.
+
+    tcu::IVec3 getExtent() const
+    {
+        return tcu::IVec3(32, 32, 1);
+    }
+
+    uint32_t getRoundCount() const
+    {
+        return 3u;
+    }
+
+    // Returns (min, max) depth range.
+    std::pair<float, float> getDepthRange(uint32_t round)
+    {
+        if (round == 0u)
+            return std::make_pair(0.125f, 0.25f);
+        if (round == 1u)
+            return std::make_pair(0.75f, 1.0f);
+        if (round == 2u)
+            return std::make_pair(0.5f, 0.625f);
+
+        DE_ASSERT(false);
+        return std::make_pair(-1.0f, -1.0f);
+    }
+
+    float getClearDepth() const
+    {
+        return 0.0f;
+    }
+
+    // Returns (clear_color, clear_depth) booleans for the given round.
+    std::pair<bool, bool> getClearFlags(uint32_t round)
+    {
+        if (round == 0u)
+            return std::make_pair(true, true);
+        if (round == 1u)
+            return std::make_pair(false, false);
+        if (round == 2u)
+            return std::make_pair(true, false);
+
+        DE_ASSERT(false);
+        return std::make_pair(false, true);
+    }
+
+    tcu::Vec4 getGeomColor(uint32_t round) const
+    {
+        if (round == 0u)
+            return tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+        if (round == 1u)
+            return tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f);
+        if (round == 2u)
+            return tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f);
+
+        DE_ASSERT(false);
+        return tcu::Vec4(0.0f);
+    }
+
+    tcu::Vec4 getClearColor() const
+    {
+        return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+
+    // For pseudorandom number generation.
+    uint32_t getSeed() const
+    {
+        return 1783585141u;
+    }
+
+    VkImageCreateInfo getDepthBufferCreateInfo() const
+    {
+        const VkImageCreateInfo depthBufferCreateInfo{
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            nullptr,
+            0u,
+            VK_IMAGE_TYPE_2D,
+            depthFormat,
+            makeExtent3D(getExtent()),
+            1u,
+            1u,
+            VK_SAMPLE_COUNT_1_BIT,
+            VK_IMAGE_TILING_OPTIMAL,
+            static_cast<VkImageUsageFlags>(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT),
+            VK_SHARING_MODE_EXCLUSIVE,
+            0u,
+            nullptr,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+
+        return depthBufferCreateInfo;
+    }
+};
+using ParamsPtr = std::shared_ptr<Params>;
+
+class Instance : public vkt::TestInstance
+{
+public:
+    Instance(Context &context, ParamsPtr params) : vkt::TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~Instance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    ParamsPtr m_params;
+};
+
+class Case : public vkt::TestCase
+{
+public:
+    Case(tcu::TestContext &testCtx, const std::string &name, ParamsPtr params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~Case(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &dst) const override;
+    vkt::TestInstance *createInstance(Context &context) const override
+    {
+        return new Instance(context, m_params);
+    }
+
+    std::string getRequiredCapabilitiesId() const override;
+    void initDeviceCapabilities(DevCaps &caps) override;
+
+protected:
+    ParamsPtr m_params;
+};
+
+std::string Case::getRequiredCapabilitiesId() const
+{
+    if (m_params->minimalDevice)
+        return typeid(*this).name();
+    return vkt::TestCase::getRequiredCapabilitiesId();
+}
+
+void Case::initDeviceCapabilities(DevCaps &caps)
+{
+    if (m_params->minimalDevice)
+    {
+        caps.addExtension("VK_KHR_depth_stencil_resolve");
+        caps.addExtension("VK_KHR_create_renderpass2");
+        caps.addExtension("VK_KHR_maintenance2");
+        caps.addExtension("VK_KHR_pipeline_library");
+
+        caps.addExtension("VK_KHR_dynamic_rendering");
+        caps.addFeature(&VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering);
+
+        caps.addExtension("VK_KHR_multiview");
+        caps.addFeature(&VkPhysicalDeviceMultiviewFeatures::multiview);
+
+#ifndef CTS_USES_VULKANSC
+        caps.addExtension("VK_EXT_graphics_pipeline_library");
+        caps.addFeature(&VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT::graphicsPipelineLibrary);
+
+        caps.addExtension("VK_EXT_shader_object");
+        caps.addFeature(&VkPhysicalDeviceShaderObjectFeaturesEXT::shaderObject);
+#endif // CTS_USES_VULKANSC
+    }
+    else
+        vkt::TestCase::initDeviceCapabilities(caps);
+}
+
+void Case::checkSupport(Context &context) const
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params->constructionType);
+    if (m_params->dynamicRendering)
+        context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+    const auto depthBufferCreateInfo = m_params->getDepthBufferCreateInfo();
+    VkImageFormatProperties imageFormatProperties;
+
+    const auto result = ctx.vki.getPhysicalDeviceImageFormatProperties(
+        ctx.physicalDevice, depthBufferCreateInfo.format, depthBufferCreateInfo.imageType, depthBufferCreateInfo.tiling,
+        depthBufferCreateInfo.usage, depthBufferCreateInfo.flags, &imageFormatProperties);
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        TCU_THROW(NotSupportedError, "Format not supported");
+    if (result != VK_SUCCESS)
+        TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned " + std::string(getResultName(result)));
+}
+
+void Case::initPrograms(vk::SourceCollections &dst) const
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "void main (void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (push_constant) uniform PCBlock { vec4 color; } pc;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main (void) {\n"
+         << "    outColor = pc.color;\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus Instance::iterate()
+{
+    const auto ctx         = m_context.getContextCommonData();
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto extent      = m_params->getExtent();
+    const auto colorUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto rpColorLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    const auto rpDepthLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    const auto bindPoint     = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+    const auto depthBufferCreateInfo = m_params->getDepthBufferCreateInfo();
+    auto colorBufferCreateInfo       = depthBufferCreateInfo;
+    colorBufferCreateInfo.format     = colorFormat;
+    colorBufferCreateInfo.usage      = colorUsage;
+
+    const auto colorSRR = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, colorBufferCreateInfo.mipLevels, 0u,
+                                                    colorBufferCreateInfo.arrayLayers);
+    ImageWithBuffer colorBuffer(
+        ctx.vkd, ctx.device, ctx.allocator, colorBufferCreateInfo.extent, colorBufferCreateInfo.format,
+        colorBufferCreateInfo.usage, colorBufferCreateInfo.imageType, colorSRR, colorBufferCreateInfo.arrayLayers,
+        colorBufferCreateInfo.samples, colorBufferCreateInfo.tiling, colorBufferCreateInfo.mipLevels);
+
+    ImageWithMemory depthBuffer(ctx.vkd, ctx.device, ctx.allocator, depthBufferCreateInfo, MemoryRequirement::Any);
+
+    VkImageAspectFlags dsAspects = 0u;
+    const auto tcuDepthFormat    = mapVkFormat(depthBufferCreateInfo.format);
+    if (tcu::hasDepthComponent(tcuDepthFormat.order))
+        dsAspects |= VK_IMAGE_ASPECT_DEPTH_BIT;
+    if (tcu::hasStencilComponent(tcuDepthFormat.order))
+        dsAspects |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    const auto depthSRR = makeImageSubresourceRange(dsAspects, 0u, depthBufferCreateInfo.mipLevels, 0u,
+                                                    depthBufferCreateInfo.arrayLayers);
+    const auto depthView =
+        makeImageView(ctx.vkd, ctx.device, *depthBuffer, VK_IMAGE_VIEW_TYPE_2D, depthBufferCreateInfo.format, depthSRR);
+
+    const std::vector<VkImage> fbImgs{
+        colorBuffer.getImage(),
+        *depthBuffer,
+    };
+
+    const std::vector<VkImageView> fbViews{
+        colorBuffer.getImageView(),
+        *depthView,
+    };
+
+    const VkVertexInputBindingDescription vtxBinding{0u, DE_SIZEOF32(tcu::Vec4), VK_VERTEX_INPUT_RATE_VERTEX};
+
+    const VkVertexInputAttributeDescription vtxAttribute{
+        0u,
+        0u,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        0u,
+    };
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState{
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, nullptr, 0u, 1u, &vtxBinding, 1u, &vtxAttribute,
+    };
+
+    const auto &binaries = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto pcSize   = DE_SIZEOF32(tcu::Vec4);
+    const auto pcStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+    PipelineLayoutWrapper pipelineLayout(m_params->constructionType, ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    const auto stencilFormat =
+        (tcu::hasStencilComponent(tcuDepthFormat.order) ? depthBufferCreateInfo.format : VK_FORMAT_UNDEFINED);
+
+    VkPipelineRenderingCreateInfo pipelineRenderingInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        nullptr,
+        0u,
+        1u,
+        &colorFormat,
+        depthBufferCreateInfo.format,
+        stencilFormat,
+    };
+    auto pPipelineRenderingCreateInfo = (m_params->dynamicRendering ? &pipelineRenderingInfo : nullptr);
+
+    VkStencilOpState stencilState;
+    memset(&stencilState, 0, sizeof(stencilState));
+
+    const VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilState{
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_TRUE,
+        VK_TRUE,
+        VK_COMPARE_OP_GREATER,
+        VK_FALSE,
+        VK_FALSE,
+        stencilState,
+        stencilState,
+        0.0f,
+        1.0f,
+    };
+
+    using RenderPassWrapperPtr       = std::unique_ptr<RenderPassWrapper>;
+    using GraphicsPipelineWrapperPtr = std::unique_ptr<GraphicsPipelineWrapper>;
+    using BufferWithMemoryPtr        = std::unique_ptr<BufferWithMemory>;
+
+    std::vector<RenderPassWrapperPtr> renderPasses;
+    std::vector<GraphicsPipelineWrapperPtr> pipelines;
+    std::vector<BufferWithMemoryPtr> vtxBuffers;
+
+    const auto roundCount = m_params->getRoundCount();
+    renderPasses.reserve(roundCount);
+    pipelines.reserve(roundCount);
+    vtxBuffers.reserve(roundCount);
+
+    for (uint32_t i = 0u; i < roundCount; ++i)
+    {
+        const auto clearFlags  = m_params->getClearFlags(i);
+        const auto &colorClear = clearFlags.first;
+        const auto &depthClear = clearFlags.second;
+
+        const auto colorLoadOp = (colorClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD);
+        const auto depthLoadOp = (depthClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD);
+
+        // Note no layout transitions, so the code is common for render passes and dynamic rendering.
+        const std::vector<VkAttachmentDescription> attDescs{
+            makeAttachmentDescription(0u, colorFormat, colorBufferCreateInfo.samples, colorLoadOp,
+                                      VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, rpColorLayout, rpColorLayout),
+            makeAttachmentDescription(0u, depthBufferCreateInfo.format, depthBufferCreateInfo.samples, depthLoadOp,
+                                      VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, rpDepthLayout, rpDepthLayout),
+        };
+
+        const std::vector<VkAttachmentReference> attRefs{
+            makeAttachmentReference(0u, rpColorLayout),
+            makeAttachmentReference(1u, rpDepthLayout),
+        };
+
+        const VkSubpassDescription subpassDesc{
+            0u, bindPoint, 0u, nullptr, 1u, &attRefs.front(), nullptr, &attRefs.back(), 0u, nullptr,
+        };
+
+        const VkRenderPassCreateInfo rpCreateInfo{
+            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+            nullptr,
+            0u,
+            de::sizeU32(attDescs),
+            de::dataOrNull(attDescs),
+            1u,
+            &subpassDesc,
+            0u,
+            nullptr,
+        };
+
+        renderPasses.emplace_back(
+            new RenderPassWrapper(ctx.vkd, ctx.device, &rpCreateInfo, m_params->dynamicRendering));
+        DE_ASSERT(fbImgs.size() == fbViews.size());
+        renderPasses.back()->createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(fbImgs), de::dataOrNull(fbImgs),
+                                               de::dataOrNull(fbViews), depthBufferCreateInfo.extent.width,
+                                               depthBufferCreateInfo.extent.height, depthBufferCreateInfo.extent.depth);
+        const auto rpHandle = renderPasses.back()->get();
+
+        if (pPipelineRenderingCreateInfo)
+            pPipelineRenderingCreateInfo->pNext = nullptr;
+
+        pipelines.emplace_back(new GraphicsPipelineWrapper(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                                           m_context.getDeviceExtensions(),
+                                                           m_params->constructionType));
+        auto &pipeline = *pipelines.back();
+        pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+            .setDefaultMultisampleState()
+            .setDefaultColorBlendState()
+            .setDefaultRasterizationState()
+            .setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, rpHandle, 0u, vertShader, nullptr,
+                                              ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
+                                              pPipelineRenderingCreateInfo)
+            .setupFragmentShaderState(pipelineLayout, rpHandle, 0u, fragShader, &pipelineDepthStencilState)
+            .setupFragmentOutputState(rpHandle, 0u)
+            .buildPipeline();
+    }
+
+    std::vector<tcu::Vec4> vertices;
+    vertices.reserve(extent.x() * extent.y());
+    const auto floatExtent = extent.asFloat();
+
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            const float xCenter = (static_cast<float>(x) + 0.5f) / floatExtent.x() * 2.0f - 1.0f;
+            const float yCenter = (static_cast<float>(y) + 0.5f) / floatExtent.y() * 2.0f - 1.0f;
+            vertices.emplace_back(xCenter, yCenter, 0.0f, 1.0f);
+        }
+
+    const auto vtxBufferSize  = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vtxBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    const auto vtxBufferInfo  = makeBufferCreateInfo(vtxBufferSize, vtxBufferUsage);
+    de::Random rng(m_params->getSeed());
+    for (uint32_t i = 0u; i < roundCount; ++i)
+    {
+        // Modify vertex depths for this round.
+        const auto range = m_params->getDepthRange(i);
+        for (auto &vert : vertices)
+            vert.z() = rng.getFloat(range.first, range.second);
+
+        // Store vertices in a new buffer.
+        vtxBuffers.emplace_back(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, vtxBufferInfo, HostIntent::W));
+        auto &alloc = vtxBuffers.back()->getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    using CmdBufferPtr = std::unique_ptr<Move<VkCommandBuffer>>;
+    std::vector<CmdBufferPtr> secondaries;
+    secondaries.reserve(roundCount);
+
+    for (uint32_t i = 0u; i < roundCount; ++i)
+    {
+        secondaries.emplace_back(new Move<VkCommandBuffer>(
+            allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY)));
+        const auto sec = secondaries.back()->get();
+
+        const auto &rp            = *renderPasses.at(i);
+        const auto &pipeline      = *pipelines.at(i);
+        const auto &vtxBuffer     = *vtxBuffers.at(i);
+        const auto geomColor      = m_params->getGeomColor(i);
+        const VkDeviceSize offset = 0ull;
+
+        const VkCommandBufferInheritanceRenderingInfo cmdRenderingInfo{
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO,
+            nullptr,
+            VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT,
+            0u,
+            1u,
+            &colorFormat,
+            depthBufferCreateInfo.format,
+            stencilFormat,
+            depthBufferCreateInfo.samples,
+        };
+        const auto pCmdRenderingInfo = (m_params->dynamicRendering ? &cmdRenderingInfo : nullptr);
+        const auto cmdFlags       = static_cast<VkCommandBufferUsageFlags>(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
+                                                                     VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+        const auto secFramebuffer = (m_params->inheritFramebuffer ? rp.getFramebuffer() : VK_NULL_HANDLE);
+        beginSecondaryCommandBuffer(ctx.vkd, sec, rp.get(), secFramebuffer, cmdFlags, pCmdRenderingInfo);
+        pipeline.bind(sec);
+        ctx.vkd.cmdBindVertexBuffers(sec, 0u, 1u, &vtxBuffer.get(), &offset);
+        ctx.vkd.cmdPushConstants(sec, pipelineLayout.get(), pcStages, 0u, pcSize, &geomColor);
+        ctx.vkd.cmdDraw(sec, de::sizeU32(vertices), 1u, 0u, 0u);
+        endCommandBuffer(ctx.vkd, sec);
+    }
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    {
+        // Move images to the expected layouts.
+        const auto colorAccess =
+            static_cast<VkAccessFlags>(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+        const auto depthAccess = static_cast<VkAccessFlags>(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                                            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+        const auto colorStages = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        const auto depthStages = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                                                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+        const std::vector<VkImageMemoryBarrier> barriers{
+            makeImageMemoryBarrier(0u, colorAccess, VK_IMAGE_LAYOUT_UNDEFINED, rpColorLayout, colorBuffer.getImage(),
+                                   colorSRR),
+            makeImageMemoryBarrier(0U, depthAccess, VK_IMAGE_LAYOUT_UNDEFINED, rpDepthLayout, depthBuffer.get(),
+                                   depthSRR),
+        };
+
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      (colorStages | depthStages), barriers.data(), barriers.size());
+    }
+
+    const std::vector<VkClearValue> clearValues{
+        makeClearValueColor(m_params->getClearColor()),
+        makeClearValueDepthStencil(m_params->getClearDepth(), 0u),
+    };
+
+    for (uint32_t i = 0u; i < roundCount; ++i)
+    {
+        // Synchronize writes.
+        if (i > 0u)
+        {
+            const auto srcAccess = static_cast<VkAccessFlags>(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+            const auto dstAccess = static_cast<VkAccessFlags>(srcAccess | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                                                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT);
+            const auto stages    = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                                                  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                                                  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+            const auto barrier   = makeMemoryBarrier(srcAccess, dstAccess);
+            cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, stages, stages, &barrier);
+        }
+
+        // One render pass for each round.
+        const auto &rp = renderPasses.at(i);
+        rp->begin(ctx.vkd, cmdBuffer, scissors.front(), de::sizeU32(clearValues), de::dataOrNull(clearValues),
+                  VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &secondaries.at(i)->get());
+        rp->end(ctx.vkd, cmdBuffer);
+    }
+
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1),
+                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                      colorBufferCreateInfo.arrayLayers);
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Verify the last draw did not affect the color buffer.
+    auto &resultAlloc = colorBuffer.getBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, resultAlloc);
+    const auto tcuColorFormat = mapVkFormat(colorFormat);
+    tcu::ConstPixelBufferAccess result(tcuColorFormat, extent, resultAlloc.getHostPtr());
+
+    tcu::TextureLevel referenceLevel(tcuColorFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = referenceLevel.getAccess();
+    tcu::clear(reference, m_params->getClearColor());
+
+    const tcu::Vec4 threshold(0.0f);
+    auto &log = m_context.getTestContext().getLog();
+
+    if (!tcu::floatThresholdCompare(log, "Color", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected output in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace StaleDepth
+
 } // namespace
 
 tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineConstructionType)
@@ -2880,6 +3456,43 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
         }
 
         depthTests->addChild(depthOnlyGroup.release());
+    }
+
+    {
+        depthTests->addChild(createTestGroup2(
+            testCtx, "stale_depth",
+            [pipelineConstructionType](tcu::TestCaseGroup *staleDepthGroup)
+            {
+                for (const auto depthFormat :
+                     {VK_FORMAT_D16_UNORM, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT,
+                      VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT})
+                {
+                    for (const bool dynamicRendering : {false, true})
+                    {
+                        if (isConstructionTypeShaderObject(pipelineConstructionType) && !dynamicRendering)
+                            continue;
+
+                        for (const bool inheritFramebuffer : {false, true})
+                        {
+                            if (dynamicRendering && inheritFramebuffer)
+                                continue;
+
+                            for (const bool minimalDevice : {false, true})
+                            {
+                                StaleDepth::ParamsPtr params(new StaleDepth::Params{pipelineConstructionType,
+                                                                                    depthFormat, dynamicRendering,
+                                                                                    inheritFramebuffer, minimalDevice});
+                                const auto testName = getFormatSimpleName(depthFormat) + "_" +
+                                                      (dynamicRendering ? "dynamic_rendering" : "renderpass") +
+                                                      (inheritFramebuffer ? "_inherit_framebuffer" : "") +
+                                                      (minimalDevice ? "_minimal_dev" : "");
+                                staleDepthGroup->addChild(
+                                    new StaleDepth::Case(staleDepthGroup->getTestContext(), testName, params));
+                            }
+                        }
+                    }
+                }
+            }));
     }
 
     return depthTests.release();

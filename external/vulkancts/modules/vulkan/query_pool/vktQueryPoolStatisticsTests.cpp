@@ -4061,17 +4061,6 @@ public:
         }
     }
 
-#ifdef CTS_USES_VULKANSC
-    std::string getInstanceCapabilitiesId() const override
-    {
-        return getRequiredCapabilitiesId();
-    }
-    void initInstanceCapabilities(InstCaps &caps) override
-    {
-        caps.shouldRemoveInstanceOnTestExit(true);
-    }
-#endif
-
     std::string getRequiredCapabilitiesId() const override
     {
         if (m_useComputeQueue)
@@ -4601,6 +4590,7 @@ tcu::TestStatus VertexShaderMultipleQueryTestInstance::checkResult(VkQueryPool q
         while (queryMask)
         {
             int32_t statisticBit = deInt32BitScan(&queryMask);
+            DE_ASSERT(statisticBit < 32); // queryMask is not zero
             uint64_t expectedMin = calculateExpectedMin((1u << statisticBit));
             uint64_t expectedMax = calculateExpectedMax((1u << statisticBit));
 

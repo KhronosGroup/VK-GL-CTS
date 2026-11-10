@@ -32,9 +32,7 @@
 
 #include <map>
 
-namespace vkt
-{
-namespace TransformFeedback
+namespace vkt::TransformFeedback
 {
 
 // Interface block details.
@@ -345,8 +343,8 @@ typedef de::SharedPtr<InterfaceBlock> InterfaceBlockSP;
 class ShaderInterface
 {
 public:
-    ShaderInterface(void);
-    ~ShaderInterface(void);
+    ShaderInterface(void)  = default;
+    ~ShaderInterface(void) = default;
 
     StructType &allocStruct(const std::string &name);
     void getNamedStructs(std::vector<const StructType *> &structs) const;
@@ -443,10 +441,11 @@ class InterfaceBlockCase : public vkt::TestCase
 public:
     InterfaceBlockCase(tcu::TestContext &testCtx, const std::string &name, MatrixLoadFlags matrixLoadFlag,
                        TestStageFlags testStageFlag, bool shuffleInterfaceMembers = false);
-    ~InterfaceBlockCase(void);
+    ~InterfaceBlockCase(void) = default;
 
     virtual void delayedInit(void);
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
+    virtual void checkSupport(Context &context) const;
     virtual TestInstance *createInstance(Context &context) const;
 
 protected:
@@ -467,7 +466,6 @@ private:
     InterfaceLayout m_interfaceLayout;     //!< interface layout.
 };
 
-} // namespace TransformFeedback
-} // namespace vkt
+} // namespace vkt::TransformFeedback
 
 #endif // _VKTTRANSFORMFEEDBACKFUZZLAYOUTCASE_HPP

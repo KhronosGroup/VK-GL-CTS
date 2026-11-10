@@ -4741,7 +4741,7 @@ struct VkMetalSurfaceCreateInfoEXT
 	VkStructureType					sType;
 	const void*						pNext;
 	VkMetalSurfaceCreateFlagsEXT	flags;
-	const pt::CAMetalLayer*			pLayer;
+	pt::CAMetalLayer*				pLayer;
 };
 
 struct VkMicromapBuildSizesInfoEXT
@@ -6956,6 +6956,20 @@ struct VkPhysicalDeviceMaintenance11FeaturesKHR
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		maintenance11;
+};
+
+struct VkPhysicalDeviceMaintenance12FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance12;
+};
+
+struct VkPhysicalDeviceMaintenance12PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxInputAttachmentIndex;
 };
 
 struct VkPhysicalDeviceMaintenance3Properties

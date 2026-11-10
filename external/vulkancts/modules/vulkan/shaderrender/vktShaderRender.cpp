@@ -1079,8 +1079,8 @@ void ShaderRenderCaseInstance::uploadImage(const tcu::TextureFormat &texFormat, 
 {
     const VkDevice vkDevice         = getDevice();
     const DeviceInterface &vk       = getDeviceInterface();
-    const VkQueue queue             = getUniversalQueue();
-    const uint32_t queueFamilyIndex = getUniversalQueueFamilyIndex();
+    const VkQueue queue             = m_useCompute ? getComputeQueue() : getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_useCompute ? getComputeQueueFamilyIndex() : getUniversalQueueFamilyIndex();
 
     const bool isShadowSampler          = refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
     const VkImageAspectFlags aspectMask = isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1169,9 +1169,10 @@ void ShaderRenderCaseInstance::uploadImage(const tcu::TextureFormat &texFormat, 
     flushAlloc(vk, vkDevice, *bufferAlloc);
 
     const auto destLayout = (storageImage ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    const auto dstStage = (m_useCompute ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
     copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, nullptr, aspectMask,
-                      mipLevels, arrayLayers, destImage, destLayout);
+                      mipLevels, arrayLayers, destImage, destLayout, dstStage);
 }
 
 void ShaderRenderCaseInstance::clearImage(const tcu::Sampler &refSampler, uint32_t mipLevels, uint32_t arrayLayers,
@@ -1179,8 +1180,8 @@ void ShaderRenderCaseInstance::clearImage(const tcu::Sampler &refSampler, uint32
 {
     const VkDevice vkDevice         = m_context.getDevice();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = m_useCompute ? getComputeQueue() : getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_useCompute ? getComputeQueueFamilyIndex() : getUniversalQueueFamilyIndex();
 
     const bool isShadowSampler          = refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
     const VkImageAspectFlags aspectMask = isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1257,7 +1258,8 @@ void ShaderRenderCaseInstance::clearImage(const tcu::Sampler &refSampler, uint32
         vk.cmdClearDepthStencilImage(*cmdBuffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                      &clearValue.depthStencil, 1, &clearRange);
     }
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                          m_useCompute ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
     endCommandBuffer(vk, *cmdBuffer);
 
@@ -1345,9 +1347,7 @@ void ShaderRenderCaseInstance::uploadSparseImage(const tcu::TextureFormat &texFo
     const VkDevice vkDevice                           = getDevice();
     const DeviceInterface &vk                         = getDeviceInterface();
     const VkPhysicalDevice physicalDevice             = getPhysicalDevice();
-    const VkQueue queue                               = getUniversalQueue();
     const VkQueue sparseQueue                         = getSparseQueue();
-    const uint32_t queueFamilyIndex                   = getUniversalQueueFamilyIndex();
     const InstanceInterface &instance                 = getInstanceInterface();
     const VkPhysicalDeviceProperties deviceProperties = getPhysicalDeviceProperties(instance, physicalDevice);
     const bool isShadowSampler                        = refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
@@ -1441,8 +1441,14 @@ void ShaderRenderCaseInstance::uploadSparseImage(const tcu::TextureFormat &texFo
             }
         }
     }
+
+    const VkQueue queue             = m_useCompute ? getComputeQueue() : getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_useCompute ? getComputeQueueFamilyIndex() : getUniversalQueueFamilyIndex();
+    const auto dstStage = (m_useCompute ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
     copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions,
-                      &(*imageMemoryBindSemaphore), aspectMask, mipLevels, arrayLayers, sparseImage);
+                      &(*imageMemoryBindSemaphore), aspectMask, mipLevels, arrayLayers, sparseImage,
+                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, dstStage);
 }
 #endif // CTS_USES_VULKANSC
 
@@ -1665,7 +1671,7 @@ void ShaderRenderCaseInstance::createSamplerUniform(uint32_t bindingLocation, Te
 {
     const VkDevice vkDevice         = getDevice();
     const DeviceInterface &vk       = getDeviceInterface();
-    const uint32_t queueFamilyIndex = getUniversalQueueFamilyIndex();
+    const uint32_t queueFamilyIndex = m_useCompute ? getComputeQueueFamilyIndex() : getUniversalQueueFamilyIndex();
     const uint32_t sparseFamilyIndex =
         (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE) ? getSparseQueueFamilyIndex() : queueFamilyIndex;
 

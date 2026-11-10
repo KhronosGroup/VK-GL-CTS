@@ -2288,11 +2288,6 @@ void checkSupport(Context &context, const CaseDef caseDef)
     if (!props.limits.standardSampleLocations)
         TCU_THROW(NotSupportedError, "Device does not support standard sample locations.");
 
-    if (caseDef.numSamples == VK_SAMPLE_COUNT_32_BIT || caseDef.numSamples == VK_SAMPLE_COUNT_64_BIT)
-    {
-        TCU_THROW(InternalError, "Standard does not define sample positions for 32x or 64x multisample modes");
-    }
-
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           caseDef.pipelineConstructionType);
 }
@@ -2852,8 +2847,10 @@ void addStandardSamplePositionTestCasesWithFunctions(tcu::TestCaseGroup *group,
                                                      PipelineConstructionType pipelineConstructionType)
 {
     const VkSampleCountFlagBits samples[] = {
-        VK_SAMPLE_COUNT_2_BIT,  VK_SAMPLE_COUNT_4_BIT,  VK_SAMPLE_COUNT_8_BIT,
-        VK_SAMPLE_COUNT_16_BIT, VK_SAMPLE_COUNT_32_BIT, VK_SAMPLE_COUNT_64_BIT,
+        VK_SAMPLE_COUNT_2_BIT,
+        VK_SAMPLE_COUNT_4_BIT,
+        VK_SAMPLE_COUNT_8_BIT,
+        VK_SAMPLE_COUNT_16_BIT,
     };
     const VkFormat format[] = {
         VK_FORMAT_R8G8B8A8_UNORM,

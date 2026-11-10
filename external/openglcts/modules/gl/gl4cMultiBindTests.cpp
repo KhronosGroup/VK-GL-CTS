@@ -28,6 +28,7 @@
 
 #include "gl4cMultiBindTests.hpp"
 
+#include "glcMisc.hpp"
 #include "gluDefs.hpp"
 #include "gluStrUtil.hpp"
 #include "glwEnums.hpp"
@@ -3498,7 +3499,7 @@ tcu::TestNode::IterateResult DispatchBindBuffersBaseTest::iterate()
     GLfloat *result = (GLfloat *)gl.mapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "MapBuffer");
 
-    if (0 != memcmp(result, sum, 4 * sizeof(GLfloat)))
+    if (!glcts::floatBitsEqual(result, sum, 4))
     {
         test_result = false;
     }

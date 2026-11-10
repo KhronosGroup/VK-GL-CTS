@@ -89,7 +89,7 @@ void TextureBorderClampParameterTextureBorderColor::deinit(void)
     }
 
     /* Deinitialize base class */
-    TestCaseBase::deinit();
+    TextureBorderClampBase::deinit();
 }
 
 /** Initializes GLES objects used during the test. */

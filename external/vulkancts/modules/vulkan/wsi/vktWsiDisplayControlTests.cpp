@@ -538,7 +538,7 @@ private:
     const VkPhysicalDevice m_physicalDevice;
     uint32_t m_planeIndex;
     const VkDisplayKHR m_display;
-    const VkSurfaceKHR m_surface;
+    const Unique<VkSurfaceKHR> m_surface;
 
     const uint32_t m_queueFamilyIndex;
     const DeviceWrapper m_device;
@@ -587,9 +587,11 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance(Context &context)
     , m_physicalDevice(m_instance.getPhysicalDevice())
     , m_planeIndex(0)
     , m_display(getDisplayAndDisplayPlane(m_vki, m_physicalDevice, &m_planeIndex))
-    , m_surface(createSurface(m_vki, m_instance, m_physicalDevice, m_display, m_planeIndex))
+    , m_surface(Move<VkSurfaceKHR>(
+          check<VkSurfaceKHR>(createSurface(m_vki, m_instance, m_physicalDevice, m_display, m_planeIndex)),
+          Deleter<VkSurfaceKHR>(m_vki, m_instance, nullptr)))
 
-    , m_queueFamilyIndex(chooseQueueFamilyIndex(m_vki, m_physicalDevice, m_surface))
+    , m_queueFamilyIndex(chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
     , m_device(createTestDevice(context, m_instance, m_physicalDevice, m_queueFamilyIndex))
     , m_vkd(m_device.getDriver())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
@@ -599,12 +601,12 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance(Context &context)
     , m_fragmentShaderModule(createShaderModule(m_vkd, *m_device, context.getBinaryCollection().get("quad-frag"), 0u))
     , m_pipelineLayout(createPipelineLayout(m_vkd, *m_device))
 
-    , m_surfaceProperties(wsi::getPhysicalDeviceSurfaceCapabilities2EXT(m_vki, m_physicalDevice, m_surface))
-    , m_surfaceFormats(wsi::getPhysicalDeviceSurfaceFormats(m_vki, m_physicalDevice, m_surface))
-    , m_presentModes(wsi::getPhysicalDeviceSurfacePresentModes(m_vki, m_physicalDevice, m_surface))
+    , m_surfaceProperties(wsi::getPhysicalDeviceSurfaceCapabilities2EXT(m_vki, m_physicalDevice, *m_surface))
+    , m_surfaceFormats(wsi::getPhysicalDeviceSurfaceFormats(m_vki, m_physicalDevice, *m_surface))
+    , m_presentModes(wsi::getPhysicalDeviceSurfacePresentModes(m_vki, m_physicalDevice, *m_surface))
 
     , m_swapchainCounterConfig(createSwapchainCounterConfig())
-    , m_swapchainConfig(createSwapchainConfig(m_surface, m_queueFamilyIndex, m_surfaceProperties, m_surfaceFormats,
+    , m_swapchainConfig(createSwapchainConfig(*m_surface, m_queueFamilyIndex, m_surfaceProperties, m_surfaceFormats,
                                               m_presentModes, VK_PRESENT_MODE_FIFO_KHR, &m_swapchainCounterConfig))
 
     , m_frameCount(20u)
@@ -618,8 +620,6 @@ SwapchainCounterTestInstance::SwapchainCounterTestInstance(Context &context)
 SwapchainCounterTestInstance::~SwapchainCounterTestInstance(void)
 {
     deinitSwapchainResources();
-
-    m_vki.destroySurfaceKHR(m_instance, m_surface, nullptr);
 }
 
 void SwapchainCounterTestInstance::initSwapchainResources(void)

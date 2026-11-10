@@ -25,6 +25,7 @@
 #include "glsShaderExecUtil.hpp"
 #include "glwFunctions.hpp"
 #include "tcuTestLog.hpp"
+#include <array>
 #include <iostream>
 
 namespace deqp
@@ -116,14 +117,11 @@ tcu::TestNode::IterateResult UniformIntegerFunctionCase::iterate(void)
 {
     int32_t result;
     int32_t comparison; // A bool in the shader, but we must use a 32-bit type to copy out into.
-    vector<void *> outputPointers(2);
-
-    outputPointers[0] = &result;
-    outputPointers[1] = &comparison;
+    const std::array<void *, 2> outputPointers = {&result, &comparison};
 
     m_executor->useProgram();
     m_context.getRenderContext().getFunctions().uniform1i(m_value, m_input);
-    m_executor->execute(1, nullptr, &outputPointers[0]);
+    m_executor->execute(1, nullptr, outputPointers.data());
 
     int expectedResult = computeExpectedResult(m_input);
     if (result != expectedResult)

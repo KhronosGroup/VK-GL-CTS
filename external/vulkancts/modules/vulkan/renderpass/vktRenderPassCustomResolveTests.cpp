@@ -1374,6 +1374,9 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
         subpassPreserveReferences.reserve(totalPasses);
         subpassDependencies.reserve(totalPasses);
 
+        // An attachment can only be preserved after a prior subpass used it (VUID-VkRenderPassCreateInfo-None-10915)
+        std::set<uint32_t> uploadedAttIndices;
+
         for (uint32_t upIndex = 0; upIndex < de::sizeU32(m_params.uploadPasses); ++upIndex)
         {
             const auto &uploadPass = m_params.uploadPasses.at(upIndex);
@@ -1413,9 +1416,11 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                     // color reference for it.
                     if (!att.isDepthStencil())
                         colorRefs.push_back(makeAttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED));
-                    preserveRefs.push_back(i);
+                    if (de::contains(uploadedAttIndices, i))
+                        preserveRefs.push_back(i);
                 }
             }
+            uploadedAttIndices.insert(uploadAttIndices.begin(), uploadAttIndices.end());
 
             const VkSubpassDescription subpassDescription = {
                 0u,
@@ -1487,7 +1492,8 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 const auto &attInfo = m_params.attachmentList.at(i);
                 if (!attInfo.isMultiSample())
                 {
-                    preserveRefs.push_back(i);
+                    if (de::contains(uploadedAttIndices, i))
+                        preserveRefs.push_back(i);
                     inputAttRefs.push_back(makeAttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED));
                 }
                 else
@@ -2167,7 +2173,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             colorAttCounts.insert(colorAttachmentCount);
 
             resolveInputAttachmentIndexInfos.emplace_back(nullptr);
-            if (dynamicRendering && depthStencilAttIndexAspects)
+            if (depthStencilAttIndexAspects)
             {
                 const auto dsInputAttOffset         = m_params.getDepthStencilInputAttOffsetDynamicRendering(i);
                 depthInputAttachmentIndices.at(i)   = dsInputAttOffset;

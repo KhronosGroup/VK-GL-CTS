@@ -52,6 +52,8 @@
 #include "glsTextureTestUtil.hpp"
 #include "glcPixelStorageModesTests.hpp"
 
+#include <vector>
+
 #include <algorithm>
 
 namespace glcts
@@ -172,7 +174,7 @@ protected:
     void setRGB10A2Refcolour(glu::CallLogWrapper gl, glw::GLdouble col);
     bool verify(tcu::Surface dst, tcu::Surface *errMask);
 
-    glw::GLubyte *m_src_data;
+    std::vector<glw::GLubyte> m_src_data;
     uint32_t tex;
     glu::ShaderProgram *prog;
 
@@ -197,8 +199,7 @@ protected:
 TexImageUtils::TexImageUtils(uint32_t internalFormat, int cuboid_w, int cuboid_h, int cuboid_d, int subcuboid_x0,
                              int subcuboid_y0, int subcuboid_z0, int subcuboid_w, int subcuboid_h, int subcuboid_d,
                              glu::GLSLVersion glsl_version)
-    : m_src_data(0)
-    , tex(0)
+    : tex(0)
     , prog(0)
     , m_internalFormat(internalFormat)
     , m_format(glu::getTransferFormat(glu::mapGLInternalFormat(internalFormat)).format)
@@ -648,7 +649,7 @@ TexImage2DCase::IterateResult TexImage2DCase::iterate(void)
 
 void TexImage2DCase::generateSrcData()
 {
-    m_src_data = new glw::GLubyte[m_cuboid_w * m_cuboid_h * m_pixelsize]();
+    m_src_data.assign(m_cuboid_w * m_cuboid_h * m_pixelsize, 0);
 
     glw::GLdouble col = 0.0;
 
@@ -662,7 +663,7 @@ void TexImage2DCase::generateSrcData()
             else
                 col = 0.0;
             int offset = y * m_cuboid_w * m_pixelsize + x * m_pixelsize;
-            writePixel(m_src_data + offset, col);
+            writePixel(m_src_data.data() + offset, col);
         }
     }
 }
@@ -680,7 +681,8 @@ void TexImage2DCase::createTexture(void)
     gl.glPixelStorei(GL_UNPACK_SKIP_ROWS, m_subcuboid_y0);
     gl.glPixelStorei(GL_UNPACK_SKIP_PIXELS, m_subcuboid_x0);
 
-    gl.glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_subcuboid_w, m_subcuboid_h, 0, m_format, m_type, m_src_data);
+    gl.glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_subcuboid_w, m_subcuboid_h, 0, m_format, m_type,
+                    m_src_data.data());
 
     gl.glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     gl.glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
@@ -782,7 +784,7 @@ void TexImage2DCase::cleanup(void)
     glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 
     gl.glDeleteTextures(1, &tex);
-    delete[] m_src_data;
+    m_src_data = std::vector<glw::GLubyte>(); // frees the data, unlike clear()
     delete prog;
 }
 
@@ -876,7 +878,7 @@ TexImage3DCase::IterateResult TexImage3DCase::iterate(void)
 
 void TexImage3DCase::generateSrcData()
 {
-    m_src_data = new glw::GLubyte[m_cuboid_w * m_cuboid_h * m_cuboid_d * m_pixelsize]();
+    m_src_data.assign(m_cuboid_w * m_cuboid_h * m_cuboid_d * m_pixelsize, 0);
 
     glw::GLdouble col = 0.0;
 
@@ -893,7 +895,7 @@ void TexImage3DCase::generateSrcData()
                 else
                     col = 0.0;
                 int offset = z * m_cuboid_h * m_cuboid_w * m_pixelsize + y * m_cuboid_w * m_pixelsize + x * m_pixelsize;
-                writePixel(m_src_data + offset, col);
+                writePixel(m_src_data.data() + offset, col);
             }
         }
     }
@@ -915,7 +917,7 @@ void TexImage3DCase::createTexture(void)
     gl.glPixelStorei(GL_UNPACK_SKIP_PIXELS, m_subcuboid_x0);
 
     gl.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, m_internalFormat, m_subcuboid_w, m_subcuboid_h, m_subcuboid_d, 0, m_format,
-                    m_type, m_src_data);
+                    m_type, m_src_data.data());
 
     gl.glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, 0);
     gl.glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -1027,7 +1029,7 @@ void TexImage3DCase::cleanup(void)
     glu::CallLogWrapper gl(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 
     gl.glDeleteTextures(1, &tex);
-    delete[] m_src_data;
+    m_src_data = std::vector<glw::GLubyte>(); // frees the data, unlike clear()
     delete prog;
 }
 

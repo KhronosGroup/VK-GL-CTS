@@ -35,8 +35,10 @@
 #include "deRandom.hpp"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
+#include "tcuStringTemplate.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkDefs.hpp"
+#include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkPlatform.hpp"
@@ -106,6 +108,7 @@ struct TestParams
     bool enableGraphicsPipelineLibrary                      = false;
     bool enableShaderObject                                 = false;
     bool enableDynamicRendering                             = false;
+    bool enableDynamicRenderingLocalRead                    = false;
     bool enableVertexPipelineStoresAndAtomics               = false;
     bool enableFragmentStoresAndAtomics                     = false;
     bool enableNVCommandBufferInheritance                   = false;
@@ -211,12 +214,17 @@ enum class SpirvTestType
     StorageTexelBufferAtomic64,
     SimpleVariablePointers,
     ArrayVariablePointers,
+    UntypedVariablePointers,
     AtomicImageWithinFunction,
     OpImageQuerySize,
     OpImageQuerySizeNullDescriptor,
     AtomicImage2d,
     AtomicImage2d64Bit,
     CopyObject,
+    CopyObjectStorageBuffer,
+    SplitAccessChain,
+    MultidimensionalStructOfDescriptorsPacked,
+    MultidimensionalStructOfDescriptorsPadded,
 };
 
 struct TestParamsSpirv : TestParams
@@ -597,6 +605,10 @@ public:
         if (m_params.enableDynamicRendering)
         {
             context.requireDeviceFunctionality(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        }
+        if (m_params.enableDynamicRenderingLocalRead)
+        {
+            context.requireDeviceFunctionality(VK_KHR_DYNAMIC_RENDERING_LOCAL_READ_EXTENSION_NAME);
         }
         if (m_params.enableVertexPipelineStoresAndAtomics)
         {
@@ -4355,6 +4367,9 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = initVulkanStructure();
     dynamicRenderingFeatures.dynamicRendering                         = VK_TRUE;
 
+    VkPhysicalDeviceDynamicRenderingLocalReadFeatures dynamicRenderingLocalReadFeatures = initVulkanStructure();
+    dynamicRenderingLocalReadFeatures.dynamicRenderingLocalRead                         = VK_TRUE;
+
     VkPhysicalDeviceCommandBufferInheritanceFeaturesNV commandBufferInheritanceFeaturesNV = initVulkanStructure();
     commandBufferInheritanceFeaturesNV.commandBufferInheritance                           = VK_TRUE;
 
@@ -4446,6 +4461,11 @@ DescriptorHeapTestInstanceBase::DescriptorHeapTestInstanceBase(Context &context,
     {
         extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
         addToChainVulkanStructure(&nextPtr, dynamicRenderingFeatures);
+    }
+    if (params.enableDynamicRenderingLocalRead)
+    {
+        extensions.push_back(VK_KHR_DYNAMIC_RENDERING_LOCAL_READ_EXTENSION_NAME);
+        addToChainVulkanStructure(&nextPtr, dynamicRenderingLocalReadFeatures);
     }
     if (params.enableVertexPipelineStoresAndAtomics)
     {
@@ -6997,11 +7017,11 @@ tcu::TestStatus DescriptorHeapTestInstanceInvariance::iterate()
     {
         // Reset allocations before replay.
         m_buffer = {};
-        m_image  = {};
+        m_image.reset();
         m_imageMemory.clear();
         m_rtBlas.clear();
         m_rtTlas.clear();
-        m_samplerYcbcrConversion = {};
+        m_samplerYcbcrConversion.reset();
 
         if (m_params.enableCustomBorderColor)
         {
@@ -9373,6 +9393,65 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
                OpFunctionEnd
 )";
         break;
+    case SpirvTestType::UntypedVariablePointers:
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpCapability VariablePointers
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_variable_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main" %2 %3
+               OpExecutionMode %1 LocalSize 1 1 1
+               OpDecorate %2 BuiltIn ResourceHeapEXT
+               OpDecorate %3 BuiltIn GlobalInvocationId
+               OpDecorateId %4 ArrayStrideIdEXT %5
+               OpDecorate %6 ArrayStride 4
+               OpDecorate %7 Block
+               OpMemberDecorate %7 0 Offset 0
+          %8 = OpTypeVoid
+          %9 = OpTypeFunction %8
+         %10 = OpTypeInt 32 0
+         %11 = OpConstant %10 0
+         %12 = OpConstant %10 1
+         %13 = OpConstant %10 2
+         %14 = OpTypeBool
+         %15 = OpTypeVector %10 3
+         %16 = OpTypePointer Input %15
+          %3 = OpVariable %16 Input
+         %17 = OpTypePointer Input %10
+         %18 = OpTypeUntypedPointerKHR UniformConstant
+         %19 = OpTypeUntypedPointerKHR StorageBuffer
+         %20 = OpTypeBufferEXT StorageBuffer
+          %5 = OpConstantSizeOfEXT %10 %20
+          %4 = OpTypeRuntimeArray %20
+          %2 = OpUntypedVariableKHR %18 UniformConstant
+          %6 = OpTypeRuntimeArray %10
+          %7 = OpTypeStruct %6
+         %21 = OpTypePointer StorageBuffer %7
+          %1 = OpFunction %8 None %9
+         %22 = OpLabel
+         %23 = OpAccessChain %17 %3 %11
+         %24 = OpLoad %10 %23
+         %25 = OpINotEqual %14 %24 %11
+         %26 = OpUntypedAccessChainKHR %18 %4 %2 %11
+         %27 = OpBufferPointerEXT %21 %26
+         %28 = OpUntypedAccessChainKHR %19 %7 %27 %11 %11
+         %29 = OpUntypedAccessChainKHR %18 %4 %2 %12
+         %30 = OpBufferPointerEXT %21 %29
+         %31 = OpUntypedAccessChainKHR %19 %7 %30 %11 %11
+         %32 = OpSelect %19 %25 %28 %31
+         %33 = OpLoad %10 %32
+         %34 = OpUntypedAccessChainKHR %18 %4 %2 %13
+         %35 = OpBufferPointerEXT %21 %34
+         %36 = OpUntypedAccessChainKHR %19 %7 %35 %11 %24
+               OpStore %36 %33
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
     case SpirvTestType::AtomicImageWithinFunction:
         assembly = R"(
                OpCapability Shader
@@ -9605,6 +9684,232 @@ void DescriptorHeapTestCaseSpirv::initPrograms(vk::SourceCollections &programCol
 )";
         spirvVersion = vk::SPIRV_VERSION_1_3;
         break;
+    case SpirvTestType::CopyObjectStorageBuffer:
+        assembly = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %ssbo_var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %rta ArrayStride 4
+               OpDecorate %Data Block
+               OpMemberDecorate %Data 0 Offset 0
+               OpDecorate %ssbo_var DescriptorSet 0
+               OpDecorate %ssbo_var Binding 0
+       %void = OpTypeVoid
+    %fn_void = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_3 = OpConstant %int 3
+     %uint_4 = OpConstant %uint 4
+        %rta = OpTypeRuntimeArray %uint
+       %Data = OpTypeStruct %rta
+   %ptr_ssbo = OpTypePointer StorageBuffer %Data
+%ptr_ssbo_rta = OpTypePointer StorageBuffer %rta
+%ptr_ssbo_uint = OpTypePointer StorageBuffer %uint
+   %ssbo_var = OpVariable %ptr_ssbo StorageBuffer
+       %main = OpFunction %void None %fn_void
+      %entry = OpLabel
+  %ssbo_copy = OpCopyObject %ptr_ssbo %ssbo_var
+      %array = OpAccessChain %ptr_ssbo_rta %ssbo_copy %int_0
+       %elem = OpAccessChain %ptr_ssbo_uint %array %int_3
+               OpStore %elem %uint_4
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPacked:
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %Data Block
+               OpMemberDecorate %Data 0 Offset 0
+               OpDecorateId %a_inner ArrayStrideIdEXT %buf_size
+               OpDecorateId %a_outer ArrayStrideIdEXT %N_x3
+               OpDecorateId %b_array ArrayStrideIdEXT %buf_size
+               OpMemberDecorateIdEXT %S 0 OffsetIdEXT %uint_0
+               OpMemberDecorateIdEXT %S 1 OffsetIdEXT %N_x6
+               OpDecorateId %S_inner ArrayStrideIdEXT %N_x8
+               OpDecorateId %S_outer ArrayStrideIdEXT %N_x24
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_6 = OpConstant %uint 6
+     %uint_8 = OpConstant %uint 8
+    %uint_24 = OpConstant %uint 24
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+     %ptr_sb = OpTypeUntypedPointerKHR StorageBuffer
+%resource_heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+       %Data = OpTypeStruct %uint
+   %buf_type = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %uint %buf_type
+       %N_x3 = OpSpecConstantOp %uint IMul %buf_size %uint_3
+       %N_x6 = OpSpecConstantOp %uint IMul %buf_size %uint_6
+       %N_x8 = OpSpecConstantOp %uint IMul %buf_size %uint_8
+      %N_x24 = OpSpecConstantOp %uint IMul %buf_size %uint_24
+    %a_inner = OpTypeArray %buf_type %uint_3
+    %a_outer = OpTypeArray %a_inner %uint_2
+    %b_array = OpTypeArray %buf_type %uint_2
+          %S = OpTypeStruct %a_outer %b_array
+    %S_inner = OpTypeArray %S %uint_3
+    %S_outer = OpTypeArray %S_inner %uint_2
+       %main = OpFunction %void None %void_fn
+      %entry = OpLabel
+     %desc_1 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_1 %uint_2 %uint_0 %uint_1 %uint_0
+      %buf_1 = OpBufferPointerEXT %ptr_sb %desc_1
+    %value_1 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_1 %uint_0
+               OpStore %value_1 %uint_1
+   %struct_2 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_0 %uint_1
+     %desc_2 = OpUntypedAccessChainKHR %ptr_uc %S %struct_2 %uint_1 %uint_1
+      %buf_2 = OpBufferPointerEXT %ptr_sb %desc_2
+    %value_2 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_2 %uint_0
+               OpStore %value_2 %uint_2
+   %member_3 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_1 %uint_0 %uint_0
+     %desc_3 = OpUntypedAccessChainKHR %ptr_uc %a_outer %member_3 %uint_0 %uint_2
+      %buf_3 = OpBufferPointerEXT %ptr_sb %desc_3
+    %value_3 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_3 %uint_0
+               OpStore %value_3 %uint_3
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
+    case SpirvTestType::SplitAccessChain:
+        assembly = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %ssbo_var %ubo_var
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %arr_uint_4 ArrayStride 4
+               OpDecorate %A Block
+               OpMemberDecorate %A 0 Offset 0
+               OpMemberDecorate %A 1 Offset 16
+               OpDecorate %ssbo_var DescriptorSet 0
+               OpDecorate %ssbo_var Binding 0
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %ubo_var DescriptorSet 0
+               OpDecorate %ubo_var Binding 1
+       %void = OpTypeVoid
+    %fn_void = OpTypeFunction %void
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+     %uint_0 = OpConstant %uint 0
+     %uint_4 = OpConstant %uint 4
+      %uvec4 = OpTypeVector %uint 4
+ %arr_uint_4 = OpTypeArray %uint %uint_4
+          %A = OpTypeStruct %uint %arr_uint_4
+          %B = OpTypeStruct %uvec4
+   %ptr_ssbo = OpTypePointer StorageBuffer %A
+    %ptr_ubo = OpTypePointer Uniform %B
+%ptr_ssbo_arr = OpTypePointer StorageBuffer %arr_uint_4
+%ptr_ssbo_uint = OpTypePointer StorageBuffer %uint
+%ptr_ubo_uvec4 = OpTypePointer Uniform %uvec4
+%ptr_ubo_uint = OpTypePointer Uniform %uint
+   %ssbo_var = OpVariable %ptr_ssbo StorageBuffer
+    %ubo_var = OpVariable %ptr_ubo Uniform
+       %main = OpFunction %void None %fn_void
+      %entry = OpLabel
+    %ubo_vec = OpAccessChain %ptr_ubo_uvec4 %ubo_var %int_0
+   %ssbo_arr = OpAccessChain %ptr_ssbo_arr %ssbo_var %int_1
+               OpBranch %second
+     %second = OpLabel
+%ubo_vec_copy = OpCopyObject %ptr_ubo_uvec4 %ubo_vec
+      %ubo_y = OpAccessChain %ptr_ubo_uint %ubo_vec_copy %int_1
+      %value = OpLoad %uint %ubo_y
+       %cond = OpINotEqual %bool %value %uint_0
+               OpSelectionMerge %merge None
+               OpBranchConditional %cond %merge %third
+      %third = OpLabel
+               OpBranch %merge
+      %merge = OpLabel
+%ssbo_arr_copy = OpCopyObject %ptr_ssbo_arr %ssbo_arr
+  %ssbo_elem = OpAccessChain %ptr_ssbo_uint %ssbo_arr_copy %int_2
+               OpStore %ssbo_elem %value
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPadded:
+        assembly = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %resource_heap
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+               OpDecorate %Data Block
+               OpMemberDecorate %Data 0 Offset 0
+               OpDecorateId %a_inner ArrayStrideIdEXT %buf_size
+               OpDecorateId %a_outer ArrayStrideIdEXT %N_x4
+               OpDecorateId %b_array ArrayStrideIdEXT %N_x2
+               OpMemberDecorateIdEXT %S 0 OffsetIdEXT %N_x4
+               OpMemberDecorateIdEXT %S 1 OffsetIdEXT %uint_0
+               OpDecorateId %S_inner ArrayStrideIdEXT %N_x12
+               OpDecorateId %S_outer ArrayStrideIdEXT %N_x40
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+    %uint_12 = OpConstant %uint 12
+    %uint_40 = OpConstant %uint 40
+     %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+     %ptr_sb = OpTypeUntypedPointerKHR StorageBuffer
+%resource_heap = OpUntypedVariableKHR %ptr_uc UniformConstant
+       %Data = OpTypeStruct %uint
+   %buf_type = OpTypeBufferEXT StorageBuffer
+   %buf_size = OpConstantSizeOfEXT %uint %buf_type
+       %N_x2 = OpSpecConstantOp %uint IMul %buf_size %uint_2
+       %N_x4 = OpSpecConstantOp %uint IMul %buf_size %uint_4
+      %N_x12 = OpSpecConstantOp %uint IMul %buf_size %uint_12
+      %N_x40 = OpSpecConstantOp %uint IMul %buf_size %uint_40
+    %a_inner = OpTypeArray %buf_type %uint_3
+    %a_outer = OpTypeArray %a_inner %uint_2
+    %b_array = OpTypeArray %buf_type %uint_2
+          %S = OpTypeStruct %a_outer %b_array
+    %S_inner = OpTypeArray %S %uint_3
+    %S_outer = OpTypeArray %S_inner %uint_2
+       %main = OpFunction %void None %void_fn
+      %entry = OpLabel
+     %desc_1 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_1 %uint_2 %uint_0 %uint_1 %uint_0
+      %buf_1 = OpBufferPointerEXT %ptr_sb %desc_1
+    %value_1 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_1 %uint_0
+               OpStore %value_1 %uint_1
+   %struct_2 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_0 %uint_1
+     %desc_2 = OpUntypedAccessChainKHR %ptr_uc %S %struct_2 %uint_1 %uint_1
+      %buf_2 = OpBufferPointerEXT %ptr_sb %desc_2
+    %value_2 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_2 %uint_0
+               OpStore %value_2 %uint_2
+   %member_3 = OpUntypedAccessChainKHR %ptr_uc %S_outer %resource_heap %uint_1 %uint_0 %uint_0
+     %desc_3 = OpUntypedAccessChainKHR %ptr_uc %a_outer %member_3 %uint_0 %uint_2
+      %buf_3 = OpBufferPointerEXT %ptr_sb %desc_3
+    %value_3 = OpUntypedAccessChainKHR %ptr_sb %Data %buf_3 %uint_0
+               OpStore %value_3 %uint_3
+               OpReturn
+               OpFunctionEnd
+)";
+        break;
     default:
         DE_ASSERT(0);
         break;
@@ -9717,6 +10022,11 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         expectedOutput = {0x5};
         heapUserSize   = 4 * resourceDescriptorStride;
         break;
+    case SpirvTestType::UntypedVariablePointers:
+        expectedOutput = {0xc, 0x5};
+        heapUserSize   = 3 * storageBufferStride;
+        dispatchWidth  = 2;
+        break;
     case SpirvTestType::AtomicImageWithinFunction:
     case SpirvTestType::AtomicImage2d:
         dispatchWidth = 128;
@@ -9745,6 +10055,30 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         expectedOutput = {0};
         heapUserSize   = 4 * resourceDescriptorStride;
         break;
+    case SpirvTestType::CopyObjectStorageBuffer:
+        expectedOutput = {0, 0, 0, 4};
+        break;
+    case SpirvTestType::SplitAccessChain:
+        expectedOutput = {0, 0, 0, 0, 0, 0, 0xcafe, 0};
+        break;
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPacked:
+    {
+        expectedOutput.resize(2 * 64 + 1, 0u);
+        expectedOutput[0]   = 1u;
+        expectedOutput[64]  = 2u;
+        expectedOutput[128] = 3u;
+        heapUserSize        = 48 * m_descriptorHeapProperties.bufferDescriptorSize;
+        break;
+    }
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPadded:
+    {
+        expectedOutput.resize(2 * 64 + 1, 0u);
+        expectedOutput[0]   = 1u;
+        expectedOutput[64]  = 2u;
+        expectedOutput[128] = 3u;
+        heapUserSize        = 75 * m_descriptorHeapProperties.bufferDescriptorSize;
+        break;
+    }
     default:
         DE_ASSERT(0);
         break;
@@ -10229,6 +10563,39 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 4, resourceInfos.data(), hostAddressRanges.data()));
         break;
     }
+    case SpirvTestType::UntypedVariablePointers:
+    {
+        const std::array<uint32_t, 2> values = {0x5, 0xc};
+        std::array<VkHostAddressRangeEXT, 3> hostAddressRanges{};
+        std::array<VkResourceDescriptorInfoEXT, 3> resourceInfos{};
+        std::array<VkDeviceAddressRangeEXT, 3> addressRanges{};
+
+        for (size_t i = 0; i < 3; ++i)
+        {
+            hostAddressRanges[i].address = reinterpret_cast<char *>(heapContents) + i * storageBufferStride;
+            hostAddressRanges[i].size    = static_cast<size_t>(storageBufferStride);
+
+            resourceInfos[i]                    = initVulkanStructure();
+            resourceInfos[i].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            resourceInfos[i].data.pAddressRange = &addressRanges[i];
+        }
+        for (size_t i = 0; i < values.size(); ++i)
+        {
+            const VkDeviceSize inputBufferSize =
+                alignUp(VkDeviceSize{sizeof(uint32_t)}, physDevProps.limits.minStorageBufferOffsetAlignment);
+            auto &inputBuffer = stagingBuffers.emplace_back(createBufferAndMemory(
+                inputBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT));
+            deMemcpy(inputBuffer->memory->getHostPtr(), &values[i], sizeof(uint32_t));
+
+            addressRanges[i].address = inputBuffer->address;
+            addressRanges[i].size    = inputBufferSize;
+        }
+        addressRanges[2].address = outputBuffer->address;
+        addressRanges[2].size    = outputBufferSize;
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 3, resourceInfos.data(), hostAddressRanges.data()));
+        break;
+    }
     case SpirvTestType::AtomicImageWithinFunction:
     case SpirvTestType::AtomicImage2d:
     case SpirvTestType::AtomicImage2d64Bit:
@@ -10441,6 +10808,75 @@ tcu::TestStatus DescriptorHeapTestInstanceSpirv::iterate()
         }
 
         VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 4, resourceInfos.data(), hostAddressRanges.data()));
+        break;
+    }
+    case SpirvTestType::CopyObjectStorageBuffer:
+    {
+        mappings.resize(1);
+        mappings[0]                              = initVulkanStructure();
+        mappings[0].firstBinding                 = 0u;
+        mappings[0].bindingCount                 = 1u;
+        mappings[0].resourceMask                 = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+        mappings[0].source                       = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+        mappings[0].sourceData.pushAddressOffset = 0u;
+
+        pushData.resize(sizeof(VkDeviceAddress));
+        deMemcpy(pushData.data(), &outputBuffer->address, sizeof(VkDeviceAddress));
+        break;
+    }
+    case SpirvTestType::SplitAccessChain:
+    {
+        const uint32_t uniformValues[4]      = {0x1111, 0xcafe, 0x3333, 0x4444};
+        const VkDeviceSize uniformBufferSize = static_cast<VkDeviceSize>(sizeof(uniformValues));
+        auto &uniformBuffer                  = stagingBuffers.emplace_back(createBufferAndMemory(
+            uniformBufferSize, VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT));
+        deMemcpy(uniformBuffer->memory->getHostPtr(), uniformValues, sizeof(uniformValues));
+
+        mappings.resize(2);
+        mappings[0]                              = initVulkanStructure();
+        mappings[0].firstBinding                 = 0u;
+        mappings[0].bindingCount                 = 1u;
+        mappings[0].resourceMask                 = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+        mappings[0].source                       = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+        mappings[0].sourceData.pushAddressOffset = 0u;
+        mappings[1]                              = initVulkanStructure();
+        mappings[1].firstBinding                 = 1u;
+        mappings[1].bindingCount                 = 1u;
+        mappings[1].resourceMask                 = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+        mappings[1].source                       = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+        mappings[1].sourceData.pushAddressOffset = static_cast<uint32_t>(sizeof(VkDeviceAddress));
+
+        pushData.resize(sizeof(VkDeviceAddress) * 2u);
+        deMemcpy(pushData.data(), &outputBuffer->address, sizeof(VkDeviceAddress));
+        deMemcpy(pushData.data() + sizeof(VkDeviceAddress), &uniformBuffer->address, sizeof(VkDeviceAddress));
+        break;
+    }
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPacked:
+    case SpirvTestType::MultidimensionalStructOfDescriptorsPadded:
+    {
+        const bool packed = m_params.spirvTestType == SpirvTestType::MultidimensionalStructOfDescriptorsPacked;
+        const std::array<uint32_t, 3> heapIndices =
+            packed ? std::array<uint32_t, 3>{43u, 15u, 26u} : std::array<uint32_t, 3>{72u, 14u, 46u};
+        const VkDeviceSize descriptorSize = m_descriptorHeapProperties.bufferDescriptorSize;
+
+        std::array<VkHostAddressRangeEXT, 3> hostAddressRanges{};
+        std::array<VkResourceDescriptorInfoEXT, 3> resourceInfos{};
+        std::array<VkDeviceAddressRangeEXT, 3> addressRanges{};
+
+        for (size_t i = 0; i < heapIndices.size(); ++i)
+        {
+            hostAddressRanges[i].address = reinterpret_cast<char *>(heapContents) + heapIndices[i] * descriptorSize;
+            hostAddressRanges[i].size    = static_cast<size_t>(descriptorSize);
+
+            addressRanges[i].address = outputBuffer->address + i * 256;
+            addressRanges[i].size    = sizeof(uint32_t);
+
+            resourceInfos[i]                    = initVulkanStructure();
+            resourceInfos[i].type               = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            resourceInfos[i].data.pAddressRange = &addressRanges[i];
+        }
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 3, resourceInfos.data(), hostAddressRanges.data()));
         break;
     }
     default:
@@ -11267,6 +11703,599 @@ void main() {
 
         programCollection.spirvAsmSources.add("frag") << fragmentShader;
     }
+}
+
+enum class InputAttachmentType
+{
+    COLOR,
+    COLOR_MSAA,
+    DEPTH,
+    STENCIL,
+};
+
+struct TestParamsInputAttachmentMasking : TestParams
+{
+    InputAttachmentType attachmentType = InputAttachmentType::COLOR;
+    VkFormat format                    = VK_FORMAT_R32_UINT;
+    bool useDynamicRendering           = false;
+};
+
+class DescriptorHeapTestInstanceInputAttachmentMask final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceInputAttachmentMask(Context &context,
+                                                           const TestParamsInputAttachmentMasking &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params(params)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParamsInputAttachmentMasking m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceInputAttachmentMask::iterate()
+{
+    const auto &vkd       = m_device.getDriver();
+    const VkDevice device = *m_device;
+    const VkQueue queue   = m_queues[0];
+    tcu::TestLog &log     = m_context.getTestContext().getLog();
+
+    const bool isDepth        = m_params.attachmentType == InputAttachmentType::DEPTH;
+    const bool isStencil      = m_params.attachmentType == InputAttachmentType::STENCIL;
+    const bool isDepthStencil = isDepth || isStencil;
+    const bool isMsaa         = m_params.attachmentType == InputAttachmentType::COLOR_MSAA;
+
+    const uint32_t imageSize = 8u;
+    const uint32_t color     = 0x12345678u;
+    const float depth        = 1.0f;
+    const uint32_t stencil   = 0xabu;
+
+    VkImageAspectFlags inputImageAspect = VK_IMAGE_ASPECT_COLOR_BIT;
+    VkImageAspectFlags inputViewAspect  = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (isDepthStencil)
+    {
+        inputImageAspect = getImageAspectFlags(mapVkFormat(m_params.format));
+        inputViewAspect  = isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+
+    const VkImageSubresourceRange inputImageRange = makeImageSubresourceRange(inputImageAspect, 0u, 1u, 0u, 1u);
+    const VkImageSubresourceRange inputViewRange  = makeImageSubresourceRange(inputViewAspect, 0u, 1u, 0u, 1u);
+    const VkImageSubresourceRange colorRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+    VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format            = m_params.format;
+    imageCreateInfo.extent            = {imageSize, imageSize, 1u};
+    imageCreateInfo.mipLevels         = 1u;
+    imageCreateInfo.arrayLayers       = 1u;
+    imageCreateInfo.samples           = isMsaa ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage             = VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    imageCreateInfo.usage |=
+        isDepthStencil ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    imageCreateInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    std::unique_ptr<Image> image      = createImageAndMemory(imageCreateInfo);
+    std::unique_ptr<Image> otherImage = createImageAndMemory(imageCreateInfo);
+
+    imageCreateInfo.format = VK_FORMAT_R32_UINT;
+    imageCreateInfo.usage =
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    std::unique_ptr<Image> colorImage = createImageAndMemory(imageCreateInfo);
+
+    std::unique_ptr<Image> resolveImage;
+    if (isMsaa)
+    {
+        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        resolveImage            = createImageAndMemory(imageCreateInfo);
+    }
+    const VkImage resultImage = isMsaa ? *resolveImage->image : *colorImage->image;
+
+    Move<VkImageView> imageView =
+        makeImageView(vkd, device, *image->image, VK_IMAGE_VIEW_TYPE_2D, m_params.format, inputViewRange);
+    Move<VkImageView> colorView =
+        makeImageView(vkd, device, *colorImage->image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R32_UINT, colorRange);
+    Move<VkImageView> resolveView;
+    if (isMsaa)
+        resolveView =
+            makeImageView(vkd, device, *resolveImage->image, VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_R32_UINT, colorRange);
+
+    const VkDeviceSize imageDescriptorStride = getImageDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize userHeapSize =
+        alignUp(2u * imageDescriptorStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize heapSize = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    auto resourceHeap         = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                    VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    char *resourceHeapHostPtr = static_cast<char *>(resourceHeap->memory->getHostPtr());
+
+    VkImageViewCreateInfo viewCreateInfo = initVulkanStructure();
+    viewCreateInfo.image                 = *otherImage->image;
+    viewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    viewCreateInfo.format                = m_params.format;
+    viewCreateInfo.components            = makeComponentMappingRGBA();
+    viewCreateInfo.subresourceRange      = inputViewRange;
+
+    VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+    imageDescriptorInfo.pView                    = &viewCreateInfo;
+    imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_GENERAL;
+
+    VkResourceDescriptorInfoEXT resourceInfo;
+    resourceInfo             = initVulkanStructure();
+    resourceInfo.type        = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    resourceInfo.data.pImage = &imageDescriptorInfo;
+
+    VkHostAddressRangeEXT hostAddressRange;
+    hostAddressRange.address = resourceHeapHostPtr;
+    hostAddressRange.size    = static_cast<size_t>(m_descriptorHeapProperties.imageDescriptorSize);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1u, &resourceInfo, &hostAddressRange));
+
+    viewCreateInfo.image     = *image->image;
+    hostAddressRange.address = resourceHeapHostPtr + imageDescriptorStride;
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1u, &resourceInfo, &hostAddressRange));
+    flushAlloc(vkd, device, *resourceHeap->memory);
+
+    Move<VkRenderPass> renderPass;
+    Move<VkFramebuffer> framebuffer;
+    if (!m_params.useDynamicRendering)
+    {
+        VkAttachmentDescription inputAttachment{};
+        inputAttachment.format        = m_params.format;
+        inputAttachment.samples       = isMsaa ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+        inputAttachment.loadOp        = VK_ATTACHMENT_LOAD_OP_LOAD;
+        inputAttachment.storeOp       = VK_ATTACHMENT_STORE_OP_STORE;
+        inputAttachment.stencilLoadOp = isDepthStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        inputAttachment.stencilStoreOp =
+            isDepthStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        inputAttachment.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+        inputAttachment.finalLayout   = VK_IMAGE_LAYOUT_GENERAL;
+
+        VkAttachmentDescription colorAttachment{};
+        colorAttachment.format         = VK_FORMAT_R32_UINT;
+        colorAttachment.samples        = isMsaa ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+        colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_LOAD;
+        colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_GENERAL;
+        colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_GENERAL;
+
+        VkAttachmentDescription resolveAttachment{};
+        resolveAttachment.format         = VK_FORMAT_R32_UINT;
+        resolveAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+        resolveAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        resolveAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+        resolveAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        resolveAttachment.initialLayout  = VK_IMAGE_LAYOUT_GENERAL;
+        resolveAttachment.finalLayout    = VK_IMAGE_LAYOUT_GENERAL;
+        resolveAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+
+        VkAttachmentDescription attachments[3] = {inputAttachment, colorAttachment, resolveAttachment};
+        VkImageView attachmentViews[3]         = {*imageView, *colorView, *resolveView};
+
+        VkAttachmentReference inputReference   = {0u, VK_IMAGE_LAYOUT_GENERAL};
+        VkAttachmentReference colorReference   = {1u, VK_IMAGE_LAYOUT_GENERAL};
+        VkAttachmentReference resolveReference = {2u, VK_IMAGE_LAYOUT_GENERAL};
+
+        VkSubpassDescription subpass{};
+        subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.inputAttachmentCount = 1u;
+        subpass.pInputAttachments    = &inputReference;
+        subpass.colorAttachmentCount = 1u;
+        subpass.pColorAttachments    = &colorReference;
+        subpass.pResolveAttachments  = isMsaa ? &resolveReference : nullptr;
+
+        VkRenderPassCreateInfo renderPassCreateInfo = initVulkanStructure();
+        renderPassCreateInfo.attachmentCount        = isMsaa ? 3u : 2u;
+        renderPassCreateInfo.pAttachments           = attachments;
+        renderPassCreateInfo.subpassCount           = 1u;
+        renderPassCreateInfo.pSubpasses             = &subpass;
+        renderPass                                  = createRenderPass(vkd, device, &renderPassCreateInfo);
+
+        VkFramebufferCreateInfo framebufferCreateInfo = initVulkanStructure();
+        framebufferCreateInfo.renderPass              = *renderPass;
+        framebufferCreateInfo.attachmentCount         = isMsaa ? 3u : 2u;
+        framebufferCreateInfo.pAttachments            = attachmentViews;
+        framebufferCreateInfo.width                   = imageSize;
+        framebufferCreateInfo.height                  = imageSize;
+        framebufferCreateInfo.layers                  = 1u;
+        framebuffer                                   = createFramebuffer(vkd, device, &framebufferCreateInfo);
+    }
+
+    std::vector<VkFormat> colorFormats;
+    std::vector<uint32_t> colorLocations;
+    std::vector<uint32_t> colorInputIndices;
+    if (!isDepthStencil)
+    {
+        colorFormats.push_back(m_params.format);
+        colorLocations.push_back(VK_ATTACHMENT_UNUSED);
+        colorInputIndices.push_back(0u);
+    }
+    colorFormats.push_back(VK_FORMAT_R32_UINT);
+    colorLocations.push_back(0u);
+    colorInputIndices.push_back(VK_ATTACHMENT_UNUSED);
+
+    const uint32_t inputIndex  = 0u;
+    const uint32_t unusedIndex = VK_ATTACHMENT_UNUSED;
+
+    VkRenderingAttachmentLocationInfo locationInfo = initVulkanStructure();
+    locationInfo.colorAttachmentCount              = de::sizeU32(colorLocations);
+    locationInfo.pColorAttachmentLocations         = colorLocations.data();
+
+    VkRenderingInputAttachmentIndexInfo inputIndexInfo = initVulkanStructure(&locationInfo);
+    inputIndexInfo.colorAttachmentCount                = de::sizeU32(colorInputIndices);
+    inputIndexInfo.pColorAttachmentInputIndices        = colorInputIndices.data();
+    inputIndexInfo.pDepthInputAttachmentIndex          = isDepth ? &inputIndex : &unusedIndex;
+    inputIndexInfo.pStencilInputAttachmentIndex        = isStencil ? &inputIndex : &unusedIndex;
+
+    VkPipelineRenderingCreateInfo renderingCreateInfo =
+        initVulkanStructure(m_params.useDynamicRendering ? &inputIndexInfo : nullptr);
+    renderingCreateInfo.colorAttachmentCount    = de::sizeU32(colorFormats);
+    renderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
+    renderingCreateInfo.depthAttachmentFormat   = isDepth ? m_params.format : VK_FORMAT_UNDEFINED;
+    renderingCreateInfo.stencilAttachmentFormat = isStencil ? m_params.format : VK_FORMAT_UNDEFINED;
+
+    auto vertModule = createShaderModule(vkd, device, getShaderBinary("vert"));
+    auto fragModule = createShaderModule(vkd, device, getShaderBinary("frag"));
+
+    VkDescriptorSetAndBindingMappingEXT mappings[2];
+    mappings[0]               = initVulkanStructure();
+    mappings[0].descriptorSet = 0u;
+    mappings[0].firstBinding  = 0u;
+    mappings[0].bindingCount  = 1u;
+    mappings[0].resourceMask  = VK_SPIRV_RESOURCE_TYPE_ALL_EXT & ~VK_SPIRV_RESOURCE_TYPE_READ_WRITE_IMAGE_BIT_EXT;
+    mappings[0].source        = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[0].sourceData.constantOffset.heapOffset = 0u;
+    mappings[1]                                      = initVulkanStructure();
+    mappings[1].descriptorSet                        = 0u;
+    mappings[1].firstBinding                         = 0u;
+    mappings[1].bindingCount                         = 1u;
+    mappings[1].resourceMask                         = VK_SPIRV_RESOURCE_TYPE_READ_WRITE_IMAGE_BIT_EXT;
+    mappings[1].source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[1].sourceData.constantOffset.heapOffset = static_cast<uint32_t>(imageDescriptorStride);
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 2u;
+    mappingInfo.pMappings                                     = mappings;
+
+    VkPipelineShaderStageCreateInfo shaderStages[2];
+    shaderStages[0]        = initVulkanStructure(&mappingInfo);
+    shaderStages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStages[0].module = *vertModule;
+    shaderStages[0].pName  = "main";
+    shaderStages[1]        = initVulkanStructure(&mappingInfo);
+    shaderStages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStages[1].module = *fragModule;
+    shaderStages[1].pName  = "main";
+
+    VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = initVulkanStructure();
+    inputAssemblyState.topology                               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+    VkViewport viewport = makeViewport(imageSize, imageSize);
+    VkRect2D scissor    = makeRect2D(0, 0, imageSize, imageSize);
+
+    VkPipelineViewportStateCreateInfo viewportState = initVulkanStructure();
+    viewportState.viewportCount                     = 1u;
+    viewportState.pViewports                        = &viewport;
+    viewportState.scissorCount                      = 1u;
+    viewportState.pScissors                         = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState = initVulkanStructure();
+    rasterizationState.lineWidth                              = 1.0f;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+    multisampleState.rasterizationSamples                 = isMsaa ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilState = initVulkanStructure();
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    colorBlendAttachment.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments(colorFormats.size(), colorBlendAttachment);
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState = initVulkanStructure();
+    colorBlendState.attachmentCount = m_params.useDynamicRendering ? de::sizeU32(colorBlendAttachments) : 1u;
+    colorBlendState.pAttachments    = colorBlendAttachments.data();
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineFlags =
+        initVulkanStructure(m_params.useDynamicRendering ? &renderingCreateInfo : nullptr);
+    pipelineFlags.flags = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineFlags);
+    pipelineCreateInfo.stageCount                   = 2u;
+    pipelineCreateInfo.pStages                      = shaderStages;
+    pipelineCreateInfo.pVertexInputState            = &vertexInputState;
+    pipelineCreateInfo.pInputAssemblyState          = &inputAssemblyState;
+    pipelineCreateInfo.pViewportState               = &viewportState;
+    pipelineCreateInfo.pRasterizationState          = &rasterizationState;
+    pipelineCreateInfo.pMultisampleState            = &multisampleState;
+    pipelineCreateInfo.pDepthStencilState           = &depthStencilState;
+    pipelineCreateInfo.pColorBlendState             = &colorBlendState;
+    pipelineCreateInfo.renderPass                   = m_params.useDynamicRendering ? VK_NULL_HANDLE : *renderPass;
+    auto pipeline = createGraphicsPipeline(vkd, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    const VkDeviceSize outputBufferSize = imageSize * imageSize * sizeof(uint32_t);
+    auto outputBuffer                   = createBufferAndMemory(outputBufferSize, VK_BUFFER_USAGE_2_TRANSFER_DST_BIT);
+
+    VkBindHeapInfoEXT heapBindInfo   = initVulkanStructure();
+    heapBindInfo.heapRange.address   = resourceHeap->address;
+    heapBindInfo.heapRange.size      = heapSize;
+    heapBindInfo.reservedRangeOffset = userHeapSize;
+    heapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    VkImageMemoryBarrier2 imageBarriers[4];
+    imageBarriers[0] = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *image->image, inputImageRange);
+    imageBarriers[1] = makeImageMemoryBarrier2(
+        VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *colorImage->image, colorRange);
+    if (isMsaa)
+        imageBarriers[2] =
+            makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                                    VK_ACCESS_2_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+                                    *resolveImage->image, colorRange);
+    imageBarriers[3] =
+        makeImageMemoryBarrier2(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
+                                VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, resultImage, colorRange);
+
+    VkMemoryBarrier2 memoryBarriers[2];
+    memoryBarriers[0] = makeMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                                           VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+                                           VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT);
+    memoryBarriers[1] = makeMemoryBarrier2(VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                                           VK_PIPELINE_STAGE_2_HOST_BIT, VK_ACCESS_2_HOST_READ_BIT);
+
+    VkDependencyInfo dependencyInfo = initVulkanStructure();
+
+    auto cmdPool              = makeCommandPool(vkd, device, m_queueFamilyIndex);
+    auto cmdBufferPtr         = allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    VkCommandBuffer cmdBuffer = cmdBufferPtr.get();
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &heapBindInfo);
+    dependencyInfo.imageMemoryBarrierCount = isMsaa ? 3u : 2u;
+    dependencyInfo.pImageMemoryBarriers    = imageBarriers;
+    vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+
+    if (isDepthStencil)
+    {
+        VkClearDepthStencilValue clearValue = {depth, stencil};
+        vkd.cmdClearDepthStencilImage(cmdBuffer, *image->image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1u,
+                                      &inputImageRange);
+    }
+    else
+    {
+        VkClearColorValue clearValue{};
+        clearValue.uint32[0] = color;
+        vkd.cmdClearColorImage(cmdBuffer, *image->image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1u, &inputImageRange);
+    }
+
+    VkClearColorValue colorClear{};
+    vkd.cmdClearColorImage(cmdBuffer, *colorImage->image, VK_IMAGE_LAYOUT_GENERAL, &colorClear, 1u, &colorRange);
+    if (isMsaa)
+        vkd.cmdClearColorImage(cmdBuffer, *resolveImage->image, VK_IMAGE_LAYOUT_GENERAL, &colorClear, 1u, &colorRange);
+
+    dependencyInfo.memoryBarrierCount      = 1u;
+    dependencyInfo.pMemoryBarriers         = &memoryBarriers[0];
+    dependencyInfo.imageMemoryBarrierCount = 0u;
+    dependencyInfo.pImageMemoryBarriers    = nullptr;
+    vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+
+    if (m_params.useDynamicRendering)
+    {
+        VkRenderingAttachmentInfo inputAttachmentInfo = initVulkanStructure();
+        inputAttachmentInfo.imageView                 = *imageView;
+        inputAttachmentInfo.imageLayout               = VK_IMAGE_LAYOUT_GENERAL;
+        inputAttachmentInfo.loadOp                    = VK_ATTACHMENT_LOAD_OP_LOAD;
+        inputAttachmentInfo.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
+
+        VkRenderingAttachmentInfo colorAttachmentInfo = initVulkanStructure();
+        colorAttachmentInfo.imageView                 = *colorView;
+        colorAttachmentInfo.imageLayout               = VK_IMAGE_LAYOUT_GENERAL;
+        colorAttachmentInfo.loadOp                    = VK_ATTACHMENT_LOAD_OP_LOAD;
+        colorAttachmentInfo.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
+        if (isMsaa)
+        {
+            colorAttachmentInfo.resolveMode        = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+            colorAttachmentInfo.resolveImageView   = *resolveView;
+            colorAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        }
+
+        std::vector<VkRenderingAttachmentInfo> colorAttachments;
+        if (!isDepthStencil)
+            colorAttachments.push_back(inputAttachmentInfo);
+        colorAttachments.push_back(colorAttachmentInfo);
+
+        VkRenderingInfo renderingInfo      = initVulkanStructure();
+        renderingInfo.renderArea           = makeRect2D(0, 0, imageSize, imageSize);
+        renderingInfo.layerCount           = 1u;
+        renderingInfo.colorAttachmentCount = de::sizeU32(colorAttachments);
+        renderingInfo.pColorAttachments    = colorAttachments.data();
+        renderingInfo.pDepthAttachment     = isDepth ? &inputAttachmentInfo : nullptr;
+        renderingInfo.pStencilAttachment   = isStencil ? &inputAttachmentInfo : nullptr;
+
+        vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
+        vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, &locationInfo);
+        vkd.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &inputIndexInfo);
+    }
+    else
+    {
+        VkRenderPassBeginInfo renderPassBeginInfo = initVulkanStructure();
+        renderPassBeginInfo.renderPass            = *renderPass;
+        renderPassBeginInfo.framebuffer           = *framebuffer;
+        renderPassBeginInfo.renderArea            = makeRect2D(0, 0, imageSize, imageSize);
+
+        vkd.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    }
+
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    if (m_params.useDynamicRendering)
+        vkd.cmdEndRendering(cmdBuffer);
+    else
+        vkd.cmdEndRenderPass(cmdBuffer);
+
+    const VkBufferImageCopy copyRegion = makeBufferImageCopy(
+        {imageSize, imageSize, 1u}, makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
+
+    dependencyInfo.memoryBarrierCount      = 0u;
+    dependencyInfo.pMemoryBarriers         = nullptr;
+    dependencyInfo.imageMemoryBarrierCount = 1u;
+    dependencyInfo.pImageMemoryBarriers    = &imageBarriers[3];
+    vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    vkd.cmdCopyImageToBuffer(cmdBuffer, resultImage, VK_IMAGE_LAYOUT_GENERAL, *outputBuffer->buffer, 1u, &copyRegion);
+    dependencyInfo.memoryBarrierCount      = 1u;
+    dependencyInfo.pMemoryBarriers         = &memoryBarriers[1];
+    dependencyInfo.imageMemoryBarrierCount = 0u;
+    dependencyInfo.pImageMemoryBarriers    = nullptr;
+    vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+    invalidateAlloc(vkd, device, *outputBuffer->memory);
+
+    uint32_t expectedValue = 0;
+    if (isDepth)
+        expectedValue = static_cast<uint32_t>(depth * 2.0f);
+    else if (isStencil)
+        expectedValue = stencil * 2u;
+    else
+        expectedValue = color * 2u;
+
+    const uint32_t *outputData = reinterpret_cast<const uint32_t *>(outputBuffer->memory->getHostPtr());
+    for (uint32_t i = 0; i < imageSize * imageSize; ++i)
+    {
+        if (outputData[i] != expectedValue)
+        {
+            log << tcu::TestLog::Message << "Pixel " << i << " expected result " << expectedValue << ", but was "
+                << outputData[i] << tcu::TestLog::EndMessage;
+            for (uint32_t j = 0; j < 2u; ++j)
+            {
+                log << tcu::TestLog::Message << "mappings[" << j << "]: set " << mappings[j].descriptorSet
+                    << ", binding " << mappings[j].firstBinding << ", resourceMask " << mappings[j].resourceMask
+                    << ", heapOffset " << mappings[j].sourceData.constantOffset.heapOffset << tcu::TestLog::EndMessage;
+            }
+            return tcu::TestStatus::fail("Fail");
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseInputAttachmentMask final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseInputAttachmentMask(tcu::TestContext &testCtx, const std::string &name,
+                                                       const TestParamsInputAttachmentMasking &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params(params)
+    {
+    }
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceInputAttachmentMask(context, m_params);
+    }
+
+private:
+    TestParamsInputAttachmentMasking m_params;
+};
+
+void DescriptorHeapTestCaseInputAttachmentMask::checkSupport(Context &context) const
+{
+    DescriptorHeapTestCaseBase::checkSupport(context);
+
+    const auto &vki                = context.getInstanceInterface();
+    const VkPhysicalDevice physDev = context.getPhysicalDevice();
+
+    if (m_params.attachmentType == InputAttachmentType::DEPTH ||
+        m_params.attachmentType == InputAttachmentType::STENCIL)
+    {
+        const VkFormatFeatureFlags requiredFeatures =
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+        const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(vki, physDev, m_params.format);
+        if ((formatProperties.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
+            TCU_THROW(NotSupportedError, "Format not supported");
+    }
+
+    if (m_params.attachmentType == InputAttachmentType::COLOR_MSAA)
+    {
+        const VkImageUsageFlags usage =
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        VkImageFormatProperties imageFormatProperties{};
+        const VkResult result = vki.getPhysicalDeviceImageFormatProperties(
+            physDev, VK_FORMAT_R32_UINT, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0, &imageFormatProperties);
+        if (result != VK_SUCCESS || (imageFormatProperties.sampleCounts & VK_SAMPLE_COUNT_4_BIT) == 0)
+            TCU_THROW(NotSupportedError, "Format not supported");
+    }
+}
+
+void DescriptorHeapTestCaseInputAttachmentMask::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::string vert = R"(#version 450
+void main() {
+    vec2 position = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));
+    gl_Position = vec4(position * 2.0f - 1.0f, 0.0f, 1.0f);
+}
+)";
+
+    std::string frag;
+    if (m_params.attachmentType == InputAttachmentType::COLOR_MSAA)
+    {
+        frag = R"(#version 450
+layout(input_attachment_index = 0, set = 0, binding = 0) uniform usubpassInputMS inputAttachment;
+layout(location = 0) out uint outColor;
+
+void main() {
+    uint value = subpassLoad(inputAttachment, 0).r * 2u;
+    for (int i = 1; i < 4; i++) {
+        if (subpassLoad(inputAttachment, i).r * 2u != value) {
+            value = 0xffffffffu;
+        }
+    }
+    outColor = value;
+}
+)";
+    }
+    else if (m_params.attachmentType == InputAttachmentType::DEPTH)
+    {
+        frag = R"(#version 450
+layout(input_attachment_index = 0, set = 0, binding = 0) uniform subpassInput inputAttachment;
+layout(location = 0) out uint outColor;
+
+void main() {
+    outColor = uint(subpassLoad(inputAttachment).r * 2.0);
+}
+)";
+    }
+    else
+    {
+        frag = R"(#version 450
+layout(input_attachment_index = 0, set = 0, binding = 0) uniform usubpassInput inputAttachment;
+layout(location = 0) out uint outColor;
+
+void main() {
+    outColor = subpassLoad(inputAttachment).r * 2u;
+}
+)";
+    }
+
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert);
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag);
 }
 
 class DescriptorHeapTestInstanceNullImageQueries : public DescriptorHeapTestInstanceBase
@@ -15117,6 +16146,305 @@ tcu::TestStatus DescriptorHeapTestInstanceSamplerHeapAccess::iterate()
     return tcu::TestStatus::pass("Pass");
 }
 
+class DescriptorHeapTestInstanceEmbeddedReservedRange final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceEmbeddedReservedRange(Context &context, const TestParams &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params(params)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    Move<VkPipeline> makePipeline(VkShaderModule module, const VkSamplerCreateInfo *embeddedSampler,
+                                  uint32_t samplerHeapOffset, uint32_t pushAddressOffset) const;
+
+    TestParams m_params;
+};
+
+Move<VkPipeline> DescriptorHeapTestInstanceEmbeddedReservedRange::makePipeline(
+    VkShaderModule module, const VkSamplerCreateInfo *embeddedSampler, uint32_t samplerHeapOffset,
+    uint32_t pushAddressOffset) const
+{
+    const auto &vkd = m_device.getDriver();
+
+    VkDescriptorSetAndBindingMappingEXT mappings[2];
+    mappings[0]                                            = initVulkanStructure();
+    mappings[0].descriptorSet                              = 0u;
+    mappings[0].firstBinding                               = 0u;
+    mappings[0].bindingCount                               = 1u;
+    mappings[0].resourceMask                               = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[0].source                                     = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mappings[0].sourceData.constantOffset.heapOffset       = 0u;
+    mappings[0].sourceData.constantOffset.heapArrayStride  = 0u;
+    mappings[0].sourceData.constantOffset.pEmbeddedSampler = embeddedSampler;
+    mappings[0].sourceData.constantOffset.samplerHeapOffset      = samplerHeapOffset;
+    mappings[0].sourceData.constantOffset.samplerHeapArrayStride = 0u;
+    mappings[1]                                                  = initVulkanStructure();
+    mappings[1].descriptorSet                                    = 0u;
+    mappings[1].firstBinding                                     = 1u;
+    mappings[1].bindingCount                                     = 1u;
+    mappings[1].resourceMask                                     = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mappings[1].source                                           = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_ADDRESS_EXT;
+    mappings[1].sourceData.pushAddressOffset                     = pushAddressOffset;
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 2u;
+    mappingInfo.pMappings                                     = mappings;
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineFlags = initVulkanStructure();
+    pipelineFlags.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineFlags);
+    pipelineCreateInfo.stage                       = initVulkanStructure(&mappingInfo);
+    pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineCreateInfo.stage.module                = module;
+    pipelineCreateInfo.stage.pName                 = "main";
+
+    return createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+}
+
+tcu::TestStatus DescriptorHeapTestInstanceEmbeddedReservedRange::iterate()
+{
+    const auto &vkd             = m_device.getDriver();
+    const auto device           = *m_device;
+    const auto queueFamilyIndex = m_queueFamilyIndex;
+    tcu::TestLog &log           = m_context.getTestContext().getLog();
+
+    const auto &props = m_descriptorHeapProperties;
+    if (props.minSamplerHeapReservedRange == props.minSamplerHeapReservedRangeWithEmbedded)
+        return tcu::TestStatus::pass("embedded and non-embedded limits are equal");
+
+    const uint32_t imageSize      = 2u;
+    const uint32_t outputCount    = imageSize * imageSize;
+    const VkFormat format         = VK_FORMAT_R32G32B32A32_SFLOAT;
+    const VkDeviceSize outputSize = outputCount * sizeof(tcu::Vec4);
+
+    const VkDeviceSize samplerStride         = getSamplerDescriptorStride(props);
+    const VkDeviceSize imageDescriptorStride = getImageDescriptorStride(props);
+    const auto subresourceRange              = makeDefaultImageSubresourceRange();
+
+    std::vector<tcu::Vec4> expected;
+    for (uint32_t i = 0; i < outputCount; ++i)
+        expected.push_back(tcu::Vec4(0.125f * float(i + 1), 0.25f, 0.5f * float(i % 2), 0.75f));
+
+    const VkDeviceSize heap1ReservedOffset = alignUp(samplerStride, props.samplerHeapAlignment);
+    const VkDeviceSize heap1SamplerOffset  = heap1ReservedOffset - samplerStride;
+    const VkDeviceSize requiredSize        = de::max(heap1ReservedOffset + props.minSamplerHeapReservedRange,
+                                                     props.minSamplerHeapReservedRangeWithEmbedded + samplerStride);
+    const VkDeviceSize samplerHeapSize     = alignUp(requiredSize, props.samplerHeapAlignment);
+
+    const auto heapUsage = VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+    auto samplerHeap1    = createBufferAndMemory(samplerHeapSize, heapUsage);
+    auto samplerHeap2    = createBufferAndMemory(samplerHeapSize, heapUsage);
+
+    const VkDeviceSize resourceReservedOffset = alignUp(imageDescriptorStride, props.resourceHeapAlignment);
+    const VkDeviceSize resourceHeapSize       = resourceReservedOffset + props.minResourceHeapReservedRange;
+    auto resourceHeap                         = createBufferAndMemory(resourceHeapSize, heapUsage);
+
+    const auto outputUsage = VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+    const VkDeviceSize outputBufferSize = 2u * outputSize;
+    auto outputBuffer                   = createBufferAndMemory(outputBufferSize, outputUsage);
+    deMemset(outputBuffer->memory->getHostPtr(), 0, static_cast<size_t>(outputBufferSize));
+    flushAlloc(vkd, device, *outputBuffer->memory);
+
+    auto stagingBuffer = createBufferAndMemory(outputSize, VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR);
+    deMemcpy(stagingBuffer->memory->getHostPtr(), expected.data(), static_cast<size_t>(outputSize));
+    flushAlloc(vkd, device, *stagingBuffer->memory);
+
+    VkImageCreateInfo imageCreateInfo = initVulkanStructure();
+    imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format            = format;
+    imageCreateInfo.extent            = {imageSize, imageSize, 1u};
+    imageCreateInfo.mipLevels         = 1u;
+    imageCreateInfo.arrayLayers       = 1u;
+    imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage             = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    auto image                        = createImageAndMemory(imageCreateInfo);
+
+    VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
+    imageViewCreateInfo.image                 = *image->image;
+    imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format                = format;
+    imageViewCreateInfo.components            = makeComponentMappingIdentity();
+    imageViewCreateInfo.subresourceRange      = subresourceRange;
+
+    VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+    imageDescriptorInfo.pView                    = &imageViewCreateInfo;
+    imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    VkResourceDescriptorInfoEXT resourceInfo = initVulkanStructure();
+    resourceInfo.type                        = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    resourceInfo.data.pImage                 = &imageDescriptorInfo;
+
+    VkHostAddressRangeEXT resourceHostRange{};
+    resourceHostRange.address = resourceHeap->memory->getHostPtr();
+    resourceHostRange.size    = static_cast<size_t>(imageDescriptorStride);
+    VK_CHECK(vkd.writeResourceDescriptorsEXT(device, 1u, &resourceInfo, &resourceHostRange));
+    flushAlloc(vkd, device, *resourceHeap->memory);
+
+    VkSamplerCreateInfo samplerCreateInfo     = initVulkanStructure();
+    samplerCreateInfo.magFilter               = VK_FILTER_NEAREST;
+    samplerCreateInfo.minFilter               = VK_FILTER_NEAREST;
+    samplerCreateInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    samplerCreateInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.maxAnisotropy           = 1.0f;
+    samplerCreateInfo.compareOp               = VK_COMPARE_OP_NEVER;
+    samplerCreateInfo.minLod                  = 0.0f;
+    samplerCreateInfo.maxLod                  = 0.0f;
+    samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+    VkHostAddressRangeEXT samplerHostRange{};
+    samplerHostRange.address = static_cast<uint8_t *>(samplerHeap1->memory->getHostPtr()) + heap1SamplerOffset;
+    samplerHostRange.size    = static_cast<size_t>(samplerStride);
+    VK_CHECK(vkd.writeSamplerDescriptorsEXT(device, 1u, &samplerCreateInfo, &samplerHostRange));
+    flushAlloc(vkd, device, *samplerHeap1->memory);
+
+    VkBindHeapInfoEXT resourceHeapBindInfo   = initVulkanStructure();
+    resourceHeapBindInfo.heapRange.address   = resourceHeap->address;
+    resourceHeapBindInfo.heapRange.size      = resourceHeapSize;
+    resourceHeapBindInfo.reservedRangeOffset = resourceReservedOffset;
+    resourceHeapBindInfo.reservedRangeSize   = props.minResourceHeapReservedRange;
+
+    VkBindHeapInfoEXT samplerHeap1BindInfo   = initVulkanStructure();
+    samplerHeap1BindInfo.heapRange.address   = samplerHeap1->address;
+    samplerHeap1BindInfo.heapRange.size      = samplerHeapSize;
+    samplerHeap1BindInfo.reservedRangeOffset = heap1ReservedOffset;
+    samplerHeap1BindInfo.reservedRangeSize   = props.minSamplerHeapReservedRange;
+
+    VkBindHeapInfoEXT samplerHeap2BindInfo   = initVulkanStructure();
+    samplerHeap2BindInfo.heapRange.address   = samplerHeap2->address;
+    samplerHeap2BindInfo.heapRange.size      = samplerHeapSize;
+    samplerHeap2BindInfo.reservedRangeOffset = 0u;
+    samplerHeap2BindInfo.reservedRangeSize   = props.minSamplerHeapReservedRangeWithEmbedded;
+
+    const auto module = createShaderModule(vkd, device, getShaderBinary("comp"));
+
+    const auto heapPipeline = makePipeline(*module, nullptr, static_cast<uint32_t>(heap1SamplerOffset), 0u);
+    const auto embeddedPipeline =
+        makePipeline(*module, &samplerCreateInfo, 0u, static_cast<uint32_t>(sizeof(VkDeviceAddress)));
+
+    const auto cmdPool      = makeCommandPool(vkd, device, queueFamilyIndex);
+    const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = *cmdBufferPtr;
+
+    VkBufferImageCopy copyRegion{};
+    copyRegion.imageSubresource = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    copyRegion.imageExtent      = imageCreateInfo.extent;
+
+    VkDeviceAddress pushAddresses[2];
+    pushAddresses[0] = outputBuffer->address;
+    pushAddresses[1] = outputBuffer->address + outputSize;
+
+    VkPushDataInfoEXT pushData = initVulkanStructure();
+    pushData.offset            = 0;
+    pushData.data.size         = sizeof(pushAddresses);
+    pushData.data.address      = pushAddresses;
+
+    const VkImageMemoryBarrier imageBarrier =
+        makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *image->image, subresourceRange);
+    const VkImageMemoryBarrier transferBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *image->image, subresourceRange);
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
+                           0, nullptr, 1, &imageBarrier);
+    vkd.cmdCopyBufferToImage(cmdBuffer, *stagingBuffer->buffer, *image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
+                             &copyRegion);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0,
+                           nullptr, 0, nullptr, 1, &transferBarrier);
+
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &resourceHeapBindInfo);
+    vkd.cmdPushDataEXT(cmdBuffer, &pushData);
+
+    vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerHeap1BindInfo);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *heapPipeline);
+    vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+    vkd.cmdBindSamplerHeapEXT(cmdBuffer, &samplerHeap2BindInfo);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *embeddedPipeline);
+    vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+    const VkMemoryBarrier hostBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1,
+                           &hostBarrier, 0, nullptr, 0, nullptr);
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, m_queues[0], cmdBuffer);
+
+    invalidateAlloc(vkd, device, *outputBuffer->memory);
+
+    const auto *outputPtr       = static_cast<const uint8_t *>(outputBuffer->memory->getHostPtr());
+    const auto *heapResults     = reinterpret_cast<const tcu::Vec4 *>(outputPtr);
+    const auto *embeddedResults = reinterpret_cast<const tcu::Vec4 *>(outputPtr + outputSize);
+
+    bool fail = false;
+    for (uint32_t i = 0; i < outputCount; ++i)
+    {
+        if (heapResults[i] != expected[i])
+        {
+            log << tcu::TestLog::Message << "Heap sampler result " << i << " expected " << expected[i] << ", but was "
+                << heapResults[i] << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+        if (embeddedResults[i] != expected[i])
+        {
+            log << tcu::TestLog::Message << "Embedded sampler result " << i << " expected " << expected[i]
+                << ", but was " << embeddedResults[i] << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+    }
+
+    if (fail)
+        return tcu::TestStatus::fail("Fail");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseEmbeddedReservedRange final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseEmbeddedReservedRange(tcu::TestContext &testCtx, const std::string &name,
+                                                         const TestParams &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params(params)
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceEmbeddedReservedRange(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParams m_params;
+};
+
+void DescriptorHeapTestCaseEmbeddedReservedRange::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::string computeShader = R"(#version 450
+layout(local_size_x=2, local_size_y=2) in;
+layout(set=0, binding=0) uniform sampler2D tex;
+layout(set=0, binding=1) buffer OutputBuffer {
+    vec4 results[];
+};
+
+void main() {
+    const vec2 coord = (vec2(gl_LocalInvocationID.xy) + 0.5f) * 0.5f;
+    results[gl_LocalInvocationIndex] = textureLod(tex, coord, 0.0f);
+}
+)";
+    programCollection.glslSources.add("comp") << glu::ComputeSource(computeShader);
+}
+
 struct TestParamsUntypedImageSampler : TestParams
 {
     bool untypedSampler = true;
@@ -18840,6 +20168,387 @@ void DescriptorHeapTestCaseDescriptorPreciseSize::initPrograms(vk::SourceCollect
     }
 }
 
+enum class LargeBindingTestType
+{
+    UboToSsbo,
+    MultipleMappings,
+    ArrayBinding,
+};
+
+struct SetAndBinding
+{
+    uint32_t set;
+    uint32_t binding;
+};
+
+struct TestParamsLargeBinding : TestParams
+{
+    LargeBindingTestType testType;
+    std::vector<SetAndBinding> inputs;
+    SetAndBinding output;
+};
+
+class DescriptorHeapTestInstanceLargeBinding final : public DescriptorHeapTestInstanceBase
+{
+public:
+    explicit DescriptorHeapTestInstanceLargeBinding(Context &context, const TestParamsLargeBinding &params)
+        : DescriptorHeapTestInstanceBase(context, params)
+        , m_params(params)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    TestParamsLargeBinding m_params;
+};
+
+tcu::TestStatus DescriptorHeapTestInstanceLargeBinding::iterate()
+{
+    const auto &vkd = m_device.getDriver();
+
+    const uint32_t uboCount        = m_params.testType == LargeBindingTestType::UboToSsbo ? 1u : 4u;
+    const uint32_t descriptorCount = uboCount + 1u;
+
+    const VkDeviceSize bufferDescriptorStride = getBufferDescriptorStride(m_descriptorHeapProperties);
+    const VkDeviceSize userHeapSize =
+        alignUp(descriptorCount * bufferDescriptorStride, m_descriptorHeapProperties.resourceHeapAlignment);
+    const VkDeviceSize heapSize = userHeapSize + m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    auto resourceHeap               = createBufferAndMemory(heapSize, VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT |
+                                                                          VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    char *const resourceHeapHostPtr = static_cast<char *>(resourceHeap->memory->getHostPtr());
+
+    const VkDeviceSize outputBufferSize = uboCount * sizeof(uint32_t);
+    auto outputBuffer = createBufferAndMemory(outputBufferSize, VK_BUFFER_USAGE_2_STORAGE_BUFFER_BIT_KHR |
+                                                                    VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    deMemset(outputBuffer->memory->getHostPtr(), 0, static_cast<size_t>(outputBufferSize));
+    flushAlloc(vkd, *m_device, *outputBuffer->memory);
+
+    uint32_t inputValues[4] = {100, 200, 300, 400};
+    std::unique_ptr<Buffer> inputBuffers[4];
+
+    for (uint32_t i = 0; i < descriptorCount; ++i)
+    {
+        VkDeviceAddressRangeEXT addressRange;
+        VkResourceDescriptorInfoEXT resourceInfo = initVulkanStructure();
+
+        if (i == 0)
+        {
+            addressRange.address = outputBuffer->address;
+            addressRange.size    = outputBufferSize;
+            resourceInfo.type    = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        }
+        else
+        {
+            inputBuffers[i - 1] = createBufferAndMemory(
+                sizeof(uint32_t), VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT);
+            deMemcpy(inputBuffers[i - 1]->memory->getHostPtr(), &inputValues[i - 1], sizeof(uint32_t));
+            flushAlloc(vkd, *m_device, *inputBuffers[i - 1]->memory);
+
+            addressRange.address = inputBuffers[i - 1]->address;
+            addressRange.size    = sizeof(uint32_t);
+            resourceInfo.type    = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        }
+
+        resourceInfo.data.pAddressRange = &addressRange;
+
+        VkHostAddressRangeEXT hostRange;
+        hostRange.address = resourceHeapHostPtr + i * bufferDescriptorStride;
+        hostRange.size    = static_cast<size_t>(bufferDescriptorStride);
+
+        VK_CHECK(vkd.writeResourceDescriptorsEXT(*m_device, 1u, &resourceInfo, &hostRange));
+    }
+    flushAlloc(vkd, *m_device, *resourceHeap->memory);
+
+    const uint32_t mappingCount = static_cast<uint32_t>(m_params.inputs.size()) + 1u;
+    std::vector<VkDescriptorSetAndBindingMappingEXT> mappings;
+
+    for (uint32_t i = 0; i < mappingCount; ++i)
+    {
+        const SetAndBinding &resource = i == 0 ? m_params.output : m_params.inputs[i - 1];
+
+        VkDescriptorSetAndBindingMappingEXT mapping       = initVulkanStructure();
+        mapping.descriptorSet                             = resource.set;
+        mapping.firstBinding                              = resource.binding;
+        mapping.bindingCount                              = 1u;
+        mapping.resourceMask                              = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+        mapping.source                                    = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+        mapping.sourceData.constantOffset.heapOffset      = static_cast<uint32_t>(i * bufferDescriptorStride);
+        mapping.sourceData.constantOffset.heapArrayStride = static_cast<uint32_t>(bufferDescriptorStride);
+        mappings.push_back(mapping);
+    }
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = static_cast<uint32_t>(mappings.size());
+    mappingInfo.pMappings                                     = mappings.data();
+
+    auto computeModule = createShaderModule(vkd, *m_device, getShaderBinary("comp"));
+
+    VkPipelineCreateFlags2CreateInfoKHR pipelineCreateFlags2CreateInfo = initVulkanStructure();
+    pipelineCreateFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure(&pipelineCreateFlags2CreateInfo);
+    pipelineCreateInfo.stage                       = initVulkanStructure(&mappingInfo);
+    pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineCreateInfo.stage.module                = *computeModule;
+    pipelineCreateInfo.stage.pName                 = "main";
+
+    auto pipeline = createComputePipeline(vkd, *m_device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    VkBindHeapInfoEXT resourceHeapBindInfo   = initVulkanStructure();
+    resourceHeapBindInfo.heapRange.address   = resourceHeap->address;
+    resourceHeapBindInfo.heapRange.size      = heapSize;
+    resourceHeapBindInfo.reservedRangeOffset = userHeapSize;
+    resourceHeapBindInfo.reservedRangeSize   = m_descriptorHeapProperties.minResourceHeapReservedRange;
+
+    const VkMemoryBarrier2 memoryBarrier =
+        makeMemoryBarrier2(VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+                           VK_PIPELINE_STAGE_2_HOST_BIT, VK_ACCESS_2_HOST_READ_BIT);
+
+    VkDependencyInfo dependencyInfo   = initVulkanStructure();
+    dependencyInfo.memoryBarrierCount = 1u;
+    dependencyInfo.pMemoryBarriers    = &memoryBarrier;
+
+    auto cmdPool      = makeCommandPool(vkd, *m_device, m_queueFamilyIndex);
+    auto cmdBufferPtr = allocateCommandBuffer(vkd, *m_device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    auto cmdBuffer    = cmdBufferPtr.get();
+
+    beginCommandBuffer(vkd, cmdBuffer);
+    vkd.cmdBindResourceHeapEXT(cmdBuffer, &resourceHeapBindInfo);
+    vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+    vkd.cmdDispatch(cmdBuffer, 1, 1, 1);
+    vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    endCommandBuffer(vkd, cmdBuffer);
+
+    submitCommandsAndWait(vkd, *m_device, m_queues[0], cmdBuffer);
+    invalidateAlloc(vkd, *m_device, *outputBuffer->memory);
+
+    const uint32_t *result = static_cast<const uint32_t *>(outputBuffer->memory->getHostPtr());
+    for (uint32_t i = 0; i < uboCount; ++i)
+    {
+        if (result[i] != inputValues[i])
+        {
+            std::stringstream msg;
+            msg << "Result " << i << " expected value " << inputValues[i] << ", but was " << result[i];
+            return tcu::TestStatus::fail(msg.str());
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class DescriptorHeapTestCaseLargeBinding final : public DescriptorHeapTestCaseBase
+{
+public:
+    explicit DescriptorHeapTestCaseLargeBinding(tcu::TestContext &testCtx, const std::string &name,
+                                                const TestParamsLargeBinding &params)
+        : DescriptorHeapTestCaseBase(testCtx, name, params)
+        , m_params(params)
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DescriptorHeapTestInstanceLargeBinding(context, m_params);
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+private:
+    TestParamsLargeBinding m_params;
+};
+
+void DescriptorHeapTestCaseLargeBinding::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::map<std::string, std::string> specializations;
+    specializations["OUT_SET"]     = de::toString(m_params.output.set);
+    specializations["OUT_BINDING"] = de::toString(m_params.output.binding);
+
+    const char *assembly = "";
+
+    if (m_params.testType == LargeBindingTestType::UboToSsbo)
+    {
+        specializations["IN_SET"]     = de::toString(m_params.inputs[0].set);
+        specializations["IN_BINDING"] = de::toString(m_params.inputs[0].binding);
+
+        assembly = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %In Block
+               OpMemberDecorate %In 0 Offset 0
+               OpDecorate %ubo DescriptorSet ${IN_SET}
+               OpDecorate %ubo Binding ${IN_BINDING}
+               OpDecorate %Out Block
+               OpMemberDecorate %Out 0 Offset 0
+               OpDecorate %ssbo DescriptorSet ${OUT_SET}
+               OpDecorate %ssbo Binding ${OUT_BINDING}
+
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+         %In = OpTypeStruct %uint
+     %ptr_In = OpTypePointer Uniform %In
+        %Out = OpTypeStruct %uint
+    %ptr_Out = OpTypePointer StorageBuffer %Out
+ %ptr_u_uint = OpTypePointer Uniform %uint
+%ptr_sb_uint = OpTypePointer StorageBuffer %uint
+        %ubo = OpVariable %ptr_In Uniform
+       %ssbo = OpVariable %ptr_Out StorageBuffer
+       %main = OpFunction %void None %void_fn
+      %entry = OpLabel
+    %src_ptr = OpAccessChain %ptr_u_uint %ubo %int_0
+      %value = OpLoad %uint %src_ptr
+    %dst_ptr = OpAccessChain %ptr_sb_uint %ssbo %int_0
+               OpStore %dst_ptr %value
+               OpReturn
+               OpFunctionEnd
+)";
+    }
+    else if (m_params.testType == LargeBindingTestType::MultipleMappings)
+    {
+        for (size_t i = 0; i < m_params.inputs.size(); ++i)
+        {
+            specializations["SET" + de::toString(i)]     = de::toString(m_params.inputs[i].set);
+            specializations["BINDING" + de::toString(i)] = de::toString(m_params.inputs[i].binding);
+        }
+
+        assembly = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+
+               OpDecorate %In Block
+               OpMemberDecorate %In 0 Offset 0
+               OpDecorate %ubo0 DescriptorSet ${SET0}
+               OpDecorate %ubo0 Binding ${BINDING0}
+               OpDecorate %ubo1 DescriptorSet ${SET1}
+               OpDecorate %ubo1 Binding ${BINDING1}
+               OpDecorate %ubo2 DescriptorSet ${SET2}
+               OpDecorate %ubo2 Binding ${BINDING2}
+               OpDecorate %ubo3 DescriptorSet ${SET3}
+               OpDecorate %ubo3 Binding ${BINDING3}
+               OpDecorate %uint_arr4 ArrayStride 4
+               OpDecorate %Out Block
+               OpMemberDecorate %Out 0 Offset 0
+               OpDecorate %ssbo DescriptorSet ${OUT_SET}
+               OpDecorate %ssbo Binding ${OUT_BINDING}
+
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+      %int_3 = OpConstant %int 3
+     %uint_4 = OpConstant %uint 4
+         %In = OpTypeStruct %uint
+     %ptr_In = OpTypePointer Uniform %In
+  %uint_arr4 = OpTypeArray %uint %uint_4
+        %Out = OpTypeStruct %uint_arr4
+    %ptr_Out = OpTypePointer StorageBuffer %Out
+ %ptr_u_uint = OpTypePointer Uniform %uint
+%ptr_sb_uint = OpTypePointer StorageBuffer %uint
+       %ubo0 = OpVariable %ptr_In Uniform
+       %ubo1 = OpVariable %ptr_In Uniform
+       %ubo2 = OpVariable %ptr_In Uniform
+       %ubo3 = OpVariable %ptr_In Uniform
+       %ssbo = OpVariable %ptr_Out StorageBuffer
+       %main = OpFunction %void None %void_fn
+      %entry = OpLabel
+       %src0 = OpAccessChain %ptr_u_uint %ubo0 %int_0
+       %val0 = OpLoad %uint %src0
+       %dst0 = OpAccessChain %ptr_sb_uint %ssbo %int_0 %int_0
+               OpStore %dst0 %val0
+       %src1 = OpAccessChain %ptr_u_uint %ubo1 %int_0
+       %val1 = OpLoad %uint %src1
+       %dst1 = OpAccessChain %ptr_sb_uint %ssbo %int_0 %int_1
+               OpStore %dst1 %val1
+       %src2 = OpAccessChain %ptr_u_uint %ubo2 %int_0
+       %val2 = OpLoad %uint %src2
+       %dst2 = OpAccessChain %ptr_sb_uint %ssbo %int_0 %int_2
+               OpStore %dst2 %val2
+       %src3 = OpAccessChain %ptr_u_uint %ubo3 %int_0
+       %val3 = OpLoad %uint %src3
+       %dst3 = OpAccessChain %ptr_sb_uint %ssbo %int_0 %int_3
+               OpStore %dst3 %val3
+               OpReturn
+               OpFunctionEnd
+)";
+    }
+    else
+    {
+        specializations["IN_SET"]     = de::toString(m_params.inputs[0].set);
+        specializations["IN_BINDING"] = de::toString(m_params.inputs[0].binding);
+
+        assembly = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %In Block
+               OpMemberDecorate %In 0 Offset 0
+               OpDecorate %ubos DescriptorSet ${IN_SET}
+               OpDecorate %ubos Binding ${IN_BINDING}
+               OpDecorate %uint_arr4 ArrayStride 4
+               OpDecorate %Out Block
+               OpMemberDecorate %Out 0 Offset 0
+               OpDecorate %ssbo DescriptorSet ${OUT_SET}
+               OpDecorate %ssbo Binding ${OUT_BINDING}
+
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+      %int_3 = OpConstant %int 3
+     %uint_4 = OpConstant %uint 4
+         %In = OpTypeStruct %uint
+    %In_arr4 = OpTypeArray %In %uint_4
+ %ptr_In_arr = OpTypePointer Uniform %In_arr4
+  %uint_arr4 = OpTypeArray %uint %uint_4
+        %Out = OpTypeStruct %uint_arr4
+    %ptr_Out = OpTypePointer StorageBuffer %Out
+ %ptr_u_uint = OpTypePointer Uniform %uint
+%ptr_sb_uint = OpTypePointer StorageBuffer %uint
+       %ubos = OpVariable %ptr_In_arr Uniform
+       %ssbo = OpVariable %ptr_Out StorageBuffer
+       %main = OpFunction %void None %void_fn
+      %entry = OpLabel
+       %src0 = OpAccessChain %ptr_u_uint %ubos %int_0 %int_0
+       %val0 = OpLoad %uint %src0
+       %dst0 = OpAccessChain %ptr_sb_uint %ssbo %int_0 %int_0
+               OpStore %dst0 %val0
+       %src1 = OpAccessChain %ptr_u_uint %ubos %int_1 %int_0
+       %val1 = OpLoad %uint %src1
+       %dst1 = OpAccessChain %ptr_sb_uint %ssbo %int_0 %int_1
+               OpStore %dst1 %val1
+       %src2 = OpAccessChain %ptr_u_uint %ubos %int_2 %int_0
+       %val2 = OpLoad %uint %src2
+       %dst2 = OpAccessChain %ptr_sb_uint %ssbo %int_0 %int_2
+               OpStore %dst2 %val2
+       %src3 = OpAccessChain %ptr_u_uint %ubos %int_3 %int_0
+       %val3 = OpLoad %uint %src3
+       %dst3 = OpAccessChain %ptr_sb_uint %ssbo %int_0 %int_3
+               OpStore %dst3 %val3
+               OpReturn
+               OpFunctionEnd
+)";
+    }
+
+    vk::SpirVAsmBuildOptions options(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3);
+    programCollection.spirvAsmSources.add("comp")
+        << tcu::StringTemplate(assembly).specialize(specializations) << options;
+}
+
 const char *getDescriptorTypeTestName(VkDescriptorType descriptorType)
 {
     switch (descriptorType)
@@ -19559,6 +21268,76 @@ void populateHighBindingTests(tcu::TestCaseGroup *topGroup, uint32_t baseSeed)
                 highBindingGroup->addChild(new DescriptorHeapTestCaseBasic(testCtx, testName, params));
             }
         }
+    }
+
+    const struct
+    {
+        SetAndBinding input;
+        SetAndBinding output;
+        const char *name;
+    } inputOutputTests[] = {
+        {{0x1Fu, 0xFFFFu}, {0x1Fu, 0x10000u}, "1"},
+        {{0x0u, 0x7FFFFFFFu}, {0x1Fu, 0x80000000u}, "2"},
+        {{0x1Fu, 0xFFFFFFFFu}, {0x0u, 0xFFFFFFFFu}, "3"},
+        {{0xFFFFFFFFu, 0xFFFFFFFEu}, {0xFFFFFFFFu, 0xFFFFFFFFu}, "4"},
+    };
+
+    const struct
+    {
+        LargeBindingTestType testType;
+        const char *name;
+    } testTypes[] = {
+        {LargeBindingTestType::UboToSsbo, "ubo_to_ssbo"},
+        {LargeBindingTestType::ArrayBinding, "array_binding"},
+    };
+
+    for (const auto &testType : testTypes)
+    {
+        for (const auto &inputOutputTest : inputOutputTests)
+        {
+            const std::string testName = std::string(testType.name) + "_" + inputOutputTest.name;
+
+            TestParamsLargeBinding params{};
+            params.queue    = VK_QUEUE_COMPUTE_BIT;
+            params.seed     = baseSeed ^ deStringHash(testName.c_str());
+            params.testType = testType.testType;
+            params.inputs   = {inputOutputTest.input};
+            params.output   = inputOutputTest.output;
+
+            highBindingGroup->addChild(new DescriptorHeapTestCaseLargeBinding(testCtx, testName, params));
+        }
+    }
+
+    const struct
+    {
+        const char *name;
+        std::vector<SetAndBinding> inputs;
+        SetAndBinding output;
+    } multipleMappingsTests[] = {
+        {"multiple_mappings_1",
+         {{0x0u, 0x0u}, {0x0u, 0xFFFFu}, {0x0u, 0x10000u}, {0x0u, 0x80000000u}},
+         {0x0u, 0xFFFFFFFFu}},
+        {"multiple_mappings_2",
+         {{0x0u, 0x80000000u}, {0x1Fu, 0xFFFFFFFFu}, {0xFFFFFFFFu, 0x0u}, {0x7FFFFFFFu, 0xFFFFu}},
+         {0x80000000u, 0x10000u}},
+        {"multiple_mappings_3",
+         {{0x0u, 0xFFFFFFFFu}, {0x1u, 0xFFFFFFFFu}, {0x1Fu, 0xFFFFFFFFu}, {0xFFFFFFFFu, 0xFFFFFFFFu}},
+         {0x20u, 0xFFFFFFFFu}},
+        {"multiple_mappings_4",
+         {{0x1Fu, 0xFFFFFFFBu}, {0x1Fu, 0xFFFFFFFCu}, {0x1Fu, 0xFFFFFFFDu}, {0x1Fu, 0xFFFFFFFEu}},
+         {0x1Fu, 0xFFFFFFFFu}},
+    };
+
+    for (const auto &test : multipleMappingsTests)
+    {
+        TestParamsLargeBinding params{};
+        params.queue    = VK_QUEUE_COMPUTE_BIT;
+        params.seed     = baseSeed ^ deStringHash(test.name);
+        params.testType = LargeBindingTestType::MultipleMappings;
+        params.inputs   = test.inputs;
+        params.output   = test.output;
+
+        highBindingGroup->addChild(new DescriptorHeapTestCaseLargeBinding(testCtx, test.name, params));
     }
 
     topGroup->addChild(highBindingGroup.release());
@@ -20359,12 +22138,17 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         {SpirvTestType::StorageTexelBufferAtomic64, "storage_texel_buffer_atomic64"},
         {SpirvTestType::SimpleVariablePointers, "simple_variable_pointers"},
         {SpirvTestType::ArrayVariablePointers, "array_variable_pointers"},
+        {SpirvTestType::UntypedVariablePointers, "untyped_variable_pointers"},
         {SpirvTestType::AtomicImageWithinFunction, "atomic_image_within_function"},
         {SpirvTestType::OpImageQuerySize, "op_image_query_size"},
         {SpirvTestType::OpImageQuerySizeNullDescriptor, "op_image_query_size_null_descriptor"},
         {SpirvTestType::AtomicImage2d, "atomic_image_2d"},
         {SpirvTestType::AtomicImage2d64Bit, "atomic_image_2d_64_bit"},
         {SpirvTestType::CopyObject, "copy_object"},
+        {SpirvTestType::CopyObjectStorageBuffer, "copy_object_storage_buffer"},
+        {SpirvTestType::SplitAccessChain, "split_access_chain"},
+        {SpirvTestType::MultidimensionalStructOfDescriptorsPacked, "multidimensional_struct_of_descriptors_packed"},
+        {SpirvTestType::MultidimensionalStructOfDescriptorsPadded, "multidimensional_struct_of_descriptors_padded"},
     };
     for (const auto &test : tests)
     {
@@ -20374,7 +22158,8 @@ void populateSpirvTests(tcu::TestCaseGroup *topGroup)
         params.enableVariablePointers = (test.first == SpirvTestType::SimpleVariablePointers) ||
                                         (test.first == SpirvTestType::ArrayVariablePointers) ||
                                         (test.first == SpirvTestType::FunctionCallUntypedBuffer) ||
-                                        (test.first == SpirvTestType::FunctionCallUntypedBuffer2);
+                                        (test.first == SpirvTestType::FunctionCallUntypedBuffer2) ||
+                                        (test.first == SpirvTestType::UntypedVariablePointers);
         params.shaderImageInt64Atomics = (params.spirvTestType == SpirvTestType::StorageTexelBufferAtomic64) ||
                                          (params.spirvTestType == SpirvTestType::AtomicImage2d64Bit);
         params.enableShader64bitIndexing    = test.first == SpirvTestType::SizeOf64;
@@ -20408,6 +22193,39 @@ void populateResourceMaskingTests(tcu::TestCaseGroup *topGroup)
         const char *const testName = nonWritable ? "input_attachment_read_only" : "input_attachment_read_write";
         resourceMaskingGroup->addChild(
             new DescriptorHeapTestCaseInputAttachment(testCtx, testName, inputAttachmentParams));
+    }
+
+    const struct
+    {
+        InputAttachmentType type;
+        VkFormat format;
+        const char *name;
+    } inputAttachmentTypes[] = {
+        {InputAttachmentType::COLOR, VK_FORMAT_R32_UINT, "color"},
+        {InputAttachmentType::COLOR_MSAA, VK_FORMAT_R32_UINT, "color_msaa"},
+        {InputAttachmentType::DEPTH, VK_FORMAT_D32_SFLOAT, "depth_d32_sfloat"},
+        {InputAttachmentType::DEPTH, VK_FORMAT_D16_UNORM, "depth_d16_unorm"},
+        {InputAttachmentType::STENCIL, VK_FORMAT_D24_UNORM_S8_UINT, "stencil_d24_unorm_s8_uint"},
+        {InputAttachmentType::STENCIL, VK_FORMAT_D32_SFLOAT_S8_UINT, "stencil_d32_sfloat_s8_uint"},
+    };
+
+    for (const bool useDynamicRendering : {false, true})
+    {
+        for (const auto &inputAttachmentType : inputAttachmentTypes)
+        {
+            const std::string testName = std::string("input_attachment_") +
+                                         (useDynamicRendering ? "local_read_" : "render_pass_") +
+                                         inputAttachmentType.name;
+            TestParamsInputAttachmentMasking inputAttachmentParams{};
+            inputAttachmentParams.queue                           = VK_QUEUE_GRAPHICS_BIT;
+            inputAttachmentParams.enableDynamicRendering          = useDynamicRendering;
+            inputAttachmentParams.enableDynamicRenderingLocalRead = useDynamicRendering;
+            inputAttachmentParams.attachmentType                  = inputAttachmentType.type;
+            inputAttachmentParams.format                          = inputAttachmentType.format;
+            inputAttachmentParams.useDynamicRendering             = useDynamicRendering;
+            resourceMaskingGroup->addChild(
+                new DescriptorHeapTestCaseInputAttachmentMask(testCtx, testName, inputAttachmentParams));
+        }
     }
 
     topGroup->addChild(resourceMaskingGroup.release());
@@ -20625,6 +22443,13 @@ void populateSamplerHeapAccessTests(tcu::TestCaseGroup *topGroup)
 
         const char *const testName = untypedSampler ? "untyped_sampler" : "untyped_texture";
         samplerHeapAccessGroup->addChild(new DescriptorHeapTestCaseUntypedImageSampler(testCtx, testName, params));
+    }
+
+    {
+        TestParams params{};
+        params.queue = VK_QUEUE_COMPUTE_BIT;
+        samplerHeapAccessGroup->addChild(
+            new DescriptorHeapTestCaseEmbeddedReservedRange(testCtx, "embedded_reserved_range", params));
     }
 
     topGroup->addChild(samplerHeapAccessGroup.release());

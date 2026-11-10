@@ -25,6 +25,7 @@
 #include "gluDefs.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
+#include "gluStrUtil.hpp"
 #include "tcuTestLog.hpp"
 #include <cstring>
 
@@ -1073,40 +1074,97 @@ tcu::TestNode::IterateResult GeometryShaderFramebufferTextureInvalidLevelNumber:
 
     glw::GLuint errorEnum;
 
+    int32_t majorVersion = 0;
+    int32_t minorVersion = 0;
+    gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
+    gl.getIntegerv(GL_MINOR_VERSION, &minorVersion);
+
+    const bool isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) ||
+                        (majorVersion > 3 || (majorVersion == 3 && minorVersion >= 2));
+
     /* Test for texture 3D */
     gl.framebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_to_3d_id /* texture */, 2 /* level */);
     errorEnum = gl.getError();
 
-    if (errorEnum == GL_INVALID_VALUE)
+    if (isES32 && errorEnum == GL_INVALID_VALUE)
     {
+        uint32_t status = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
+        {
+            result = false;
+
+            m_testCtx.getLog() << tcu::TestLog::Message << "Expected GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT, got "
+                               << glu::getFramebufferStatusStr(status).toString().c_str() << tcu::TestLog::EndMessage;
+
+            goto end;
+        }
         result = true;
     }
     else
     {
-        result = false;
+        if (errorEnum != GL_NO_ERROR)
+        {
+            result = false;
 
-        m_testCtx.getLog() << tcu::TestLog::Message << "Error different than GL_INVALID_VALUE was generated."
-                           << tcu::TestLog::EndMessage;
+            m_testCtx.getLog() << tcu::TestLog::Message << "Error different than GL_INVALID_VALUE was generated."
+                               << tcu::TestLog::EndMessage;
 
-        goto end;
+            goto end;
+        }
+
+        // Non-existent mip level for immutable texture must flag FBO as incomplete.
+        uint32_t status = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
+        {
+            result = false;
+
+            m_testCtx.getLog() << tcu::TestLog::Message << "Expected GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT, got "
+                               << glu::getFramebufferStatusStr(status).toString().c_str() << tcu::TestLog::EndMessage;
+            goto end;
+        }
+
+        result = true;
     }
 
     /* Test for texture array 2D */
     gl.framebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_to_2d_array_id /* texture */, 2 /* level */);
     errorEnum = gl.getError();
 
-    if (errorEnum == GL_INVALID_VALUE)
+    if (isES32 && errorEnum == GL_INVALID_VALUE)
     {
+        uint32_t status = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
+        {
+            result = false;
+            m_testCtx.getLog() << tcu::TestLog::Message << "Expected GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT, got "
+                               << glu::getFramebufferStatusStr(status).toString().c_str() << tcu::TestLog::EndMessage;
+            goto end;
+        }
         result = true;
     }
     else
     {
-        result = false;
+        if (errorEnum != GL_NO_ERROR)
+        {
+            result = false;
 
-        m_testCtx.getLog() << tcu::TestLog::Message << "Error different than GL_INVALID_VALUE was generated."
-                           << tcu::TestLog::EndMessage;
+            m_testCtx.getLog() << tcu::TestLog::Message << "Error different than GL_INVALID_VALUE was generated."
+                               << tcu::TestLog::EndMessage;
+            goto end;
+        }
 
-        goto end;
+        // Non-existent mip level for immutable texture must flag FBO as incomplete.
+        uint32_t status = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
+        {
+            result = false;
+
+            m_testCtx.getLog() << tcu::TestLog::Message << "Expected GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT, got "
+                               << glu::getFramebufferStatusStr(status).toString().c_str() << tcu::TestLog::EndMessage;
+            goto end;
+        }
+
+        result = true;
     }
 
 end:

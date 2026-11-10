@@ -340,7 +340,8 @@ tcu::TestStatus RemainingArrayLayersTestInstance::iterate(void)
     const auto sr     = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, VK_REMAINING_ARRAY_LAYERS);
     auto imageBarrier = makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                                                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, **image, sr);
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+    // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                           (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &imageBarrier);
 
     if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)

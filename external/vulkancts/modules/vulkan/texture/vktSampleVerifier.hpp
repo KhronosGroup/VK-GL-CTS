@@ -186,6 +186,20 @@ private:
     const int m_unnormalizedDim;
 
     const std::vector<tcu::ConstPixelBufferAccess> &m_levels;
+
+    // getFilteredSample results for the sample being verified. The search over candidate texel grid
+    // coordinates pairs each candidate on one mip level with every candidate on the other, so the same
+    // filtered sample is needed many times.
+    struct FilteredSample
+    {
+        tcu::IVec3 texelBase;
+        tcu::Vec3 weights;
+        int layer;
+        int level;
+        tcu::Vec4 resultMin;
+        tcu::Vec4 resultMax;
+    };
+    mutable std::vector<FilteredSample> m_filteredSamples;
 };
 
 } // namespace texture

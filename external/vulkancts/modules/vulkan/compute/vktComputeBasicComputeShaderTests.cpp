@@ -5972,11 +5972,23 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
                                                                    "float16_isnan_isinf.amber",
                                                                    {"Float16Int8Features.shaderFloat16"}));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(
+            testCtx, "mixed_block_padding", "Compiler block padding for specific layout transfers", "compute",
+            "mixed_block_padding.amber"));
+        basicComputeTests->addChild(cts_amber::createAmberTestCase(
             testCtx, "webgl_spirv_loop",
             "Simple SPIR-V loop from a WebGL example that caused problems in some implementations", "compute",
             "webgl_spirv_loop.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "remove_global_load_pass", "", "compute",
                                                                    "remove_global_load_pass.amber"));
+
+        {
+            cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(
+                testCtx, "private_memory_in_loop", "Accessing private memory array in a loop", "compute",
+                "private_memory_in_loop.amber");
+            testCase->addRequirement("Storage16BitFeatures.storageBuffer16BitAccess");
+            testCase->addRequirement("Float16Int8Features.shaderFloat16");
+            basicComputeTests->addChild(testCase);
+        }
 
         {
             cts_amber::AmberTestCase *testCase = cts_amber::createAmberTestCase(

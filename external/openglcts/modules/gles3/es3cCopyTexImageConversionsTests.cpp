@@ -9718,9 +9718,10 @@ bool RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData refere
             min_n_bits = n_source_bits;
         }
 
-        if (max_n_bits != min_n_bits && max_n_bits != 0)
+        // Only integer and float data have 32 bits; the rounding epsilon is for normalized data.
+        if (max_n_bits != min_n_bits && max_n_bits != 0 && max_n_bits < 32)
         {
-            DE_ASSERT(min_n_bits != std::numeric_limits<int>::max());
+            DE_ASSERT(min_n_bits > 0 && min_n_bits < max_n_bits);
 
             // Allow rounding in either direction
             max_epsilon[n_channel] = deCeilFloatToInt32(((1 << max_n_bits) - 1.0f) / ((1 << min_n_bits) - 1));

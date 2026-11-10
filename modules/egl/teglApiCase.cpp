@@ -107,6 +107,27 @@ void ApiCase::expectEitherError(EGLenum expectedA, EGLenum expectedB)
     }
 }
 
+void ApiCase::expectAnyError(std::initializer_list<EGLenum> errors)
+{
+    EGLenum err = m_eglTestCtx.getLibrary().getError();
+    for (EGLenum expected : errors)
+    {
+        if (err == expected)
+            return;
+    }
+    std::string expectedList;
+    for (EGLenum expected : errors)
+    {
+        if (!expectedList.empty())
+            expectedList += ", ";
+        expectedList += eglu::getErrorName(expected);
+    }
+    m_testCtx.getLog() << TestLog::Message << "// ERROR expected one of: " << expectedList
+                       << ", Got: " << eglu::getErrorStr(err) << TestLog::EndMessage;
+    if (m_testCtx.getTestResult() == QP_TEST_RESULT_PASS)
+        m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Got invalid error");
+}
+
 void ApiCase::expectBoolean(EGLBoolean expected, EGLBoolean got)
 {
     if (expected != got)

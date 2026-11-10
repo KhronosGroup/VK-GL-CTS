@@ -33,11 +33,9 @@
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "tcuImageCompare.hpp"
-#include "vktTestGroupUtil.hpp"
+#include "tcuTestHierarchyUtil.hpp"
 
-namespace vkt
-{
-namespace renderpass
+namespace vkt::renderpass
 {
 
 using namespace vk;
@@ -73,20 +71,26 @@ struct Vertex4RGBA
     tcu::Vec4 color;
 };
 
-struct SingletonInstanceAndDevice
+// Instance and device shared by all test cases of the group; owned by DitheringTestGroup.
+struct SharedInstanceAndDevice : tcu::SharedResourceBase
 {
     InstanceWrapper instance;
     DeviceWrapper device;
+
+    void setup(Context &context);
+    void reset() override
+    {
+        *this = SharedInstanceAndDevice{};
+    }
 };
 
-de::SharedPtr<SingletonInstanceAndDevice> g_singletonInstanceAndDevice;
-
-const DeviceWrapper &getDevice(Context &context)
+void SharedInstanceAndDevice::setup(Context &context)
 {
-    if (g_singletonInstanceAndDevice)
-        return g_singletonInstanceAndDevice->device;
+    // setup shared data only once
+    if (*device)
+        return;
 
-    InstanceWrapper instance(context);
+    instance = InstanceWrapper(context);
 
     // Create a universal queue that supports graphics and compute
     const float queuePriority = 1.0f;
@@ -129,10 +133,7 @@ const DeviceWrapper &getDevice(Context &context)
         nullptr,                              //pEnabledFeatures;
     };
 
-    DeviceWrapper device         = instance.createCustomDevice(&deviceCreateInfo);
-    g_singletonInstanceAndDevice = de::SharedPtr<SingletonInstanceAndDevice>(
-        new SingletonInstanceAndDevice{std::move(instance), std::move(device)});
-    return g_singletonInstanceAndDevice->device;
+    device = instance.createCustomDevice(&deviceCreateInfo);
 }
 
 std::vector<Vertex4RGBA> createQuad(void)
@@ -187,7 +188,7 @@ class DitheringTest : public vkt::TestCase
 {
 public:
     DitheringTest(tcu::TestContext &testContext, const std::string &name, TestParams testParams);
-    virtual ~DitheringTest(void);
+    virtual ~DitheringTest(void) = default;
     virtual void initPrograms(SourceCollections &sourceCollections) const;
     virtual void checkSupport(Context &context) const;
     virtual TestInstance *createInstance(Context &context) const;
@@ -199,8 +200,8 @@ private:
 class DitheringTestInstance : public vkt::TestInstance
 {
 public:
-    DitheringTestInstance(Context &context, TestParams testParams);
-    virtual ~DitheringTestInstance(void);
+    DitheringTestInstance(Context &context, TestParams testParams, SharedInstanceAndDevice &sharedData);
+    virtual ~DitheringTestInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
 
 private:
@@ -216,6 +217,7 @@ private:
     // Data.
 private:
     TestParams m_testParams;
+    SharedInstanceAndDevice &m_sharedData;
 
     // Common resources.
     vk::Allocator &m_memAlloc;
@@ -247,10 +249,6 @@ private:
 DitheringTest::DitheringTest(tcu::TestContext &testContext, const std::string &name, TestParams testParams)
     : vkt::TestCase(testContext, name)
     , m_testParams(testParams)
-{
-}
-
-DitheringTest::~DitheringTest(void)
 {
 }
 
@@ -357,26 +355,26 @@ void DitheringTest::checkSupport(Context &ctx) const
 
 TestInstance *DitheringTest::createInstance(Context &context) const
 {
-    return new DitheringTestInstance(context, m_testParams);
+    auto &sharedData = tcu::retrieveSharedResource<SharedInstanceAndDevice>(this);
+    sharedData.setup(context);
+    return new DitheringTestInstance(context, m_testParams, sharedData);
 }
 
-DitheringTestInstance::DitheringTestInstance(Context &context, TestParams testParams)
+DitheringTestInstance::DitheringTestInstance(Context &context, TestParams testParams,
+                                             SharedInstanceAndDevice &sharedData)
     : vkt::TestInstance(context)
     , m_testParams(testParams)
-    , m_memAlloc(getDevice(context).getAllocator())
+    , m_sharedData(sharedData)
+    , m_memAlloc(sharedData.device.getAllocator())
 {
     createCommonResources();
     createDrawResources(false); // No dithering
     createDrawResources(true);  // Dithering
 }
 
-DitheringTestInstance::~DitheringTestInstance(void)
-{
-}
-
 tcu::TestStatus DitheringTestInstance::iterate(void)
 {
-    const auto &vkDevice            = getDevice(m_context);
+    const auto &vkDevice            = m_sharedData.device;
     const DeviceInterface &vk       = vkDevice.getDriver();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const VkQueue queue             = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
@@ -491,7 +489,7 @@ tcu::TestStatus DitheringTestInstance::iterate(void)
 template <typename RenderpassSubpass>
 void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
 {
-    const auto &vkDevice            = getDevice(m_context);
+    const auto &vkDevice            = m_sharedData.device;
     const DeviceInterface &vk       = vkDevice.getDriver();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const VkQueue queue             = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
@@ -668,7 +666,7 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
 
 void DitheringTestInstance::createCommonResources(void)
 {
-    const auto &vkDevice            = getDevice(m_context);
+    const auto &vkDevice            = m_sharedData.device;
     const DeviceInterface &vk       = vkDevice.getDriver();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 
@@ -721,7 +719,7 @@ void DitheringTestInstance::createCommonResources(void)
 
 void DitheringTestInstance::createDrawResources(bool useDithering)
 {
-    const auto &vkDevice            = getDevice(m_context);
+    const auto &vkDevice            = m_sharedData.device;
     const DeviceInterface &vk       = vkDevice.getDriver();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const VkQueue queue             = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
@@ -1037,7 +1035,7 @@ template <typename AttachmentDescription, typename AttachmentReference, typename
           typename RenderPassCreateInfo>
 void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
 {
-    const auto &vkDevice      = getDevice(m_context);
+    const auto &vkDevice      = m_sharedData.device;
     const DeviceInterface &vk = vkDevice.getDriver();
 
     uint32_t resourceNdx               = useDithering ? m_ditheringNdx : m_noDitheringNdx;
@@ -1153,11 +1151,29 @@ void DitheringTestInstance::createRenderPassFramebuffer(bool useDithering)
     m_drawResources[resourceNdx].framebuffer = createFramebuffer(vk, vkDevice, &framebufferParams);
 }
 
-} // namespace
-
-static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroupParams groupParams, bool revision2)
+class DitheringTestGroup : public tcu::TestCaseGroup
 {
-    tcu::TestContext &testCtx           = ditheringTests->getTestContext();
+public:
+    DitheringTestGroup(tcu::TestContext &testCtx, const char *name, const SharedGroupParams groupParams,
+                       bool useRevision2)
+        : tcu::TestCaseGroup(testCtx, name)
+        , m_groupParams(groupParams)
+        , m_useRevision2(useRevision2)
+    {
+    }
+
+    void init(void) override;
+
+private:
+    const SharedGroupParams m_groupParams;
+    const bool m_useRevision2;
+};
+
+void DitheringTestGroup::init(void)
+{
+    setSharedResource(std::make_unique<SharedInstanceAndDevice>());
+
+    tcu::TestContext &testCtx           = getTestContext();
     uint32_t imageDimensions            = 256u;
     uint32_t smallRenderAreaDimensions  = 31u;
     uint32_t maxRenderOffset            = imageDimensions - smallRenderAreaDimensions;
@@ -1169,7 +1185,7 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
 
     testParams.overrideColor      = tcu::Vec4(0.5f, 0.0f, 0.0f, 1.0f);
     testParams.imageSize          = tcu::UVec2{imageDimensions, imageDimensions};
-    testParams.groupParams        = groupParams;
+    testParams.groupParams        = m_groupParams;
     testParams.depthStencilFormat = VK_FORMAT_UNDEFINED;
     testParams.srcFactor          = VK_BLEND_FACTOR_SRC_ALPHA;
     testParams.dstFactor          = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -1177,7 +1193,7 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
     testParams.stencilClearValue  = 0x81;
     testParams.depthCompareOp     = VK_COMPARE_OP_LESS;
     testParams.blending           = false;
-    testParams.revision2          = revision2;
+    testParams.revision2          = m_useRevision2;
 
     // Complete render pass.
     testParams.renderAreas.emplace_back(makeViewport(testParams.imageSize));
@@ -1258,7 +1274,7 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
             testParams.colorFormats.pop_back();
         }
 
-        ditheringTests->addChild(baseTests.release());
+        addChild(baseTests.release());
     }
 
     // Complete render pass.
@@ -1308,7 +1324,7 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
         }
         testParams.depthStencilFormat = VK_FORMAT_UNDEFINED;
 
-        ditheringTests->addChild(depthStencilTests.release());
+        addChild(depthStencilTests.release());
     }
 
     // Blend tests. Ensure dithering works with blending.
@@ -1335,28 +1351,22 @@ static void createChildren(tcu::TestCaseGroup *ditheringTests, const SharedGroup
         }
         testParams.blending = false;
 
-        ditheringTests->addChild(blendTests.release());
+        addChild(blendTests.release());
     }
 }
 
-static void cleanupGroup(tcu::TestCaseGroup *group, const SharedGroupParams, bool revision2)
-{
-    DE_UNREF(group);
-    DE_UNREF(revision2);
-    // Destroy singleton objects.
-    g_singletonInstanceAndDevice.clear();
-}
+} // namespace
 
 static tcu::TestCaseGroup *createDitheringRevision1GroupTests(tcu::TestContext &testCtx,
                                                               const SharedGroupParams groupParams)
 {
-    return createTestGroup(testCtx, "v1", createChildren, groupParams, false, cleanupGroup);
+    return new DitheringTestGroup(testCtx, "v1", groupParams, false);
 }
 
 static tcu::TestCaseGroup *createDitheringRevision2GroupTests(tcu::TestContext &testCtx,
                                                               const SharedGroupParams groupParams)
 {
-    return createTestGroup(testCtx, "v2", createChildren, groupParams, true, cleanupGroup);
+    return new DitheringTestGroup(testCtx, "v2", groupParams, true);
 }
 
 tcu::TestCaseGroup *createRenderPassDitheringTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams)
@@ -1370,5 +1380,4 @@ tcu::TestCaseGroup *createRenderPassDitheringTests(tcu::TestContext &testCtx, co
     return ditheringTests.release();
 }
 
-} // namespace renderpass
-} // namespace vkt
+} // namespace vkt::renderpass

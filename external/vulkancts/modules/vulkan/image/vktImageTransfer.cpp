@@ -33,6 +33,7 @@
 #include "vkFormatLists.hpp"
 
 #include "tcuTestLog.hpp"
+#include "tcuImageCompare.hpp"
 #include "vktTestCase.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuCommandLine.hpp"
@@ -280,11 +281,27 @@ tcu::TestStatus TransferQueueInstance::iterate(void)
         invalidateAlloc(vk, device, alloc);
         deMemcpy(resultData.data(), alloc.getHostPtr(), resultData.size());
 
-        for (uint32_t i = 0; i < pixelDataSize; ++i)
+        // The Vulkan Specification states that values read from or written to X components are undefined and therefore
+        // cannot be checked for equality. Format-aware access ignores those undefined bits.
+        if (isPaddedFormat(m_params.imageFormat))
         {
-            if (resultData[i] != generatedData[i])
-            {
+            const tcu::IVec3 dataSize(static_cast<int>(width), static_cast<int>(height),
+                                      static_cast<int>(layers * depth));
+            const tcu::ConstPixelBufferAccess expected(tcuFormat, dataSize, generatedData.data());
+            const tcu::ConstPixelBufferAccess result(tcuFormat, dataSize, resultData.data());
+
+            if (!tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Comparison", "", expected, result,
+                                          tcu::UVec4(0u), tcu::COMPARE_LOG_RESULT))
                 return tcu::TestStatus::fail("Transfer queue test");
+        }
+        else
+        {
+            for (uint32_t i = 0; i < pixelDataSize; ++i)
+            {
+                if (resultData[i] != generatedData[i])
+                {
+                    return tcu::TestStatus::fail("Transfer queue test");
+                }
             }
         }
     }

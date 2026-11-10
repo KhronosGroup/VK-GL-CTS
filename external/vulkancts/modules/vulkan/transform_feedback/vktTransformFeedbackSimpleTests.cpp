@@ -1497,9 +1497,6 @@ TransformFeedbackWindingOrderTestInstance::TransformFeedbackWindingOrderTestInst
     : TransformFeedbackTestInstance(context, parameters)
     , m_requiresTesselationStage(parameters.primTopology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
 {
-    if (m_requiresTesselationStage && !context.getDeviceFeatures().tessellationShader)
-        throw tcu::NotSupportedError("Tessellation shader not supported");
-
     TopologyParametersMap topologyParametersMap = getTopologyParametersMap();
     DE_ASSERT(topologyParametersMap.find(parameters.primTopology) != topologyParametersMap.end());
     m_tParameters = topologyParametersMap.at(parameters.primTopology);
@@ -1792,23 +1789,6 @@ TransformFeedbackBuiltinTestInstance::TransformFeedbackBuiltinTestInstance(Conte
                                                                            const TestParameters &parameters)
     : TransformFeedbackTestInstance(context, parameters)
 {
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-
-    const uint32_t tfBuffersSupported = m_transformFeedbackProperties.maxTransformFeedbackBuffers;
-    const uint32_t tfBuffersRequired  = m_parameters.partCount;
-
-    if ((m_parameters.testType == TEST_TYPE_XFB_CLIPDISTANCE || m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL) &&
-        !features.shaderClipDistance)
-        TCU_THROW(NotSupportedError, std::string("shaderClipDistance feature is not supported"));
-    if ((m_parameters.testType == TEST_TYPE_XFB_CULLDISTANCE || m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL) &&
-        !features.shaderCullDistance)
-        TCU_THROW(NotSupportedError, std::string("shaderCullDistance feature is not supported"));
-    if (tfBuffersSupported < tfBuffersRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
-                                                 ", while test requires " + de::toString(tfBuffersRequired))
-                                         .c_str());
 }
 
 void TransformFeedbackBuiltinTestInstance::verifyTransformFeedbackBuffer(const DeviceHelper &deviceHelper,
@@ -1952,26 +1932,6 @@ TransformFeedbackDepthClipControlTestInstance::TransformFeedbackDepthClipControl
     Context &context, const TestParameters &parameters)
     : TransformFeedbackTestInstance(context, parameters)
 {
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-
-    const uint32_t tfBuffersSupported = m_transformFeedbackProperties.maxTransformFeedbackBuffers;
-    const uint32_t tfBuffersRequired  = m_parameters.partCount;
-
-    if (!context.isDeviceFunctionalitySupported("VK_EXT_depth_clip_control"))
-        TCU_THROW(NotSupportedError, "VK_EXT_depth_clip_control is not supported");
-
-    if (parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY && !features.geometryShader)
-        TCU_THROW(NotSupportedError, "Geometry shader not supported");
-
-    if (parameters.testType == TEST_TYPE_DEPTH_CLIP_CONTROL_TESE && !features.tessellationShader)
-        TCU_THROW(NotSupportedError, "Tessellation shader not supported");
-
-    if (tfBuffersSupported < tfBuffersRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
-                                                 ", while test requires " + de::toString(tfBuffersRequired))
-                                         .c_str());
 }
 
 uint32_t TransformFeedbackDepthClipControlTestInstance::getFloatsPerVertex(void) const
@@ -2144,55 +2104,6 @@ TransformFeedbackMultistreamTestInstance::TransformFeedbackMultistreamTestInstan
                                                                                    const TestParameters &parameters)
     : TransformFeedbackTestInstance(context, parameters)
 {
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-    const VkPhysicalDeviceTransformFeedbackFeaturesEXT &transformFeedbackFeatures =
-        m_context.getTransformFeedbackFeaturesEXT();
-    const uint32_t streamsSupported            = m_transformFeedbackProperties.maxTransformFeedbackStreams;
-    const uint32_t streamsRequired             = m_parameters.streamId + 1;
-    const uint32_t tfBuffersSupported          = m_transformFeedbackProperties.maxTransformFeedbackBuffers;
-    const uint32_t tfBuffersRequired           = m_parameters.partCount;
-    const uint32_t bytesPerVertex              = m_parameters.bufferSize / m_parameters.partCount;
-    const uint32_t tfStreamDataSizeSupported   = m_transformFeedbackProperties.maxTransformFeedbackStreamDataSize;
-    const uint32_t tfBufferDataSizeSupported   = m_transformFeedbackProperties.maxTransformFeedbackBufferDataSize;
-    const uint32_t tfBufferDataStrideSupported = m_transformFeedbackProperties.maxTransformFeedbackBufferDataStride;
-
-    DE_ASSERT(m_parameters.partCount == 2u);
-
-    if (!features.geometryShader)
-        TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
-
-    if (transformFeedbackFeatures.geometryStreams == false)
-        TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
-
-    if (streamsSupported < streamsRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
-                                                 ", while test requires " + de::toString(streamsRequired))
-                                         .c_str());
-
-    if (tfBuffersSupported < tfBuffersRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
-                                                 ", while test requires " + de::toString(tfBuffersRequired))
-                                         .c_str());
-
-    if (tfStreamDataSizeSupported < bytesPerVertex)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackStreamDataSize=" + de::toString(tfStreamDataSizeSupported) +
-                              ", while test requires " + de::toString(bytesPerVertex))
-                      .c_str());
-
-    if (tfBufferDataSizeSupported < bytesPerVertex)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackBufferDataSize=" + de::toString(tfBufferDataSizeSupported) +
-                              ", while test requires " + de::toString(bytesPerVertex))
-                      .c_str());
-
-    if (tfBufferDataStrideSupported < bytesPerVertex)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) +
-                              ", while test requires " + de::toString(bytesPerVertex))
-                      .c_str());
 }
 
 std::vector<VkDeviceSize> TransformFeedbackMultistreamTestInstance::generateSizesList(const size_t bufBytes,
@@ -2327,53 +2238,6 @@ TransformFeedbackMultistreamSameLocationTestInstance::TransformFeedbackMultistre
     Context &context, const TestParameters &parameters)
     : TransformFeedbackTestInstance(context, parameters)
 {
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-    const VkPhysicalDeviceTransformFeedbackFeaturesEXT &transformFeedbackFeatures =
-        m_context.getTransformFeedbackFeaturesEXT();
-    const uint32_t streamsSupported            = m_transformFeedbackProperties.maxTransformFeedbackStreams;
-    const uint32_t streamsRequired             = m_parameters.streamId + 1;
-    const uint32_t tfBuffersSupported          = m_transformFeedbackProperties.maxTransformFeedbackBuffers;
-    const uint32_t tfBuffersRequired           = 1;
-    const uint32_t bytesPerVertex              = 4;
-    const uint32_t tfStreamDataSizeSupported   = m_transformFeedbackProperties.maxTransformFeedbackStreamDataSize;
-    const uint32_t tfBufferDataSizeSupported   = m_transformFeedbackProperties.maxTransformFeedbackBufferDataSize;
-    const uint32_t tfBufferDataStrideSupported = m_transformFeedbackProperties.maxTransformFeedbackBufferDataStride;
-
-    if (!features.geometryShader)
-        TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
-
-    if (transformFeedbackFeatures.geometryStreams == false)
-        TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
-
-    if (streamsSupported < streamsRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
-                                                 ", while test requires " + de::toString(streamsRequired))
-                                         .c_str());
-
-    if (tfBuffersSupported < tfBuffersRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
-                                                 ", while test requires " + de::toString(tfBuffersRequired))
-                                         .c_str());
-
-    if (tfStreamDataSizeSupported < bytesPerVertex)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackStreamDataSize=" + de::toString(tfStreamDataSizeSupported) +
-                              ", while test requires " + de::toString(bytesPerVertex))
-                      .c_str());
-
-    if (tfBufferDataSizeSupported < bytesPerVertex)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackBufferDataSize=" + de::toString(tfBufferDataSizeSupported) +
-                              ", while test requires " + de::toString(bytesPerVertex))
-                      .c_str());
-
-    if (tfBufferDataStrideSupported < bytesPerVertex)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) +
-                              ", while test requires " + de::toString(bytesPerVertex))
-                      .c_str());
 }
 
 tcu::TestStatus TransformFeedbackMultistreamSameLocationTestInstance::iterate(void)
@@ -2460,34 +2324,6 @@ TransformFeedbackStreamsTestInstance::TransformFeedbackStreamsTestInstance(Conte
                                                                            const TestParameters &parameters)
     : TransformFeedbackTestInstance(context, parameters)
 {
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-    const VkPhysicalDeviceTransformFeedbackFeaturesEXT &transformFeedbackFeatures =
-        m_context.getTransformFeedbackFeaturesEXT();
-    const uint32_t streamsSupported  = m_transformFeedbackProperties.maxTransformFeedbackStreams;
-    const uint32_t streamsRequired   = m_parameters.streamId + 1;
-    const bool geomPointSizeRequired = m_parameters.testType == TEST_TYPE_STREAMS_POINTSIZE;
-
-    if (!features.geometryShader)
-        TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
-
-    if (transformFeedbackFeatures.geometryStreams == false)
-        TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
-
-    if (streamsSupported < streamsRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
-                                                 ", while test requires " + de::toString(streamsRequired))
-                                         .c_str());
-
-    if (geomPointSizeRequired && !features.shaderTessellationAndGeometryPointSize)
-        TCU_THROW(NotSupportedError, "shaderTessellationAndGeometryPointSize feature is not supported");
-
-    if (m_parameters.testType == TEST_TYPE_STREAMS_CLIPDISTANCE && !features.shaderClipDistance)
-        TCU_THROW(NotSupportedError, std::string("shaderClipDistance feature is not supported"));
-
-    if (m_parameters.testType == TEST_TYPE_STREAMS_CULLDISTANCE && !features.shaderCullDistance)
-        TCU_THROW(NotSupportedError, std::string("shaderCullDistance feature is not supported"));
 }
 
 bool TransformFeedbackStreamsTestInstance::verifyImage(const VkFormat imageFormat, const VkExtent2D &size,
@@ -3165,27 +3001,6 @@ TransformFeedbackQueryTestInstance::TransformFeedbackQueryTestInstance(Context &
                                                                        const TestParameters &parameters)
     : TransformFeedbackTestInstance(context, parameters)
 {
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-    const VkPhysicalDeviceTransformFeedbackFeaturesEXT &transformFeedbackFeatures =
-        m_context.getTransformFeedbackFeaturesEXT();
-    const uint32_t streamsSupported = m_transformFeedbackProperties.maxTransformFeedbackStreams;
-    const uint32_t streamsRequired  = m_parameters.streamId + 1;
-
-    if (!features.geometryShader)
-        TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
-
-    if (streamsRequired > 1 && transformFeedbackFeatures.geometryStreams == false)
-        TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
-
-    if (streamsSupported < streamsRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
-                                                 ", while test requires " + de::toString(streamsRequired))
-                                         .c_str());
-
-    if (m_transformFeedbackProperties.transformFeedbackQueries == false)
-        TCU_THROW(NotSupportedError, "transformFeedbackQueries feature is not supported");
 }
 
 tcu::TestStatus TransformFeedbackQueryTestInstance::iterate(void)
@@ -3455,58 +3270,6 @@ TransformFeedbackMultiQueryTestInstance::TransformFeedbackMultiQueryTestInstance
                                                                                  const TestParameters &parameters)
     : TransformFeedbackTestInstance(context, parameters)
 {
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-    const VkPhysicalDeviceTransformFeedbackFeaturesEXT &transformFeedbackFeatures =
-        m_context.getTransformFeedbackFeaturesEXT();
-    const uint32_t streamsSupported            = m_transformFeedbackProperties.maxTransformFeedbackStreams;
-    const uint32_t streamsRequired             = m_parameters.streamId + 1;
-    const uint32_t tfBuffersSupported          = m_transformFeedbackProperties.maxTransformFeedbackBuffers;
-    const uint32_t tfBuffersRequired           = m_parameters.partCount;
-    const uint32_t bytesPerVertex              = m_parameters.bufferSize / m_parameters.partCount;
-    const uint32_t tfStreamDataSizeSupported   = m_transformFeedbackProperties.maxTransformFeedbackStreamDataSize;
-    const uint32_t tfBufferDataSizeSupported   = m_transformFeedbackProperties.maxTransformFeedbackBufferDataSize;
-    const uint32_t tfBufferDataStrideSupported = m_transformFeedbackProperties.maxTransformFeedbackBufferDataStride;
-
-    DE_ASSERT(m_parameters.partCount == 2u);
-
-    if (!features.geometryShader)
-        TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
-
-    if (transformFeedbackFeatures.geometryStreams == false)
-        TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
-
-    if (streamsSupported < streamsRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
-                                                 ", while test requires " + de::toString(streamsRequired))
-                                         .c_str());
-
-    if (tfBuffersSupported < tfBuffersRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
-                                                 ", while test requires " + de::toString(tfBuffersRequired))
-                                         .c_str());
-
-    if (tfStreamDataSizeSupported < bytesPerVertex)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackStreamDataSize=" + de::toString(tfStreamDataSizeSupported) +
-                              ", while test requires " + de::toString(bytesPerVertex))
-                      .c_str());
-
-    if (tfBufferDataSizeSupported < bytesPerVertex)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackBufferDataSize=" + de::toString(tfBufferDataSizeSupported) +
-                              ", while test requires " + de::toString(bytesPerVertex))
-                      .c_str());
-
-    if (tfBufferDataStrideSupported < bytesPerVertex)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) +
-                              ", while test requires " + de::toString(bytesPerVertex))
-                      .c_str());
-
-    if (m_transformFeedbackProperties.transformFeedbackQueries == false)
-        TCU_THROW(NotSupportedError, "transformFeedbackQueries feature is not supported");
 }
 
 std::vector<VkDeviceSize> TransformFeedbackMultiQueryTestInstance::generateSizesList(const size_t bufBytes,
@@ -3710,36 +3473,6 @@ TransformFeedbackLinesOrTrianglesTestInstance::TransformFeedbackLinesOrTriangles
     Context &context, const TestParameters &parameters)
     : TransformFeedbackTestInstance(context, parameters)
 {
-    const InstanceInterface &vki            = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice       = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
-    const VkPhysicalDeviceTransformFeedbackFeaturesEXT &transformFeedbackFeatures =
-        m_context.getTransformFeedbackFeaturesEXT();
-    const uint32_t streamsSupported   = m_transformFeedbackProperties.maxTransformFeedbackStreams;
-    const uint32_t streamsRequired    = m_parameters.streamId + 1;
-    const uint32_t tfBuffersSupported = m_transformFeedbackProperties.maxTransformFeedbackBuffers;
-    const uint32_t tfBuffersRequired  = m_parameters.partCount;
-
-    DE_ASSERT(m_parameters.partCount == 2u);
-
-    if (m_transformFeedbackProperties.transformFeedbackStreamsLinesTriangles == false)
-        TCU_THROW(NotSupportedError, "transformFeedbackStreamsLinesTriangles required");
-
-    if (!features.geometryShader)
-        TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
-
-    if (transformFeedbackFeatures.geometryStreams == false)
-        TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
-
-    if (streamsSupported < streamsRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
-                                                 ", while test requires " + de::toString(streamsRequired))
-                                         .c_str());
-
-    if (tfBuffersSupported < tfBuffersRequired)
-        TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
-                                                 ", while test requires " + de::toString(tfBuffersRequired))
-                                         .c_str());
 }
 
 std::vector<VkDeviceSize> TransformFeedbackLinesOrTrianglesTestInstance::generateSizesList(const size_t bufBytes,
@@ -4608,75 +4341,18 @@ vkt::TestInstance *TransformFeedbackTestCase::createInstance(vkt::Context &conte
 
 void TransformFeedbackTestCase::checkSupport(Context &context) const
 {
-    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
-
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_parameters.pipelineConstructionType);
 
     context.requireDeviceFunctionality("VK_EXT_transform_feedback");
+    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
 
-    if (context.getTransformFeedbackFeaturesEXT().transformFeedback == VK_FALSE)
+    const auto &xfbFeatures = context.getTransformFeedbackFeaturesEXT();
+    if (!xfbFeatures.transformFeedback)
         TCU_THROW(NotSupportedError, "transformFeedback feature is not supported");
 
     if (m_parameters.useMaintenance5)
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
-
-    const auto &xfbProperties = context.getTransformFeedbackPropertiesEXT();
-
-    // transformFeedbackRasterizationStreamSelect is required when vertex streams other than zero are rasterized
-    if (m_parameters.requireRastStreamSelect &&
-        (xfbProperties.transformFeedbackRasterizationStreamSelect == VK_FALSE) && (m_parameters.streamId > 0))
-        TCU_THROW(NotSupportedError, "transformFeedbackRasterizationStreamSelect property is not supported");
-
-    if ((m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW) ||
-        (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW) ||
-        (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET_MULTIVIEW))
-    {
-        const auto &features = context.getMultiviewFeatures();
-        if (!features.multiview)
-            TCU_THROW(NotSupportedError, "multiview not supported");
-    }
-
-    if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY ||
-        m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT ||
-        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_RESUBMIT)
-    {
-        if (!xfbProperties.transformFeedbackDraw)
-            TCU_THROW(NotSupportedError, "transformFeedbackDraw not supported");
-    }
-
-    if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT ||
-        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW ||
-        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET ||
-        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW ||
-        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET ||
-        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET_MULTIVIEW)
-    {
-        const auto &limits                         = context.getDeviceProperties().limits;
-        const uint32_t tfBufferDataSizeSupported   = xfbProperties.maxTransformFeedbackBufferDataSize;
-        const uint32_t tfBufferDataStrideSupported = xfbProperties.maxTransformFeedbackBufferDataStride;
-
-        if (xfbProperties.transformFeedbackDraw == false)
-            TCU_THROW(NotSupportedError, "transformFeedbackDraw feature is not supported");
-
-        if (limits.maxVertexInputBindingStride < m_parameters.vertexStride)
-            TCU_THROW(NotSupportedError,
-                      std::string("maxVertexInputBindingStride=" + de::toString(limits.maxVertexInputBindingStride) +
-                                  ", while test requires " + de::toString(m_parameters.vertexStride))
-                          .c_str());
-
-        if (tfBufferDataSizeSupported < m_parameters.vertexStride)
-            TCU_THROW(NotSupportedError,
-                      std::string("maxTransformFeedbackBufferDataSize=" + de::toString(tfBufferDataSizeSupported) +
-                                  ", while test requires " + de::toString(m_parameters.vertexStride))
-                          .c_str());
-
-        if (tfBufferDataStrideSupported < m_parameters.vertexStride)
-            TCU_THROW(NotSupportedError,
-                      std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) +
-                                  ", while test requires " + de::toString(m_parameters.vertexStride))
-                          .c_str());
-    }
 
     if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT)
         context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
@@ -4702,10 +4378,221 @@ void TransformFeedbackTestCase::checkSupport(Context &context) const
         !coreFeatures.shaderTessellationAndGeometryPointSize)
         TCU_THROW(NotSupportedError, "shaderTessellationAndGeometryPointSize not supported");
 
-    if (m_parameters.testType == TEST_TYPE_QUERY_RESET)
+    // transformFeedbackRasterizationStreamSelect is required when vertex streams other than zero are rasterized
+    const auto &xfbProperties = context.getTransformFeedbackPropertiesEXT();
+    if (m_parameters.requireRastStreamSelect && (!xfbProperties.transformFeedbackRasterizationStreamSelect) &&
+        (m_parameters.streamId > 0))
+        TCU_THROW(NotSupportedError, "transformFeedbackRasterizationStreamSelect property is not supported");
+
+    const auto testType = m_parameters.testType;
+    if ((testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW) ||
+        (testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW) ||
+        (testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET_MULTIVIEW))
+    {
+        if (!context.getMultiviewFeatures().multiview)
+            TCU_THROW(NotSupportedError, "multiview not supported");
+    }
+
+    if (testType == TEST_TYPE_BACKWARD_DEPENDENCY || testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT ||
+        testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_RESUBMIT)
+    {
+        if (!xfbProperties.transformFeedbackDraw)
+            TCU_THROW(NotSupportedError, "transformFeedbackDraw not supported");
+    }
+
+    if (testType == TEST_TYPE_DRAW_INDIRECT || testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW ||
+        testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET ||
+        testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW ||
+        testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET ||
+        testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET_MULTIVIEW)
+    {
+        const auto &limits                         = context.getDeviceProperties().limits;
+        const uint32_t tfBufferDataSizeSupported   = xfbProperties.maxTransformFeedbackBufferDataSize;
+        const uint32_t tfBufferDataStrideSupported = xfbProperties.maxTransformFeedbackBufferDataStride;
+
+        if (!xfbProperties.transformFeedbackDraw)
+            TCU_THROW(NotSupportedError, "transformFeedbackDraw feature is not supported");
+
+        if (limits.maxVertexInputBindingStride < m_parameters.vertexStride)
+            TCU_THROW(NotSupportedError,
+                      std::string("maxVertexInputBindingStride=" + de::toString(limits.maxVertexInputBindingStride) +
+                                  ", while test requires " + de::toString(m_parameters.vertexStride))
+                          .c_str());
+
+        if (tfBufferDataSizeSupported < m_parameters.vertexStride)
+            TCU_THROW(NotSupportedError,
+                      std::string("maxTransformFeedbackBufferDataSize=" + de::toString(tfBufferDataSizeSupported) +
+                                  ", while test requires " + de::toString(m_parameters.vertexStride))
+                          .c_str());
+
+        if (tfBufferDataStrideSupported < m_parameters.vertexStride)
+            TCU_THROW(NotSupportedError,
+                      std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) +
+                                  ", while test requires " + de::toString(m_parameters.vertexStride))
+                          .c_str());
+    }
+
+    if (m_parameters.testType == TEST_TYPE_LINES_TRIANGLES)
+    {
+        const uint32_t streamsSupported   = xfbProperties.maxTransformFeedbackStreams;
+        const uint32_t streamsRequired    = m_parameters.streamId + 1;
+        const uint32_t tfBuffersSupported = xfbProperties.maxTransformFeedbackBuffers;
+        const uint32_t tfBuffersRequired  = m_parameters.partCount;
+
+        DE_ASSERT(m_parameters.partCount == 2u);
+
+        if (!xfbProperties.transformFeedbackStreamsLinesTriangles)
+            TCU_THROW(NotSupportedError, "transformFeedbackStreamsLinesTriangles required");
+
+        if (!xfbFeatures.geometryStreams)
+            TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
+
+        if (streamsSupported < streamsRequired)
+            TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
+                                                     ", while test requires " + de::toString(streamsRequired))
+                                             .c_str());
+
+        if (tfBuffersSupported < tfBuffersRequired)
+            TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
+                                                     ", while test requires " + de::toString(tfBuffersRequired))
+                                             .c_str());
+    }
+
+    if (testType == TEST_TYPE_XFB_POINTSIZE || testType == TEST_TYPE_XFB_CLIPDISTANCE ||
+        testType == TEST_TYPE_XFB_CULLDISTANCE || testType == TEST_TYPE_XFB_CLIP_AND_CULL)
+    {
+        const uint32_t tfBuffersSupported = xfbProperties.maxTransformFeedbackBuffers;
+        const uint32_t tfBuffersRequired  = m_parameters.partCount;
+
+        if ((testType == TEST_TYPE_XFB_CLIPDISTANCE || testType == TEST_TYPE_XFB_CLIP_AND_CULL) &&
+            !coreFeatures.shaderClipDistance)
+            TCU_THROW(NotSupportedError, std::string("shaderClipDistance feature is not supported"));
+        if ((testType == TEST_TYPE_XFB_CULLDISTANCE || testType == TEST_TYPE_XFB_CLIP_AND_CULL) &&
+            !coreFeatures.shaderCullDistance)
+            TCU_THROW(NotSupportedError, std::string("shaderCullDistance feature is not supported"));
+        if (tfBuffersSupported < tfBuffersRequired)
+            TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
+                                                     ", while test requires " + de::toString(tfBuffersRequired))
+                                             .c_str());
+    }
+
+    if (testType == TEST_TYPE_DEPTH_CLIP_CONTROL_VERTEX || testType == TEST_TYPE_DEPTH_CLIP_CONTROL_GEOMETRY ||
+        testType == TEST_TYPE_DEPTH_CLIP_CONTROL_TESE)
+    {
+        const uint32_t tfBuffersSupported = xfbProperties.maxTransformFeedbackBuffers;
+        const uint32_t tfBuffersRequired  = m_parameters.partCount;
+
+        context.requireDeviceFunctionality("VK_EXT_depth_clip_control");
+
+        if (testType == TEST_TYPE_DEPTH_CLIP_CONTROL_TESE && !coreFeatures.tessellationShader)
+            TCU_THROW(NotSupportedError, "Tessellation shader not supported");
+
+        if (tfBuffersSupported < tfBuffersRequired)
+            TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
+                                                     ", while test requires " + de::toString(tfBuffersRequired))
+                                             .c_str());
+    }
+
+    if (testType == TEST_TYPE_MULTISTREAMS || testType == TEST_TYPE_MULTIQUERY ||
+        testType == TEST_TYPE_MULTISTREAMS_SAME_LOCATION)
+    {
+        const bool sameLocation                  = (testType == TEST_TYPE_MULTISTREAMS_SAME_LOCATION);
+        const uint32_t streamsSupported          = xfbProperties.maxTransformFeedbackStreams;
+        const uint32_t streamsRequired           = m_parameters.streamId + 1;
+        const uint32_t tfBuffersSupported        = xfbProperties.maxTransformFeedbackBuffers;
+        const uint32_t tfBuffersRequired         = sameLocation ? 1u : m_parameters.partCount;
+        const uint32_t bytesPerVertex            = sameLocation ? 4u : m_parameters.bufferSize / m_parameters.partCount;
+        const uint32_t tfStreamDataSizeSupported = xfbProperties.maxTransformFeedbackStreamDataSize;
+        const uint32_t tfBufferDataSizeSupported = xfbProperties.maxTransformFeedbackBufferDataSize;
+        const uint32_t tfBufferDataStrideSupported = xfbProperties.maxTransformFeedbackBufferDataStride;
+
+        DE_ASSERT(sameLocation || m_parameters.partCount == 2u);
+
+        if (!xfbFeatures.geometryStreams)
+            TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
+
+        if (streamsSupported < streamsRequired)
+            TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
+                                                     ", while test requires " + de::toString(streamsRequired))
+                                             .c_str());
+
+        if (tfBuffersSupported < tfBuffersRequired)
+            TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) +
+                                                     ", while test requires " + de::toString(tfBuffersRequired))
+                                             .c_str());
+
+        if (tfStreamDataSizeSupported < bytesPerVertex)
+            TCU_THROW(NotSupportedError,
+                      std::string("maxTransformFeedbackStreamDataSize=" + de::toString(tfStreamDataSizeSupported) +
+                                  ", while test requires " + de::toString(bytesPerVertex))
+                          .c_str());
+
+        if (tfBufferDataSizeSupported < bytesPerVertex)
+            TCU_THROW(NotSupportedError,
+                      std::string("maxTransformFeedbackBufferDataSize=" + de::toString(tfBufferDataSizeSupported) +
+                                  ", while test requires " + de::toString(bytesPerVertex))
+                          .c_str());
+
+        if (tfBufferDataStrideSupported < bytesPerVertex)
+            TCU_THROW(NotSupportedError,
+                      std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) +
+                                  ", while test requires " + de::toString(bytesPerVertex))
+                          .c_str());
+    }
+
+    if (testType == TEST_TYPE_STREAMS || testType == TEST_TYPE_STREAMS_POINTSIZE ||
+        testType == TEST_TYPE_STREAMS_CLIPDISTANCE || testType == TEST_TYPE_STREAMS_CULLDISTANCE)
+    {
+        const uint32_t streamsSupported  = xfbProperties.maxTransformFeedbackStreams;
+        const uint32_t streamsRequired   = m_parameters.streamId + 1;
+        const bool geomPointSizeRequired = (testType == TEST_TYPE_STREAMS_POINTSIZE);
+
+        if (!coreFeatures.geometryShader)
+            TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
+
+        if (!xfbFeatures.geometryStreams)
+            TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
+
+        if (streamsSupported < streamsRequired)
+            TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
+                                                     ", while test requires " + de::toString(streamsRequired))
+                                             .c_str());
+
+        if (geomPointSizeRequired && !coreFeatures.shaderTessellationAndGeometryPointSize)
+            TCU_THROW(NotSupportedError, "shaderTessellationAndGeometryPointSize feature is not supported");
+
+        if (m_parameters.testType == TEST_TYPE_STREAMS_CLIPDISTANCE && !coreFeatures.shaderClipDistance)
+            TCU_THROW(NotSupportedError, "shaderClipDistance feature is not supported");
+
+        if (m_parameters.testType == TEST_TYPE_STREAMS_CULLDISTANCE && !coreFeatures.shaderCullDistance)
+            TCU_THROW(NotSupportedError, "shaderCullDistance feature is not supported");
+    }
+
+    if (testType == TEST_TYPE_QUERY_GET || testType == TEST_TYPE_QUERY_COPY ||
+        testType == TEST_TYPE_QUERY_COPY_STRIDE_ZERO || testType == TEST_TYPE_QUERY_RESET)
+    {
+        const uint32_t streamsSupported = xfbProperties.maxTransformFeedbackStreams;
+        const uint32_t streamsRequired  = m_parameters.streamId + 1;
+
+        if (streamsRequired > 1 && xfbFeatures.geometryStreams == false)
+            TCU_THROW(NotSupportedError, "geometryStreams feature is not supported");
+
+        if (streamsSupported < streamsRequired)
+            TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackStreams=" + de::toString(streamsSupported) +
+                                                     ", while test requires " + de::toString(streamsRequired))
+                                             .c_str());
+    }
+
+    if ((testType == TEST_TYPE_QUERY_GET || testType == TEST_TYPE_QUERY_COPY ||
+         testType == TEST_TYPE_QUERY_COPY_STRIDE_ZERO || testType == TEST_TYPE_QUERY_RESET ||
+         testType == TEST_TYPE_MULTIQUERY) &&
+        !xfbProperties.transformFeedbackQueries)
+        TCU_THROW(NotSupportedError, "transformFeedbackQueries feature is not supported");
+
+    if (testType == TEST_TYPE_QUERY_RESET)
         context.requireDeviceFunctionality("VK_EXT_host_query_reset");
 
-    if (m_parameters.testType == TEST_TYPE_MAX_OUTPUT_COMPONENTS)
+    if (testType == TEST_TYPE_MAX_OUTPUT_COMPONENTS)
     {
         const auto &maxComps  = context.getDeviceProperties().limits.maxVertexOutputComponents;
         const auto totalComps = (m_parameters.partCount + 1u /*gl_Position*/) * kVec4Components;
@@ -4727,7 +4614,7 @@ void TransformFeedbackTestCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, messagePrefix + "maxTransformFeedbackBufferDataStride");
     }
 
-    if (m_parameters.testType == TEST_TYPE_SHADER_OBJECT_REBIND)
+    if (testType == TEST_TYPE_SHADER_OBJECT_REBIND)
     {
         context.requireDeviceFunctionality("VK_EXT_shader_object");
 

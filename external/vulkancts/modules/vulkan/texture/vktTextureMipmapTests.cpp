@@ -2403,17 +2403,9 @@ void Texture2DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
 
         TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
 
-    vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
-    imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-    imageViewMinLodFeatures.pNext = nullptr;
-
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
-    robustness2Features.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
-    robustness2Features.pNext = &imageViewMinLodFeatures;
-    vk::VkPhysicalDeviceFeatures2 features2;
-
-    features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features2.pNext = &robustness2Features;
+    vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures = vk::initVulkanStructure();
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = vk::initVulkanStructure(&imageViewMinLodFeatures);
+    vk::VkPhysicalDeviceFeatures2 features2                    = vk::initVulkanStructure(&robustness2Features);
 
     context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
@@ -2614,17 +2606,9 @@ void Texture3DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
 
         TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
 
-    vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
-    imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-    imageViewMinLodFeatures.pNext = nullptr;
-
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
-    robustness2Features.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
-    robustness2Features.pNext = &imageViewMinLodFeatures;
-    vk::VkPhysicalDeviceFeatures2 features2;
-
-    features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features2.pNext = &robustness2Features;
+    vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures = vk::initVulkanStructure();
+    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = vk::initVulkanStructure(&imageViewMinLodFeatures);
+    vk::VkPhysicalDeviceFeatures2 features2                    = vk::initVulkanStructure(&robustness2Features);
 
     context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
@@ -3221,14 +3205,8 @@ void checkTextureSupport(Context &context, const Texture2DMipmapTestCaseParamete
     if (testParameters.testType != TextureCommonTestCaseParameters::TEST_NORMAL)
     {
         context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
-        vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
-        imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-        imageViewMinLodFeatures.pNext = nullptr;
-
-        vk::VkPhysicalDeviceFeatures2 features2;
-
-        features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        features2.pNext = &imageViewMinLodFeatures;
+        vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&imageViewMinLodFeatures);
 
         context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
@@ -3243,14 +3221,8 @@ void checkTextureSupport(Context &context, const TextureCubeMipmapTestCaseParame
     if (testParameters.testType != TextureCommonTestCaseParameters::TEST_NORMAL)
     {
         context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
-        vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
-        imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-        imageViewMinLodFeatures.pNext = nullptr;
-
-        vk::VkPhysicalDeviceFeatures2 features2;
-
-        features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        features2.pNext = &imageViewMinLodFeatures;
+        vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&imageViewMinLodFeatures);
 
         context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
@@ -3265,14 +3237,8 @@ void checkTextureSupport(Context &context, const Texture3DMipmapTestCaseParamete
     if (testParameters.testType != TextureCommonTestCaseParameters::TEST_NORMAL)
     {
         context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
-        vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
-        imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
-        imageViewMinLodFeatures.pNext = nullptr;
-
-        vk::VkPhysicalDeviceFeatures2 features2;
-
-        features2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        features2.pNext = &imageViewMinLodFeatures;
+        vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures = vk::initVulkanStructure();
+        vk::VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&imageViewMinLodFeatures);
 
         context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 

@@ -34,6 +34,8 @@
 #include "vkDeviceUtil.hpp"
 #include "vkSafetyCriticalUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
+#include "vkBuilderUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkImageUtil.hpp"
 
@@ -98,6 +100,168 @@ void initShaders(SourceCollections &shaderCollection, SemaphoreTestConfig)
 void buildShaders(SourceCollections &shaderCollection)
 {
     initShaders(shaderCollection, {SynchronizationType::LEGACY, VK_SEMAPHORE_TYPE_BINARY});
+}
+
+// Smoke test that needs no graphics queue; everything else in this group synchronizes a draw.
+struct NonGraphicsSmokeConfig
+{
+    SynchronizationType type;
+    bool transferWork; //!< produce the data with a copy instead of a dispatch
+};
+
+constexpr uint32_t NON_GRAPHICS_SMOKE_VALUE_COUNT = 256u;
+constexpr uint32_t NON_GRAPHICS_SMOKE_LOCAL_SIZE  = 64u;
+
+void initNonGraphicsSmokeShaders(SourceCollections &shaderCollection, NonGraphicsSmokeConfig config)
+{
+    if (config.transferWork)
+        return;
+
+    std::ostringstream comp;
+    comp << "#version 450\n"
+         << "layout(local_size_x = " << NON_GRAPHICS_SMOKE_LOCAL_SIZE << ") in;\n"
+         << "layout(set = 0, binding = 0, std430) writeonly buffer Out { uint v[]; } outBuffer;\n"
+         << "void main (void)\n"
+         << "{\n"
+         << "    outBuffer.v[gl_GlobalInvocationID.x] = gl_GlobalInvocationID.x + 1u;\n"
+         << "}\n";
+    shaderCollection.glslSources.add("smokecomp") << glu::ComputeSource(comp.str());
+}
+
+void checkNonGraphicsSmokeSupport(Context &context, NonGraphicsSmokeConfig config)
+{
+    if (config.type == SynchronizationType::SYNCHRONIZATION2)
+        context.requireDeviceFunctionality("VK_KHR_synchronization2");
+}
+
+// Two submissions chained with a binary semaphore and waited on with a fence.
+tcu::TestStatus testNonGraphicsSmoke(Context &context, const QueueData &queueData, NonGraphicsSmokeConfig config)
+{
+    const DeviceInterface &vk     = context.getDeviceInterface();
+    const VkDevice device         = context.getDevice();
+    Allocator &allocator          = context.getDefaultAllocator();
+    const VkDeviceSize bufferSize = NON_GRAPHICS_SMOKE_VALUE_COUNT * sizeof(uint32_t);
+
+    // both flavours leave the same values behind, so they share the verification below
+    std::vector<uint32_t> expected(NON_GRAPHICS_SMOKE_VALUE_COUNT);
+    for (uint32_t ndx = 0; ndx < NON_GRAPHICS_SMOKE_VALUE_COUNT; ++ndx)
+        expected[ndx] = ndx + 1u;
+
+    BufferWithMemory workBuffer(vk, device, allocator,
+                                makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                                                     VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+                                MemoryRequirement::Any);
+    BufferWithMemory resultBuffer(vk, device, allocator,
+                                  makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+                                  MemoryRequirement::HostVisible);
+
+    // only built for the compute flavour, but has to outlive the command buffer either way
+    Move<VkDescriptorSetLayout> setLayout;
+    Move<VkDescriptorPool> descriptorPool;
+    Move<VkDescriptorSet> descriptorSet;
+    Move<VkPipelineLayout> pipelineLayout;
+    Move<VkShaderModule> shaderModule;
+    Move<VkPipeline> pipeline;
+
+    if (!config.transferWork)
+    {
+        setLayout = DescriptorSetLayoutBuilder()
+                        .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+                        .build(vk, device);
+        descriptorPool = DescriptorPoolBuilder()
+                             .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                             .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+        descriptorSet                                  = makeDescriptorSet(vk, device, *descriptorPool, *setLayout);
+        const VkDescriptorBufferInfo bufferDescription = makeDescriptorBufferInfo(*workBuffer, 0ull, bufferSize);
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescription)
+            .update(vk, device);
+
+        pipelineLayout = makePipelineLayout(vk, device, *setLayout);
+        shaderModule   = createShaderModule(vk, device, context.getBinaryCollection().get("smokecomp"), 0u);
+        pipeline       = makeComputePipeline(vk, device, *pipelineLayout, *shaderModule);
+    }
+
+    const Move<VkCommandPool> cmdPool =
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueData.familyIndex);
+    const Move<VkCommandBuffer> workCmdBuffer   = makeCommandBuffer(vk, device, *cmdPool);
+    const Move<VkCommandBuffer> resultCmdBuffer = makeCommandBuffer(vk, device, *cmdPool);
+    const Move<VkSemaphore> semaphore           = createSemaphore(vk, device);
+    const Move<VkFence> fence                   = createFence(vk, device);
+
+    beginCommandBuffer(vk, *workCmdBuffer);
+    if (config.transferWork)
+        vk.cmdUpdateBuffer(*workCmdBuffer, *workBuffer, 0ull, bufferSize, expected.data());
+    else
+    {
+        vk.cmdBindPipeline(*workCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+        vk.cmdBindDescriptorSets(*workCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                 &descriptorSet.get(), 0u, nullptr);
+        vk.cmdDispatch(*workCmdBuffer, NON_GRAPHICS_SMOKE_VALUE_COUNT / NON_GRAPHICS_SMOKE_LOCAL_SIZE, 1u, 1u);
+    }
+    endCommandBuffer(vk, *workCmdBuffer);
+
+    const VkPipelineStageFlags2KHR workStageMask =
+        (config.transferWork ? VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR : VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT_KHR);
+    const VkAccessFlags2KHR workAccessMask =
+        (config.transferWork ? VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR : VK_ACCESS_2_SHADER_WRITE_BIT_KHR);
+
+    beginCommandBuffer(vk, *resultCmdBuffer);
+    {
+        SynchronizationWrapperPtr barrierWrapper = getSynchronizationWrapper(config.type, vk, false);
+        const VkBufferMemoryBarrier2KHR bufferBarrier =
+            makeBufferMemoryBarrier2(workStageMask, workAccessMask, VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
+                                     VK_ACCESS_2_TRANSFER_READ_BIT_KHR, *workBuffer, 0ull, bufferSize);
+        VkDependencyInfoKHR dependencyInfo = makeCommonDependencyInfo(nullptr, &bufferBarrier);
+        barrierWrapper->cmdPipelineBarrier(*resultCmdBuffer, &dependencyInfo);
+
+        const VkBufferCopy copyRegion = {0ull, 0ull, bufferSize};
+        vk.cmdCopyBuffer(*resultCmdBuffer, *workBuffer, *resultBuffer, 1u, &copyRegion);
+    }
+    endCommandBuffer(vk, *resultCmdBuffer);
+
+    // first submission produces the data and signals the semaphore, second one waits on it and copies the result out
+    {
+        SynchronizationWrapperPtr submitWrapper                = getSynchronizationWrapper(config.type, vk, false, 2u);
+        const VkCommandBufferSubmitInfoKHR workCmdBufferInfo   = makeCommonCommandBufferSubmitInfo(*workCmdBuffer);
+        const VkCommandBufferSubmitInfoKHR resultCmdBufferInfo = makeCommonCommandBufferSubmitInfo(*resultCmdBuffer);
+        const VkSemaphoreSubmitInfoKHR signalInfo = makeCommonSemaphoreSubmitInfo(*semaphore, 0u, workStageMask);
+        const VkSemaphoreSubmitInfoKHR waitInfo =
+            makeCommonSemaphoreSubmitInfo(*semaphore, 0u, VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR);
+
+        submitWrapper->addSubmitInfo(0u, nullptr, 1u, &workCmdBufferInfo, 1u, &signalInfo);
+        submitWrapper->addSubmitInfo(1u, &waitInfo, 1u, &resultCmdBufferInfo, 0u, nullptr);
+        VK_CHECK(submitWrapper->queueSubmit(queueData.handle, *fence));
+    }
+
+    if (VK_SUCCESS != vk.waitForFences(device, 1u, &fence.get(), true, std::numeric_limits<uint64_t>::max()))
+        return tcu::TestStatus::fail("Failed to wait for the fence");
+
+    invalidateAlloc(vk, device, resultBuffer.getAllocation());
+
+    const uint32_t *result = static_cast<const uint32_t *>(resultBuffer.getAllocation().getHostPtr());
+    for (uint32_t ndx = 0; ndx < NON_GRAPHICS_SMOKE_VALUE_COUNT; ++ndx)
+        if (result[ndx] != expected[ndx])
+        {
+            context.getTestContext().getLog() << TestLog::Message << "Unexpected value at index " << ndx << ", got "
+                                              << result[ndx] << ", expected " << expected[ndx] << TestLog::EndMessage;
+            return tcu::TestStatus::fail("Unexpected value in the result buffer");
+        }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void addNonGraphicsSmokeTests(tcu::TestCaseGroup *group, SynchronizationType type)
+{
+    // dispatches run on compute capable families, copies on the transfer family as well
+    addFunctionCaseWithProgramsMultiQueue(group, "compute", COMPUTE_QUEUE, checkNonGraphicsSmokeSupport,
+                                          initNonGraphicsSmokeShaders, testNonGraphicsSmoke,
+                                          NonGraphicsSmokeConfig{type, false});
+    addFunctionCaseWithProgramsMultiQueue(group, "transfer", TRANSFER_QUEUE, checkNonGraphicsSmokeSupport,
+                                          initNonGraphicsSmokeShaders, testNonGraphicsSmoke,
+                                          NonGraphicsSmokeConfig{type, true});
 }
 
 static CustomDevice createTestDevice(Context &context, SemaphoreTestConfig &config, const InstanceWrapper &instance,
@@ -1747,6 +1911,8 @@ tcu::TestCaseGroup *createSmokeTests(tcu::TestContext &textCtx)
                         externalQueueFamilyImageBarrier, params);
     }
 
+    addNonGraphicsSmokeTests(smokeTests.get(), type);
+
     return smokeTests.release();
 }
 
@@ -1775,6 +1941,8 @@ tcu::TestCaseGroup *createSynchronization2SmokeTests(tcu::TestContext &textCtx)
         addFunctionCaseWithPrograms(smokeTests.get(), testName.c_str(), checkQueueFamilyTypeImageSupport,
                                     initQueueFamilyTypePrograms, ignoreQueueFamilyTypeImage, params);
     }
+
+    addNonGraphicsSmokeTests(smokeTests.get(), type);
 
     return smokeTests.release();
 }

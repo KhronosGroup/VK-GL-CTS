@@ -365,8 +365,8 @@ public:
         tcu::Vec4 vert_f64d4_inter_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f64d4_inter_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f64d3_inter_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f64d3_inter_1[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f64d3_inter_0[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f64d3_inter_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f64d2_inter_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f64d2_inter_1[IfaceVar::kNumVertices];
@@ -377,8 +377,8 @@ public:
         tcu::Vec4 vert_f32d4_inter_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f32d4_inter_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f32d3_inter_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f32d3_inter_1[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f32d3_inter_0[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f32d3_inter_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f32d2_inter_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f32d2_inter_1[IfaceVar::kNumVertices];
@@ -389,8 +389,8 @@ public:
         tcu::Vec4 vert_f16d4_inter_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f16d4_inter_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f16d3_inter_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f16d3_inter_1[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f16d3_inter_0[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f16d3_inter_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f16d2_inter_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f16d2_inter_1[IfaceVar::kNumVertices];
@@ -403,8 +403,8 @@ public:
         tcu::Vec4 vert_f64d4_flat_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f64d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f64d3_flat_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f64d3_flat_1[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f64d3_flat_0[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f64d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f64d2_flat_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f64d2_flat_1[IfaceVar::kNumVertices];
@@ -415,8 +415,8 @@ public:
         tcu::Vec4 vert_f32d4_flat_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f32d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f32d3_flat_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f32d3_flat_1[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f32d3_flat_0[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f32d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f32d2_flat_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f32d2_flat_1[IfaceVar::kNumVertices];
@@ -427,8 +427,8 @@ public:
         tcu::Vec4 vert_f16d4_flat_0[IfaceVar::kNumVertices];
         tcu::Vec4 vert_f16d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::Vec3 vert_f16d3_flat_0[IfaceVar::kNumVertices];
-        tcu::Vec3 vert_f16d3_flat_1[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f16d3_flat_0[IfaceVar::kNumVertices];
+        tcu::Vec4 vert_f16d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::Vec2 vert_f16d2_flat_0[IfaceVar::kNumVertices];
         tcu::Vec2 vert_f16d2_flat_1[IfaceVar::kNumVertices];
@@ -441,8 +441,8 @@ public:
         tcu::IVec4 vert_i64d4_flat_0[IfaceVar::kNumVertices];
         tcu::IVec4 vert_i64d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::IVec3 vert_i64d3_flat_0[IfaceVar::kNumVertices];
-        tcu::IVec3 vert_i64d3_flat_1[IfaceVar::kNumVertices];
+        tcu::IVec4 vert_i64d3_flat_0[IfaceVar::kNumVertices];
+        tcu::IVec4 vert_i64d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::IVec2 vert_i64d2_flat_0[IfaceVar::kNumVertices];
         tcu::IVec2 vert_i64d2_flat_1[IfaceVar::kNumVertices];
@@ -453,8 +453,8 @@ public:
         tcu::IVec4 vert_i32d4_flat_0[IfaceVar::kNumVertices];
         tcu::IVec4 vert_i32d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::IVec3 vert_i32d3_flat_0[IfaceVar::kNumVertices];
-        tcu::IVec3 vert_i32d3_flat_1[IfaceVar::kNumVertices];
+        tcu::IVec4 vert_i32d3_flat_0[IfaceVar::kNumVertices];
+        tcu::IVec4 vert_i32d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::IVec2 vert_i32d2_flat_0[IfaceVar::kNumVertices];
         tcu::IVec2 vert_i32d2_flat_1[IfaceVar::kNumVertices];
@@ -465,8 +465,8 @@ public:
         tcu::IVec4 vert_i16d4_flat_0[IfaceVar::kNumVertices];
         tcu::IVec4 vert_i16d4_flat_1[IfaceVar::kNumVertices];
 
-        tcu::IVec3 vert_i16d3_flat_0[IfaceVar::kNumVertices];
-        tcu::IVec3 vert_i16d3_flat_1[IfaceVar::kNumVertices];
+        tcu::IVec4 vert_i16d3_flat_0[IfaceVar::kNumVertices];
+        tcu::IVec4 vert_i16d3_flat_1[IfaceVar::kNumVertices];
 
         tcu::IVec2 vert_i16d2_flat_0[IfaceVar::kNumVertices];
         tcu::IVec2 vert_i16d2_flat_1[IfaceVar::kNumVertices];
@@ -482,8 +482,8 @@ public:
         tcu::Vec4 prim_f64d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec4 prim_f64d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::Vec3 prim_f64d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::Vec3 prim_f64d3_flat_1[IfaceVar::kNumPrimitives];
+        tcu::Vec4 prim_f64d3_flat_0[IfaceVar::kNumPrimitives];
+        tcu::Vec4 prim_f64d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::Vec2 prim_f64d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec2 prim_f64d2_flat_1[IfaceVar::kNumPrimitives];
@@ -494,8 +494,8 @@ public:
         tcu::Vec4 prim_f32d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec4 prim_f32d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::Vec3 prim_f32d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::Vec3 prim_f32d3_flat_1[IfaceVar::kNumPrimitives];
+        tcu::Vec4 prim_f32d3_flat_0[IfaceVar::kNumPrimitives];
+        tcu::Vec4 prim_f32d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::Vec2 prim_f32d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec2 prim_f32d2_flat_1[IfaceVar::kNumPrimitives];
@@ -506,8 +506,8 @@ public:
         tcu::Vec4 prim_f16d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec4 prim_f16d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::Vec3 prim_f16d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::Vec3 prim_f16d3_flat_1[IfaceVar::kNumPrimitives];
+        tcu::Vec4 prim_f16d3_flat_0[IfaceVar::kNumPrimitives];
+        tcu::Vec4 prim_f16d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::Vec2 prim_f16d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::Vec2 prim_f16d2_flat_1[IfaceVar::kNumPrimitives];
@@ -520,8 +520,8 @@ public:
         tcu::IVec4 prim_i64d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec4 prim_i64d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::IVec3 prim_i64d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::IVec3 prim_i64d3_flat_1[IfaceVar::kNumPrimitives];
+        tcu::IVec4 prim_i64d3_flat_0[IfaceVar::kNumPrimitives];
+        tcu::IVec4 prim_i64d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::IVec2 prim_i64d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec2 prim_i64d2_flat_1[IfaceVar::kNumPrimitives];
@@ -532,8 +532,8 @@ public:
         tcu::IVec4 prim_i32d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec4 prim_i32d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::IVec3 prim_i32d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::IVec3 prim_i32d3_flat_1[IfaceVar::kNumPrimitives];
+        tcu::IVec4 prim_i32d3_flat_0[IfaceVar::kNumPrimitives];
+        tcu::IVec4 prim_i32d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::IVec2 prim_i32d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec2 prim_i32d2_flat_1[IfaceVar::kNumPrimitives];
@@ -544,8 +544,8 @@ public:
         tcu::IVec4 prim_i16d4_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec4 prim_i16d4_flat_1[IfaceVar::kNumPrimitives];
 
-        tcu::IVec3 prim_i16d3_flat_0[IfaceVar::kNumPrimitives];
-        tcu::IVec3 prim_i16d3_flat_1[IfaceVar::kNumPrimitives];
+        tcu::IVec4 prim_i16d3_flat_0[IfaceVar::kNumPrimitives];
+        tcu::IVec4 prim_i16d3_flat_1[IfaceVar::kNumPrimitives];
 
         tcu::IVec2 prim_i16d2_flat_0[IfaceVar::kNumPrimitives];
         tcu::IVec2 prim_i16d2_flat_1[IfaceVar::kNumPrimitives];
@@ -1082,6 +1082,8 @@ for line in sys.stdin:
         statement = '%s[%s] = %s;' % (varName, index, value)
         print('%s' % (statement,))
 #endif
+    constexpr double kVec3PaddingValue = -1.0f;
+    constexpr int kIVec3PaddingValue   = -1;
     InterfaceVariablesCase::PerVertexData perVertexData;
     {
         perVertexData.vert_f64d4_inter_0[0] = tcu::Vec4(1011.25, 1012.5, 1013.875, 1014.0);
@@ -1092,14 +1094,14 @@ for line in sys.stdin:
         perVertexData.vert_f64d4_inter_1[1] = tcu::Vec4(1021.25, 1022.75, 1023.875, 1024.0);
         perVertexData.vert_f64d4_inter_1[2] = tcu::Vec4(1021.5, 1022.5, 1023.875, 1024.0);
         perVertexData.vert_f64d4_inter_1[3] = tcu::Vec4(1021.5, 1022.75, 1023.875, 1024.0);
-        perVertexData.vert_f64d3_inter_0[0] = tcu::Vec3(1031.25, 1032.5, 1033.875);
-        perVertexData.vert_f64d3_inter_0[1] = tcu::Vec3(1031.25, 1032.75, 1033.875);
-        perVertexData.vert_f64d3_inter_0[2] = tcu::Vec3(1031.5, 1032.5, 1033.875);
-        perVertexData.vert_f64d3_inter_0[3] = tcu::Vec3(1031.5, 1032.75, 1033.875);
-        perVertexData.vert_f64d3_inter_1[0] = tcu::Vec3(1041.25, 1042.5, 1043.875);
-        perVertexData.vert_f64d3_inter_1[1] = tcu::Vec3(1041.25, 1042.75, 1043.875);
-        perVertexData.vert_f64d3_inter_1[2] = tcu::Vec3(1041.5, 1042.5, 1043.875);
-        perVertexData.vert_f64d3_inter_1[3] = tcu::Vec3(1041.5, 1042.75, 1043.875);
+        perVertexData.vert_f64d3_inter_0[0] = tcu::Vec4(1031.25, 1032.5, 1033.875, kVec3PaddingValue);
+        perVertexData.vert_f64d3_inter_0[1] = tcu::Vec4(1031.25, 1032.75, 1033.875, kVec3PaddingValue);
+        perVertexData.vert_f64d3_inter_0[2] = tcu::Vec4(1031.5, 1032.5, 1033.875, kVec3PaddingValue);
+        perVertexData.vert_f64d3_inter_0[3] = tcu::Vec4(1031.5, 1032.75, 1033.875, kVec3PaddingValue);
+        perVertexData.vert_f64d3_inter_1[0] = tcu::Vec4(1041.25, 1042.5, 1043.875, kVec3PaddingValue);
+        perVertexData.vert_f64d3_inter_1[1] = tcu::Vec4(1041.25, 1042.75, 1043.875, kVec3PaddingValue);
+        perVertexData.vert_f64d3_inter_1[2] = tcu::Vec4(1041.5, 1042.5, 1043.875, kVec3PaddingValue);
+        perVertexData.vert_f64d3_inter_1[3] = tcu::Vec4(1041.5, 1042.75, 1043.875, kVec3PaddingValue);
         perVertexData.vert_f64d2_inter_0[0] = tcu::Vec2(1051.25, 1052.5);
         perVertexData.vert_f64d2_inter_0[1] = tcu::Vec2(1051.25, 1052.75);
         perVertexData.vert_f64d2_inter_0[2] = tcu::Vec2(1051.5, 1052.5);
@@ -1124,14 +1126,14 @@ for line in sys.stdin:
         perVertexData.vert_f32d4_inter_1[1] = tcu::Vec4(1101.25, 1102.75, 1103.875, 1104.0);
         perVertexData.vert_f32d4_inter_1[2] = tcu::Vec4(1101.5, 1102.5, 1103.875, 1104.0);
         perVertexData.vert_f32d4_inter_1[3] = tcu::Vec4(1101.5, 1102.75, 1103.875, 1104.0);
-        perVertexData.vert_f32d3_inter_0[0] = tcu::Vec3(1111.25, 1112.5, 1113.875);
-        perVertexData.vert_f32d3_inter_0[1] = tcu::Vec3(1111.25, 1112.75, 1113.875);
-        perVertexData.vert_f32d3_inter_0[2] = tcu::Vec3(1111.5, 1112.5, 1113.875);
-        perVertexData.vert_f32d3_inter_0[3] = tcu::Vec3(1111.5, 1112.75, 1113.875);
-        perVertexData.vert_f32d3_inter_1[0] = tcu::Vec3(1121.25, 1122.5, 1123.875);
-        perVertexData.vert_f32d3_inter_1[1] = tcu::Vec3(1121.25, 1122.75, 1123.875);
-        perVertexData.vert_f32d3_inter_1[2] = tcu::Vec3(1121.5, 1122.5, 1123.875);
-        perVertexData.vert_f32d3_inter_1[3] = tcu::Vec3(1121.5, 1122.75, 1123.875);
+        perVertexData.vert_f32d3_inter_0[0] = tcu::Vec4(1111.25, 1112.5, 1113.875, kVec3PaddingValue);
+        perVertexData.vert_f32d3_inter_0[1] = tcu::Vec4(1111.25, 1112.75, 1113.875, kVec3PaddingValue);
+        perVertexData.vert_f32d3_inter_0[2] = tcu::Vec4(1111.5, 1112.5, 1113.875, kVec3PaddingValue);
+        perVertexData.vert_f32d3_inter_0[3] = tcu::Vec4(1111.5, 1112.75, 1113.875, kVec3PaddingValue);
+        perVertexData.vert_f32d3_inter_1[0] = tcu::Vec4(1121.25, 1122.5, 1123.875, kVec3PaddingValue);
+        perVertexData.vert_f32d3_inter_1[1] = tcu::Vec4(1121.25, 1122.75, 1123.875, kVec3PaddingValue);
+        perVertexData.vert_f32d3_inter_1[2] = tcu::Vec4(1121.5, 1122.5, 1123.875, kVec3PaddingValue);
+        perVertexData.vert_f32d3_inter_1[3] = tcu::Vec4(1121.5, 1122.75, 1123.875, kVec3PaddingValue);
         perVertexData.vert_f32d2_inter_0[0] = tcu::Vec2(1131.25, 1132.5);
         perVertexData.vert_f32d2_inter_0[1] = tcu::Vec2(1131.25, 1132.75);
         perVertexData.vert_f32d2_inter_0[2] = tcu::Vec2(1131.5, 1132.5);
@@ -1156,14 +1158,14 @@ for line in sys.stdin:
         perVertexData.vert_f16d4_inter_1[1] = tcu::Vec4(1181.25, 1182.75, 1183.875, 1184.0);
         perVertexData.vert_f16d4_inter_1[2] = tcu::Vec4(1181.5, 1182.5, 1183.875, 1184.0);
         perVertexData.vert_f16d4_inter_1[3] = tcu::Vec4(1181.5, 1182.75, 1183.875, 1184.0);
-        perVertexData.vert_f16d3_inter_0[0] = tcu::Vec3(1191.25, 1192.5, 1193.875);
-        perVertexData.vert_f16d3_inter_0[1] = tcu::Vec3(1191.25, 1192.75, 1193.875);
-        perVertexData.vert_f16d3_inter_0[2] = tcu::Vec3(1191.5, 1192.5, 1193.875);
-        perVertexData.vert_f16d3_inter_0[3] = tcu::Vec3(1191.5, 1192.75, 1193.875);
-        perVertexData.vert_f16d3_inter_1[0] = tcu::Vec3(1201.25, 1202.5, 1203.875);
-        perVertexData.vert_f16d3_inter_1[1] = tcu::Vec3(1201.25, 1202.75, 1203.875);
-        perVertexData.vert_f16d3_inter_1[2] = tcu::Vec3(1201.5, 1202.5, 1203.875);
-        perVertexData.vert_f16d3_inter_1[3] = tcu::Vec3(1201.5, 1202.75, 1203.875);
+        perVertexData.vert_f16d3_inter_0[0] = tcu::Vec4(1191.25, 1192.5, 1193.875, kVec3PaddingValue);
+        perVertexData.vert_f16d3_inter_0[1] = tcu::Vec4(1191.25, 1192.75, 1193.875, kVec3PaddingValue);
+        perVertexData.vert_f16d3_inter_0[2] = tcu::Vec4(1191.5, 1192.5, 1193.875, kVec3PaddingValue);
+        perVertexData.vert_f16d3_inter_0[3] = tcu::Vec4(1191.5, 1192.75, 1193.875, kVec3PaddingValue);
+        perVertexData.vert_f16d3_inter_1[0] = tcu::Vec4(1201.25, 1202.5, 1203.875, kVec3PaddingValue);
+        perVertexData.vert_f16d3_inter_1[1] = tcu::Vec4(1201.25, 1202.75, 1203.875, kVec3PaddingValue);
+        perVertexData.vert_f16d3_inter_1[2] = tcu::Vec4(1201.5, 1202.5, 1203.875, kVec3PaddingValue);
+        perVertexData.vert_f16d3_inter_1[3] = tcu::Vec4(1201.5, 1202.75, 1203.875, kVec3PaddingValue);
         perVertexData.vert_f16d2_inter_0[0] = tcu::Vec2(1211.25, 1212.5);
         perVertexData.vert_f16d2_inter_0[1] = tcu::Vec2(1211.25, 1212.75);
         perVertexData.vert_f16d2_inter_0[2] = tcu::Vec2(1211.5, 1212.5);
@@ -1188,14 +1190,14 @@ for line in sys.stdin:
         perVertexData.vert_f64d4_flat_1[1]  = tcu::Vec4(1261, 1262, 1263, 1264);
         perVertexData.vert_f64d4_flat_1[2]  = tcu::Vec4(1261, 1262, 1263, 1264);
         perVertexData.vert_f64d4_flat_1[3]  = tcu::Vec4(1261, 1262, 1263, 1264);
-        perVertexData.vert_f64d3_flat_0[0]  = tcu::Vec3(1271, 1272, 1273);
-        perVertexData.vert_f64d3_flat_0[1]  = tcu::Vec3(1271, 1272, 1273);
-        perVertexData.vert_f64d3_flat_0[2]  = tcu::Vec3(1271, 1272, 1273);
-        perVertexData.vert_f64d3_flat_0[3]  = tcu::Vec3(1271, 1272, 1273);
-        perVertexData.vert_f64d3_flat_1[0]  = tcu::Vec3(1281, 1282, 1283);
-        perVertexData.vert_f64d3_flat_1[1]  = tcu::Vec3(1281, 1282, 1283);
-        perVertexData.vert_f64d3_flat_1[2]  = tcu::Vec3(1281, 1282, 1283);
-        perVertexData.vert_f64d3_flat_1[3]  = tcu::Vec3(1281, 1282, 1283);
+        perVertexData.vert_f64d3_flat_0[0]  = tcu::Vec4(1271, 1272, 1273, kVec3PaddingValue);
+        perVertexData.vert_f64d3_flat_0[1]  = tcu::Vec4(1271, 1272, 1273, kVec3PaddingValue);
+        perVertexData.vert_f64d3_flat_0[2]  = tcu::Vec4(1271, 1272, 1273, kVec3PaddingValue);
+        perVertexData.vert_f64d3_flat_0[3]  = tcu::Vec4(1271, 1272, 1273, kVec3PaddingValue);
+        perVertexData.vert_f64d3_flat_1[0]  = tcu::Vec4(1281, 1282, 1283, kVec3PaddingValue);
+        perVertexData.vert_f64d3_flat_1[1]  = tcu::Vec4(1281, 1282, 1283, kVec3PaddingValue);
+        perVertexData.vert_f64d3_flat_1[2]  = tcu::Vec4(1281, 1282, 1283, kVec3PaddingValue);
+        perVertexData.vert_f64d3_flat_1[3]  = tcu::Vec4(1281, 1282, 1283, kVec3PaddingValue);
         perVertexData.vert_f64d2_flat_0[0]  = tcu::Vec2(1291, 1292);
         perVertexData.vert_f64d2_flat_0[1]  = tcu::Vec2(1291, 1292);
         perVertexData.vert_f64d2_flat_0[2]  = tcu::Vec2(1291, 1292);
@@ -1220,14 +1222,14 @@ for line in sys.stdin:
         perVertexData.vert_f32d4_flat_1[1]  = tcu::Vec4(1341, 1342, 1343, 1344);
         perVertexData.vert_f32d4_flat_1[2]  = tcu::Vec4(1341, 1342, 1343, 1344);
         perVertexData.vert_f32d4_flat_1[3]  = tcu::Vec4(1341, 1342, 1343, 1344);
-        perVertexData.vert_f32d3_flat_0[0]  = tcu::Vec3(1351, 1352, 1353);
-        perVertexData.vert_f32d3_flat_0[1]  = tcu::Vec3(1351, 1352, 1353);
-        perVertexData.vert_f32d3_flat_0[2]  = tcu::Vec3(1351, 1352, 1353);
-        perVertexData.vert_f32d3_flat_0[3]  = tcu::Vec3(1351, 1352, 1353);
-        perVertexData.vert_f32d3_flat_1[0]  = tcu::Vec3(1361, 1362, 1363);
-        perVertexData.vert_f32d3_flat_1[1]  = tcu::Vec3(1361, 1362, 1363);
-        perVertexData.vert_f32d3_flat_1[2]  = tcu::Vec3(1361, 1362, 1363);
-        perVertexData.vert_f32d3_flat_1[3]  = tcu::Vec3(1361, 1362, 1363);
+        perVertexData.vert_f32d3_flat_0[0]  = tcu::Vec4(1351, 1352, 1353, kVec3PaddingValue);
+        perVertexData.vert_f32d3_flat_0[1]  = tcu::Vec4(1351, 1352, 1353, kVec3PaddingValue);
+        perVertexData.vert_f32d3_flat_0[2]  = tcu::Vec4(1351, 1352, 1353, kVec3PaddingValue);
+        perVertexData.vert_f32d3_flat_0[3]  = tcu::Vec4(1351, 1352, 1353, kVec3PaddingValue);
+        perVertexData.vert_f32d3_flat_1[0]  = tcu::Vec4(1361, 1362, 1363, kVec3PaddingValue);
+        perVertexData.vert_f32d3_flat_1[1]  = tcu::Vec4(1361, 1362, 1363, kVec3PaddingValue);
+        perVertexData.vert_f32d3_flat_1[2]  = tcu::Vec4(1361, 1362, 1363, kVec3PaddingValue);
+        perVertexData.vert_f32d3_flat_1[3]  = tcu::Vec4(1361, 1362, 1363, kVec3PaddingValue);
         perVertexData.vert_f32d2_flat_0[0]  = tcu::Vec2(1371, 1372);
         perVertexData.vert_f32d2_flat_0[1]  = tcu::Vec2(1371, 1372);
         perVertexData.vert_f32d2_flat_0[2]  = tcu::Vec2(1371, 1372);
@@ -1252,14 +1254,14 @@ for line in sys.stdin:
         perVertexData.vert_f16d4_flat_1[1]  = tcu::Vec4(1421, 1422, 1423, 1424);
         perVertexData.vert_f16d4_flat_1[2]  = tcu::Vec4(1421, 1422, 1423, 1424);
         perVertexData.vert_f16d4_flat_1[3]  = tcu::Vec4(1421, 1422, 1423, 1424);
-        perVertexData.vert_f16d3_flat_0[0]  = tcu::Vec3(1431, 1432, 1433);
-        perVertexData.vert_f16d3_flat_0[1]  = tcu::Vec3(1431, 1432, 1433);
-        perVertexData.vert_f16d3_flat_0[2]  = tcu::Vec3(1431, 1432, 1433);
-        perVertexData.vert_f16d3_flat_0[3]  = tcu::Vec3(1431, 1432, 1433);
-        perVertexData.vert_f16d3_flat_1[0]  = tcu::Vec3(1441, 1442, 1443);
-        perVertexData.vert_f16d3_flat_1[1]  = tcu::Vec3(1441, 1442, 1443);
-        perVertexData.vert_f16d3_flat_1[2]  = tcu::Vec3(1441, 1442, 1443);
-        perVertexData.vert_f16d3_flat_1[3]  = tcu::Vec3(1441, 1442, 1443);
+        perVertexData.vert_f16d3_flat_0[0]  = tcu::Vec4(1431, 1432, 1433, kVec3PaddingValue);
+        perVertexData.vert_f16d3_flat_0[1]  = tcu::Vec4(1431, 1432, 1433, kVec3PaddingValue);
+        perVertexData.vert_f16d3_flat_0[2]  = tcu::Vec4(1431, 1432, 1433, kVec3PaddingValue);
+        perVertexData.vert_f16d3_flat_0[3]  = tcu::Vec4(1431, 1432, 1433, kVec3PaddingValue);
+        perVertexData.vert_f16d3_flat_1[0]  = tcu::Vec4(1441, 1442, 1443, kVec3PaddingValue);
+        perVertexData.vert_f16d3_flat_1[1]  = tcu::Vec4(1441, 1442, 1443, kVec3PaddingValue);
+        perVertexData.vert_f16d3_flat_1[2]  = tcu::Vec4(1441, 1442, 1443, kVec3PaddingValue);
+        perVertexData.vert_f16d3_flat_1[3]  = tcu::Vec4(1441, 1442, 1443, kVec3PaddingValue);
         perVertexData.vert_f16d2_flat_0[0]  = tcu::Vec2(1451, 1452);
         perVertexData.vert_f16d2_flat_0[1]  = tcu::Vec2(1451, 1452);
         perVertexData.vert_f16d2_flat_0[2]  = tcu::Vec2(1451, 1452);
@@ -1284,14 +1286,14 @@ for line in sys.stdin:
         perVertexData.vert_i64d4_flat_1[1]  = tcu::IVec4(1501, 1502, 1503, 1504);
         perVertexData.vert_i64d4_flat_1[2]  = tcu::IVec4(1501, 1502, 1503, 1504);
         perVertexData.vert_i64d4_flat_1[3]  = tcu::IVec4(1501, 1502, 1503, 1504);
-        perVertexData.vert_i64d3_flat_0[0]  = tcu::IVec3(1511, 1512, 1513);
-        perVertexData.vert_i64d3_flat_0[1]  = tcu::IVec3(1511, 1512, 1513);
-        perVertexData.vert_i64d3_flat_0[2]  = tcu::IVec3(1511, 1512, 1513);
-        perVertexData.vert_i64d3_flat_0[3]  = tcu::IVec3(1511, 1512, 1513);
-        perVertexData.vert_i64d3_flat_1[0]  = tcu::IVec3(1521, 1522, 1523);
-        perVertexData.vert_i64d3_flat_1[1]  = tcu::IVec3(1521, 1522, 1523);
-        perVertexData.vert_i64d3_flat_1[2]  = tcu::IVec3(1521, 1522, 1523);
-        perVertexData.vert_i64d3_flat_1[3]  = tcu::IVec3(1521, 1522, 1523);
+        perVertexData.vert_i64d3_flat_0[0]  = tcu::IVec4(1511, 1512, 1513, kIVec3PaddingValue);
+        perVertexData.vert_i64d3_flat_0[1]  = tcu::IVec4(1511, 1512, 1513, kIVec3PaddingValue);
+        perVertexData.vert_i64d3_flat_0[2]  = tcu::IVec4(1511, 1512, 1513, kIVec3PaddingValue);
+        perVertexData.vert_i64d3_flat_0[3]  = tcu::IVec4(1511, 1512, 1513, kIVec3PaddingValue);
+        perVertexData.vert_i64d3_flat_1[0]  = tcu::IVec4(1521, 1522, 1523, kIVec3PaddingValue);
+        perVertexData.vert_i64d3_flat_1[1]  = tcu::IVec4(1521, 1522, 1523, kIVec3PaddingValue);
+        perVertexData.vert_i64d3_flat_1[2]  = tcu::IVec4(1521, 1522, 1523, kIVec3PaddingValue);
+        perVertexData.vert_i64d3_flat_1[3]  = tcu::IVec4(1521, 1522, 1523, kIVec3PaddingValue);
         perVertexData.vert_i64d2_flat_0[0]  = tcu::IVec2(1531, 1532);
         perVertexData.vert_i64d2_flat_0[1]  = tcu::IVec2(1531, 1532);
         perVertexData.vert_i64d2_flat_0[2]  = tcu::IVec2(1531, 1532);
@@ -1316,14 +1318,14 @@ for line in sys.stdin:
         perVertexData.vert_i32d4_flat_1[1]  = tcu::IVec4(1581, 1582, 1583, 1584);
         perVertexData.vert_i32d4_flat_1[2]  = tcu::IVec4(1581, 1582, 1583, 1584);
         perVertexData.vert_i32d4_flat_1[3]  = tcu::IVec4(1581, 1582, 1583, 1584);
-        perVertexData.vert_i32d3_flat_0[0]  = tcu::IVec3(1591, 1592, 1593);
-        perVertexData.vert_i32d3_flat_0[1]  = tcu::IVec3(1591, 1592, 1593);
-        perVertexData.vert_i32d3_flat_0[2]  = tcu::IVec3(1591, 1592, 1593);
-        perVertexData.vert_i32d3_flat_0[3]  = tcu::IVec3(1591, 1592, 1593);
-        perVertexData.vert_i32d3_flat_1[0]  = tcu::IVec3(1601, 1602, 1603);
-        perVertexData.vert_i32d3_flat_1[1]  = tcu::IVec3(1601, 1602, 1603);
-        perVertexData.vert_i32d3_flat_1[2]  = tcu::IVec3(1601, 1602, 1603);
-        perVertexData.vert_i32d3_flat_1[3]  = tcu::IVec3(1601, 1602, 1603);
+        perVertexData.vert_i32d3_flat_0[0]  = tcu::IVec4(1591, 1592, 1593, kIVec3PaddingValue);
+        perVertexData.vert_i32d3_flat_0[1]  = tcu::IVec4(1591, 1592, 1593, kIVec3PaddingValue);
+        perVertexData.vert_i32d3_flat_0[2]  = tcu::IVec4(1591, 1592, 1593, kIVec3PaddingValue);
+        perVertexData.vert_i32d3_flat_0[3]  = tcu::IVec4(1591, 1592, 1593, kIVec3PaddingValue);
+        perVertexData.vert_i32d3_flat_1[0]  = tcu::IVec4(1601, 1602, 1603, kIVec3PaddingValue);
+        perVertexData.vert_i32d3_flat_1[1]  = tcu::IVec4(1601, 1602, 1603, kIVec3PaddingValue);
+        perVertexData.vert_i32d3_flat_1[2]  = tcu::IVec4(1601, 1602, 1603, kIVec3PaddingValue);
+        perVertexData.vert_i32d3_flat_1[3]  = tcu::IVec4(1601, 1602, 1603, kIVec3PaddingValue);
         perVertexData.vert_i32d2_flat_0[0]  = tcu::IVec2(1611, 1612);
         perVertexData.vert_i32d2_flat_0[1]  = tcu::IVec2(1611, 1612);
         perVertexData.vert_i32d2_flat_0[2]  = tcu::IVec2(1611, 1612);
@@ -1348,14 +1350,14 @@ for line in sys.stdin:
         perVertexData.vert_i16d4_flat_1[1]  = tcu::IVec4(1661, 1662, 1663, 1664);
         perVertexData.vert_i16d4_flat_1[2]  = tcu::IVec4(1661, 1662, 1663, 1664);
         perVertexData.vert_i16d4_flat_1[3]  = tcu::IVec4(1661, 1662, 1663, 1664);
-        perVertexData.vert_i16d3_flat_0[0]  = tcu::IVec3(1671, 1672, 1673);
-        perVertexData.vert_i16d3_flat_0[1]  = tcu::IVec3(1671, 1672, 1673);
-        perVertexData.vert_i16d3_flat_0[2]  = tcu::IVec3(1671, 1672, 1673);
-        perVertexData.vert_i16d3_flat_0[3]  = tcu::IVec3(1671, 1672, 1673);
-        perVertexData.vert_i16d3_flat_1[0]  = tcu::IVec3(1681, 1682, 1683);
-        perVertexData.vert_i16d3_flat_1[1]  = tcu::IVec3(1681, 1682, 1683);
-        perVertexData.vert_i16d3_flat_1[2]  = tcu::IVec3(1681, 1682, 1683);
-        perVertexData.vert_i16d3_flat_1[3]  = tcu::IVec3(1681, 1682, 1683);
+        perVertexData.vert_i16d3_flat_0[0]  = tcu::IVec4(1671, 1672, 1673, kIVec3PaddingValue);
+        perVertexData.vert_i16d3_flat_0[1]  = tcu::IVec4(1671, 1672, 1673, kIVec3PaddingValue);
+        perVertexData.vert_i16d3_flat_0[2]  = tcu::IVec4(1671, 1672, 1673, kIVec3PaddingValue);
+        perVertexData.vert_i16d3_flat_0[3]  = tcu::IVec4(1671, 1672, 1673, kIVec3PaddingValue);
+        perVertexData.vert_i16d3_flat_1[0]  = tcu::IVec4(1681, 1682, 1683, kIVec3PaddingValue);
+        perVertexData.vert_i16d3_flat_1[1]  = tcu::IVec4(1681, 1682, 1683, kIVec3PaddingValue);
+        perVertexData.vert_i16d3_flat_1[2]  = tcu::IVec4(1681, 1682, 1683, kIVec3PaddingValue);
+        perVertexData.vert_i16d3_flat_1[3]  = tcu::IVec4(1681, 1682, 1683, kIVec3PaddingValue);
         perVertexData.vert_i16d2_flat_0[0]  = tcu::IVec2(1691, 1692);
         perVertexData.vert_i16d2_flat_0[1]  = tcu::IVec2(1691, 1692);
         perVertexData.vert_i16d2_flat_0[2]  = tcu::IVec2(1691, 1692);
@@ -1380,10 +1382,10 @@ for line in sys.stdin:
         perPrimitiveData.prim_f64d4_flat_0[1] = tcu::Vec4(1011, 1012, 1013, 1014);
         perPrimitiveData.prim_f64d4_flat_1[0] = tcu::Vec4(1021, 1022, 1023, 1024);
         perPrimitiveData.prim_f64d4_flat_1[1] = tcu::Vec4(1021, 1022, 1023, 1024);
-        perPrimitiveData.prim_f64d3_flat_0[0] = tcu::Vec3(1031, 1032, 1033);
-        perPrimitiveData.prim_f64d3_flat_0[1] = tcu::Vec3(1031, 1032, 1033);
-        perPrimitiveData.prim_f64d3_flat_1[0] = tcu::Vec3(1041, 1042, 1043);
-        perPrimitiveData.prim_f64d3_flat_1[1] = tcu::Vec3(1041, 1042, 1043);
+        perPrimitiveData.prim_f64d3_flat_0[0] = tcu::Vec4(1031, 1032, 1033, kVec3PaddingValue);
+        perPrimitiveData.prim_f64d3_flat_0[1] = tcu::Vec4(1031, 1032, 1033, kVec3PaddingValue);
+        perPrimitiveData.prim_f64d3_flat_1[0] = tcu::Vec4(1041, 1042, 1043, kVec3PaddingValue);
+        perPrimitiveData.prim_f64d3_flat_1[1] = tcu::Vec4(1041, 1042, 1043, kVec3PaddingValue);
         perPrimitiveData.prim_f64d2_flat_0[0] = tcu::Vec2(1051, 1052);
         perPrimitiveData.prim_f64d2_flat_0[1] = tcu::Vec2(1051, 1052);
         perPrimitiveData.prim_f64d2_flat_1[0] = tcu::Vec2(1061, 1062);
@@ -1396,10 +1398,10 @@ for line in sys.stdin:
         perPrimitiveData.prim_f32d4_flat_0[1] = tcu::Vec4(1091, 1092, 1093, 1094);
         perPrimitiveData.prim_f32d4_flat_1[0] = tcu::Vec4(1101, 1102, 1103, 1104);
         perPrimitiveData.prim_f32d4_flat_1[1] = tcu::Vec4(1101, 1102, 1103, 1104);
-        perPrimitiveData.prim_f32d3_flat_0[0] = tcu::Vec3(1111, 1112, 1113);
-        perPrimitiveData.prim_f32d3_flat_0[1] = tcu::Vec3(1111, 1112, 1113);
-        perPrimitiveData.prim_f32d3_flat_1[0] = tcu::Vec3(1121, 1122, 1123);
-        perPrimitiveData.prim_f32d3_flat_1[1] = tcu::Vec3(1121, 1122, 1123);
+        perPrimitiveData.prim_f32d3_flat_0[0] = tcu::Vec4(1111, 1112, 1113, kVec3PaddingValue);
+        perPrimitiveData.prim_f32d3_flat_0[1] = tcu::Vec4(1111, 1112, 1113, kVec3PaddingValue);
+        perPrimitiveData.prim_f32d3_flat_1[0] = tcu::Vec4(1121, 1122, 1123, kVec3PaddingValue);
+        perPrimitiveData.prim_f32d3_flat_1[1] = tcu::Vec4(1121, 1122, 1123, kVec3PaddingValue);
         perPrimitiveData.prim_f32d2_flat_0[0] = tcu::Vec2(1131, 1132);
         perPrimitiveData.prim_f32d2_flat_0[1] = tcu::Vec2(1131, 1132);
         perPrimitiveData.prim_f32d2_flat_1[0] = tcu::Vec2(1141, 1142);
@@ -1412,10 +1414,10 @@ for line in sys.stdin:
         perPrimitiveData.prim_f16d4_flat_0[1] = tcu::Vec4(1171, 1172, 1173, 1174);
         perPrimitiveData.prim_f16d4_flat_1[0] = tcu::Vec4(1181, 1182, 1183, 1184);
         perPrimitiveData.prim_f16d4_flat_1[1] = tcu::Vec4(1181, 1182, 1183, 1184);
-        perPrimitiveData.prim_f16d3_flat_0[0] = tcu::Vec3(1191, 1192, 1193);
-        perPrimitiveData.prim_f16d3_flat_0[1] = tcu::Vec3(1191, 1192, 1193);
-        perPrimitiveData.prim_f16d3_flat_1[0] = tcu::Vec3(1201, 1202, 1203);
-        perPrimitiveData.prim_f16d3_flat_1[1] = tcu::Vec3(1201, 1202, 1203);
+        perPrimitiveData.prim_f16d3_flat_0[0] = tcu::Vec4(1191, 1192, 1193, kVec3PaddingValue);
+        perPrimitiveData.prim_f16d3_flat_0[1] = tcu::Vec4(1191, 1192, 1193, kVec3PaddingValue);
+        perPrimitiveData.prim_f16d3_flat_1[0] = tcu::Vec4(1201, 1202, 1203, kVec3PaddingValue);
+        perPrimitiveData.prim_f16d3_flat_1[1] = tcu::Vec4(1201, 1202, 1203, kVec3PaddingValue);
         perPrimitiveData.prim_f16d2_flat_0[0] = tcu::Vec2(1211, 1212);
         perPrimitiveData.prim_f16d2_flat_0[1] = tcu::Vec2(1211, 1212);
         perPrimitiveData.prim_f16d2_flat_1[0] = tcu::Vec2(1221, 1222);
@@ -1428,10 +1430,10 @@ for line in sys.stdin:
         perPrimitiveData.prim_i64d4_flat_0[1] = tcu::IVec4(1251, 1252, 1253, 1254);
         perPrimitiveData.prim_i64d4_flat_1[0] = tcu::IVec4(1261, 1262, 1263, 1264);
         perPrimitiveData.prim_i64d4_flat_1[1] = tcu::IVec4(1261, 1262, 1263, 1264);
-        perPrimitiveData.prim_i64d3_flat_0[0] = tcu::IVec3(1271, 1272, 1273);
-        perPrimitiveData.prim_i64d3_flat_0[1] = tcu::IVec3(1271, 1272, 1273);
-        perPrimitiveData.prim_i64d3_flat_1[0] = tcu::IVec3(1281, 1282, 1283);
-        perPrimitiveData.prim_i64d3_flat_1[1] = tcu::IVec3(1281, 1282, 1283);
+        perPrimitiveData.prim_i64d3_flat_0[0] = tcu::IVec4(1271, 1272, 1273, kIVec3PaddingValue);
+        perPrimitiveData.prim_i64d3_flat_0[1] = tcu::IVec4(1271, 1272, 1273, kIVec3PaddingValue);
+        perPrimitiveData.prim_i64d3_flat_1[0] = tcu::IVec4(1281, 1282, 1283, kIVec3PaddingValue);
+        perPrimitiveData.prim_i64d3_flat_1[1] = tcu::IVec4(1281, 1282, 1283, kIVec3PaddingValue);
         perPrimitiveData.prim_i64d2_flat_0[0] = tcu::IVec2(1291, 1292);
         perPrimitiveData.prim_i64d2_flat_0[1] = tcu::IVec2(1291, 1292);
         perPrimitiveData.prim_i64d2_flat_1[0] = tcu::IVec2(1301, 1302);
@@ -1444,10 +1446,10 @@ for line in sys.stdin:
         perPrimitiveData.prim_i32d4_flat_0[1] = tcu::IVec4(1331, 1332, 1333, 1334);
         perPrimitiveData.prim_i32d4_flat_1[0] = tcu::IVec4(1341, 1342, 1343, 1344);
         perPrimitiveData.prim_i32d4_flat_1[1] = tcu::IVec4(1341, 1342, 1343, 1344);
-        perPrimitiveData.prim_i32d3_flat_0[0] = tcu::IVec3(1351, 1352, 1353);
-        perPrimitiveData.prim_i32d3_flat_0[1] = tcu::IVec3(1351, 1352, 1353);
-        perPrimitiveData.prim_i32d3_flat_1[0] = tcu::IVec3(1361, 1362, 1363);
-        perPrimitiveData.prim_i32d3_flat_1[1] = tcu::IVec3(1361, 1362, 1363);
+        perPrimitiveData.prim_i32d3_flat_0[0] = tcu::IVec4(1351, 1352, 1353, kIVec3PaddingValue);
+        perPrimitiveData.prim_i32d3_flat_0[1] = tcu::IVec4(1351, 1352, 1353, kIVec3PaddingValue);
+        perPrimitiveData.prim_i32d3_flat_1[0] = tcu::IVec4(1361, 1362, 1363, kIVec3PaddingValue);
+        perPrimitiveData.prim_i32d3_flat_1[1] = tcu::IVec4(1361, 1362, 1363, kIVec3PaddingValue);
         perPrimitiveData.prim_i32d2_flat_0[0] = tcu::IVec2(1371, 1372);
         perPrimitiveData.prim_i32d2_flat_0[1] = tcu::IVec2(1371, 1372);
         perPrimitiveData.prim_i32d2_flat_1[0] = tcu::IVec2(1381, 1382);
@@ -1460,10 +1462,10 @@ for line in sys.stdin:
         perPrimitiveData.prim_i16d4_flat_0[1] = tcu::IVec4(1411, 1412, 1413, 1414);
         perPrimitiveData.prim_i16d4_flat_1[0] = tcu::IVec4(1421, 1422, 1423, 1424);
         perPrimitiveData.prim_i16d4_flat_1[1] = tcu::IVec4(1421, 1422, 1423, 1424);
-        perPrimitiveData.prim_i16d3_flat_0[0] = tcu::IVec3(1431, 1432, 1433);
-        perPrimitiveData.prim_i16d3_flat_0[1] = tcu::IVec3(1431, 1432, 1433);
-        perPrimitiveData.prim_i16d3_flat_1[0] = tcu::IVec3(1441, 1442, 1443);
-        perPrimitiveData.prim_i16d3_flat_1[1] = tcu::IVec3(1441, 1442, 1443);
+        perPrimitiveData.prim_i16d3_flat_0[0] = tcu::IVec4(1431, 1432, 1433, kIVec3PaddingValue);
+        perPrimitiveData.prim_i16d3_flat_0[1] = tcu::IVec4(1431, 1432, 1433, kIVec3PaddingValue);
+        perPrimitiveData.prim_i16d3_flat_1[0] = tcu::IVec4(1441, 1442, 1443, kIVec3PaddingValue);
+        perPrimitiveData.prim_i16d3_flat_1[1] = tcu::IVec4(1441, 1442, 1443, kIVec3PaddingValue);
         perPrimitiveData.prim_i16d2_flat_0[0] = tcu::IVec2(1451, 1452);
         perPrimitiveData.prim_i16d2_flat_0[1] = tcu::IVec2(1451, 1452);
         perPrimitiveData.prim_i16d2_flat_1[0] = tcu::IVec2(1461, 1462);

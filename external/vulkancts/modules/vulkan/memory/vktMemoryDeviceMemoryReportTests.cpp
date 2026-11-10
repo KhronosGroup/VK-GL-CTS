@@ -1658,6 +1658,11 @@ tcu::TestCaseGroup *createObjectTestsGroup(tcu::TestContext &testCtx, const char
     return group.release();
 }
 
+static bool isPipelineRelatedObjectType(VkObjectType objectType)
+{
+    return objectType == VK_OBJECT_TYPE_PIPELINE || objectType == VK_OBJECT_TYPE_PIPELINE_CACHE;
+}
+
 static bool validateCallbackRecords(Context &context, const InstanceWrapper &instance, const CallbackRecorder &recorder)
 {
     tcu::TestLog &log                                       = context.getTestContext().getLog();
@@ -1665,6 +1670,7 @@ static bool validateCallbackRecords(Context &context, const InstanceWrapper &ins
     const InstanceInterface &vki                            = instance.getDriver();
     const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, physicalDevice);
     std::set<std::pair<uint64_t, uint64_t>> memoryObjectSet;
+    std::set<uint64_t> pipelineRelatedMemoryObjectIds;
 
     for (auto iter = recorder.getRecordsBegin(); iter != recorder.getRecordsEnd(); iter++)
     {
@@ -1690,6 +1696,9 @@ static bool validateCallbackRecords(Context &context, const InstanceWrapper &ins
         if (record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT ||
             record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT)
         {
+            if (isPipelineRelatedObjectType(record.objectType))
+                pipelineRelatedMemoryObjectIds.insert(record.memoryObjectId);
+
             memoryObjectSet.insert(std::make_pair(record.memoryObjectId, record.objectHandle));
             continue;
         }
@@ -1697,6 +1706,30 @@ static bool validateCallbackRecords(Context &context, const InstanceWrapper &ins
         if (record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_FREE_EXT ||
             record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_UNIMPORT_EXT)
         {
+            if (pipelineRelatedMemoryObjectIds.count(record.memoryObjectId))
+            {
+                bool found = false;
+                for (const auto &pair : memoryObjectSet)
+                {
+                    if (pair.first == record.memoryObjectId)
+                    {
+                        memoryObjectSet.erase(pair);
+                        pipelineRelatedMemoryObjectIds.erase(record.memoryObjectId);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    log << tcu::TestLog::Message << "Unpaired or out-of-order free/unimport event"
+                        << tcu::TestLog::EndMessage;
+                    log << tcu::TestLog::Message << record << tcu::TestLog::EndMessage;
+                    return false;
+                }
+
+                continue;
+            }
             const auto objectPair = std::make_pair(record.memoryObjectId, record.objectHandle);
             if (!memoryObjectSet.count(objectPair))
             {

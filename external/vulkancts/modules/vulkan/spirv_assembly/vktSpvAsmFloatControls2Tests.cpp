@@ -1096,13 +1096,14 @@ public:
 
     OperationTestCase(const char *_baseName, FP _behaviorFlags, bool _useDecorationFlags, OperationId _operatinId,
                       ValueId _input1, ValueId _input2, ValueId _expectedOutput, bool _fp16Without16BitStorage = false,
-                      bool _requireRte = false)
+                      bool _requireRte = false, bool _requireRtz = false)
         : baseName(_baseName)
         , useDecorationFlags(_useDecorationFlags)
         , operationId(_operatinId)
         , expectedOutput(_expectedOutput)
         , fp16Without16BitStorage(_fp16Without16BitStorage)
         , requireRte(_requireRte)
+        , requireRtz(_requireRtz)
     {
         if (useDecorationFlags)
         {
@@ -1128,6 +1129,7 @@ public:
     ValueId expectedOutput;
     bool fp16Without16BitStorage;
     bool requireRte;
+    bool requireRtz;
 };
 
 struct OperationTestCaseInputs
@@ -1138,6 +1140,7 @@ struct OperationTestCaseInputs
     ValueId result;
     FP testedFlagBits;
     bool requireRte = false;
+    bool requireRtz = false;
 };
 
 // op1 is SPECIAL VALUE (SZ/INF/NAN)
@@ -1426,6 +1429,8 @@ const OperationTestCaseInputs nonStc16and32Only[] = {
     {OID_SINH, V_MINUS_INF, V_UNUSED, V_MINUS_INF, FP::NotInf},
     {OID_COSH, V_MINUS_INF, V_UNUSED, V_INF, FP::NotInf},
     {OID_TANH, V_MINUS_INF, V_UNUSED, V_MINUS_ONE, FP::NotInf},
+    {OID_TANH, V_INF, V_UNUSED, V_ONE, FP::NotInf, false, true},
+    {OID_TANH, V_MINUS_INF, V_UNUSED, V_MINUS_ONE, FP::NotInf, false, true},
 
     {OID_ASINH, V_MINUS_INF, V_UNUSED, V_MINUS_INF, FP::NotInf},
 
@@ -1987,11 +1992,15 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         string OTCname = "op_testedWithout_" + getBehaviourName(it->testedFlagBits, "_OR_") + "_arg1_" +
                          getValueName(it->operandFirst) + "_arg2_" + getValueName(it->operandSecond) + "_res_" +
                          getValueName(it->result);
+        if (it->requireRtz)
+            OTCname += "_rtz";
 
         testCases.push_back(OTC((OTCname + "_exec").c_str(), invert(it->testedFlagBits), false, it->operationId,
-                                it->operandFirst, it->operandSecond, it->result, isFP16, it->requireRte));
+                                it->operandFirst, it->operandSecond, it->result, isFP16, it->requireRte,
+                                it->requireRtz));
         testCases.push_back(OTC((OTCname + "_deco").c_str(), invert(it->testedFlagBits), true, it->operationId,
-                                it->operandFirst, it->operandSecond, it->result, isFP16, it->requireRte));
+                                it->operandFirst, it->operandSecond, it->result, isFP16, it->requireRte,
+                                it->requireRtz));
     }
 
     // test None, AllowTransform and AllowRecip gramatically
@@ -2360,12 +2369,15 @@ void TestGroupBuilderBase::FillFloatControlsProperties(vk::VkPhysicalDeviceFloat
     {
     case FP16:
         fc.shaderRoundingModeRTEFloat16 = testCase.requireRte;
+        fc.shaderRoundingModeRTZFloat16 = testCase.requireRtz;
         break;
     case FP32:
         fc.shaderRoundingModeRTEFloat32 = testCase.requireRte;
+        fc.shaderRoundingModeRTZFloat32 = testCase.requireRtz;
         break;
     case FP64:
         fc.shaderRoundingModeRTEFloat64 = testCase.requireRte;
+        fc.shaderRoundingModeRTZFloat64 = testCase.requireRtz;
         break;
     }
 }
@@ -2632,6 +2644,13 @@ void ComputeTestGroupBuilder::fillShaderSpec(const OperationTestCaseInfo &testCa
         extensions += "OpExtension \"SPV_KHR_float_controls\"\n";
         capabilities += "OpCapability RoundingModeRTE\n";
         behaviorExecutionMode += "OpExecutionMode %main RoundingModeRTE " + inTypeSnippets->bitWidth + "\n";
+    }
+
+    if (testCase.requireRtz)
+    {
+        extensions += "OpExtension \"SPV_KHR_float_controls\"\n";
+        capabilities += "OpCapability RoundingModeRTZ\n";
+        behaviorExecutionMode += "OpExecutionMode %main RoundingModeRTZ " + inTypeSnippets->bitWidth + "\n";
     }
 
     specializations["execution_mode"] = behaviorExecutionMode;
@@ -3237,6 +3256,17 @@ InstanceContextPtr GraphicsTestGroupBuilder::createInstanceContext(const Operati
         fragExtensions += "OpExtension \"SPV_KHR_float_controls\"\n";
         fragCapabilities += "OpCapability RoundingModeRTE\n";
         fragExecutionMode += "OpExecutionMode %main RoundingModeRTE " + inTypeSnippets->bitWidth + "\n";
+    }
+
+    if (testCase.requireRtz)
+    {
+        vertExtensions += "OpExtension \"SPV_KHR_float_controls\"\n";
+        vertCapabilities += "OpCapability RoundingModeRTZ\n";
+        vertExecutionMode += "OpExecutionMode %main RoundingModeRTZ " + inTypeSnippets->bitWidth + "\n";
+
+        fragExtensions += "OpExtension \"SPV_KHR_float_controls\"\n";
+        fragCapabilities += "OpCapability RoundingModeRTZ\n";
+        fragExecutionMode += "OpExecutionMode %main RoundingModeRTZ " + inTypeSnippets->bitWidth + "\n";
     }
 
     map<string, string> specializations;

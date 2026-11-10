@@ -24,6 +24,7 @@
 
 #include "vktMeshShaderProvokingVertexTestsEXT.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 #include "vktMeshShaderUtil.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkTypeUtil.hpp"
@@ -447,39 +448,44 @@ using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 } // anonymous namespace
 
-tcu::TestCaseGroup *createMeshShaderProvokingVertexTestsEXT(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderProvokingVertexTestsEXT(tcu::TestContext &testContext)
 {
-    const std::vector<Geometry> geometries{Geometry::LINES, Geometry::TRIANGLES};
-
-    const std::vector<ProvokingVertexModeVec> testModeCases{
-        ProvokingVertexModeVec{VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT},
-        ProvokingVertexModeVec{VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT},
-        ProvokingVertexModeVec{VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT, VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT},
-        ProvokingVertexModeVec{VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT, VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT},
-    };
-
-    GroupPtr provokingVertexGroup(new tcu::TestCaseGroup(testCtx, "provoking_vertex"));
-
-    for (const auto &geometry : geometries)
-    {
-        const auto geometryName = getCaseName(geometry);
-        GroupPtr geometryGroup(new tcu::TestCaseGroup(testCtx, geometryName.c_str()));
-
-        for (const auto &testModes : testModeCases)
+    return createTestGroup2(
+        testContext, "provoking_vertex",
+        [](tcu::TestCaseGroup *provokingVertexGroup)
         {
-            const auto modeName = getCaseName(testModes);
-            TestParams params{
-                testModes, // ProvokingVertexModeVec provokingVertices;
-                geometry,  // Geometry geometryType;
-            };
+            const std::vector<Geometry> geometries{Geometry::LINES, Geometry::TRIANGLES};
 
-            geometryGroup->addChild(new ProvokingVertexCase(testCtx, modeName, params));
-        }
+            for (const auto &geometry : geometries)
+            {
+                const auto geometryName = getCaseName(geometry);
+                addTestGroup2(provokingVertexGroup, geometryName,
+                              [geometry](tcu::TestCaseGroup *geometryGroup)
+                              {
+                                  const std::vector<ProvokingVertexModeVec> testModeCases{
+                                      ProvokingVertexModeVec{VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT},
+                                      ProvokingVertexModeVec{VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT},
+                                      ProvokingVertexModeVec{VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT,
+                                                             VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT},
+                                      ProvokingVertexModeVec{VK_PROVOKING_VERTEX_MODE_LAST_VERTEX_EXT,
+                                                             VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT},
+                                  };
 
-        provokingVertexGroup->addChild(geometryGroup.release());
-    }
+                                  auto &testCtx = geometryGroup->getTestContext();
 
-    return provokingVertexGroup.release();
+                                  for (const auto &testModes : testModeCases)
+                                  {
+                                      const auto modeName = getCaseName(testModes);
+                                      TestParams params{
+                                          testModes, // ProvokingVertexModeVec provokingVertices;
+                                          geometry,  // Geometry geometryType;
+                                      };
+
+                                      geometryGroup->addChild(new ProvokingVertexCase(testCtx, modeName, params));
+                                  }
+                              });
+            }
+        });
 }
 
 } // namespace MeshShader

@@ -1175,7 +1175,7 @@ tcu::TestStatus glc::subgroups::makeTessellationEvaluationFrameBufferTest(
 
     {
         glw::GLvoid *bufferPtr = vertexBuffer.mapBufferPtr();
-        std::vector<tcu::Vec4> data(2u * maxWidth, tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f));
+        std::vector<tcu::Vec4> data(2u * maxWidth, tcu::Vec4(1.0f, 0.5f, 1.0f, 1.0f));
         const float pixelSize  = 2.0f / static_cast<float>(maxWidth);
         float leftHandPosition = -1.0f;
 

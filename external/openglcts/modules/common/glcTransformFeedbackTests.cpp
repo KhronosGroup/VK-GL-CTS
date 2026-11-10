@@ -377,7 +377,12 @@ tcu::TestNode::IterateResult TransformFeedbackStatesTestCase::iterate()
     gl.getIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &bbinding);
     GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
 
-    if (m_isContextES)
+    // glGetTransformFeedbacki64_v needs GL 4.5 or ARB_direct_state_access, more than this test requires
+    const bool useDsaQuery =
+        !m_isContextES && (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 5)) ||
+                           m_context.getContextInfo().isExtensionSupported("GL_ARB_direct_state_access"));
+
+    if (!useDsaQuery)
     {
         gl.getInteger64i_v(GL_TRANSFORM_FEEDBACK_BUFFER_START, 0, &bstart);
         GLU_EXPECT_NO_ERROR(gl.getError(), "getInteger64i_v");

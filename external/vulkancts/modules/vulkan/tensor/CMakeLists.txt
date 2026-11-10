@@ -3,7 +3,6 @@
 include_directories(
 	..
 	../util
-	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_TENSOR_SRCS

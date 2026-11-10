@@ -50,6 +50,7 @@ const vk::VkPhysicalDeviceLayeredApiPropertiesListKHR&				getLayeredApiPropertie
 const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		getLegacyVertexAttributesPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceLineRasterizationProperties&				getLineRasterizationProperties				(void) const;
 const vk::VkPhysicalDeviceMaintenance10PropertiesKHR&				getMaintenance10Properties					(void) const;
+const vk::VkPhysicalDeviceMaintenance12PropertiesKHR&				getMaintenance12Properties					(void) const;
 const vk::VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const;
 const vk::VkPhysicalDeviceMaintenance4Properties&					getMaintenance4Properties					(void) const;
 const vk::VkPhysicalDeviceMaintenance5Properties&					getMaintenance5Properties					(void) const;

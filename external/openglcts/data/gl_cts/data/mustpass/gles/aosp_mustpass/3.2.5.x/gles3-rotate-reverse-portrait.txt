@@ -205,6 +205,7 @@ dEQP-GLES3.functional.fence_sync.client_wait_sync_noflush
 dEQP-GLES3.functional.fence_sync.client_wait_sync_smalldraw
 dEQP-GLES3.functional.fence_sync.client_wait_sync_timeout_largedraw
 dEQP-GLES3.functional.fence_sync.client_wait_sync_timeout_smalldraw
+dEQP-GLES3.functional.fence_sync.fbo_and_fence_sync
 dEQP-GLES3.functional.fence_sync.wait_sync_largedraw
 dEQP-GLES3.functional.fence_sync.wait_sync_smalldraw
 dEQP-GLES3.functional.occlusion_query.all_occluders
@@ -327,6 +328,8 @@ dEQP-GLES3.functional.pbo.renderbuffer.rgba8ui_clears
 dEQP-GLES3.functional.pbo.renderbuffer.rgba8ui_triangles
 dEQP-GLES3.functional.pbo.renderbuffer.srgb8_alpha8_clears
 dEQP-GLES3.functional.pbo.renderbuffer.srgb8_alpha8_triangles
+dEQP-GLES3.functional.pbo.upload.split_upload_last_line
+dEQP-GLES3.functional.pbo.upload.split_upload_last_pixel
 dEQP-GLES3.functional.prerequisite.clear_color
 dEQP-GLES3.functional.prerequisite.read_pixels
 dEQP-GLES3.functional.prerequisite.state_reset

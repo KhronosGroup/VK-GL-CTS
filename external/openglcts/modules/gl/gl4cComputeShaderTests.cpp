@@ -22,6 +22,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "gl4cComputeShaderTests.hpp"
+#include "glcMisc.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 #include "tcuMatrix.hpp"
@@ -4782,7 +4783,7 @@ class AdvancedPipelinePostXFB : public ComputeShaderBase
             float data[3 * 8];
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_storage_buffer);
             glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(data), data);
-            if (memcmp(data, in_data, sizeof(data)) != 0)
+            if (!glcts::floatBitsEqual(data, in_data, DE_LENGTH_OF_ARRAY(data)))
             {
                 m_context.getTestContext().getLog()
                     << tcu::TestLog::Message << "Data in shader storage buffer is incorrect."
@@ -4796,7 +4797,7 @@ class AdvancedPipelinePostXFB : public ComputeShaderBase
 
             float data[3 * 8];
             glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(data), data);
-            if (memcmp(data, ref_data, sizeof(data)) != 0)
+            if (!glcts::floatBitsEqual(data, ref_data, DE_LENGTH_OF_ARRAY(data)))
             {
                 m_context.getTestContext().getLog()
                     << tcu::TestLog::Message << "Data in xfb buffer is incorrect." << tcu::TestLog::EndMessage;

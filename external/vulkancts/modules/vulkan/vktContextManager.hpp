@@ -505,18 +505,16 @@ struct InstCaps
 {
     friend class ContextManager;
     // Creates InstCaps class with id=DefInstId. This default behavior mostly used in existing code.
-    InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine);
+    InstCaps(const vk::PlatformInterface &vkPlatform);
     // Creates InstCaps class with id=id_ parameter. This allows the ContextManager class to distinguish
     // whether the test needs a different instance than the default one.
-    InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_,
-             vkt::TestCase *testCase, const InstCaps *hint = nullptr, bool dontCreateDefaultDeviceFlag = false);
+    InstCaps(const vk::PlatformInterface &vkPlatform, const std::string &id_, vkt::TestCase *testCase,
+             const InstCaps *hint = nullptr);
 
     // All fields below are initialized in the same way as in the default instance.
     const uint32_t maximumFrameworkVulkanVersion;
     const uint32_t availableInstanceVersion;
     const uint32_t usedInstanceVersion;
-    const std::pair<uint32_t, uint32_t> deviceVersions;
-    const uint32_t usedApiVersion;
     const std::vector<std::string> coreExtensions;
 
     // This InstCaps identity.
@@ -530,13 +528,6 @@ struct InstCaps
     // Returns a list of extensions required to create a new instance,
     // concatenated from Core and the internal extension list.
     std::vector<std::string> getExtensions() const;
-
-    // Prevents the creation of a default device on this instance.
-    // By default, this flag is set to false, so the default device
-    // will always be created regardless of the number of
-    // logical devices created by the test
-    bool dontCreateDefaultDevice(bool flag);
-    bool dontCreateDefaultDevice() const;
 
     // Enables destruction of devices before starting a test.
     // Whenever function TestCase::getInstanceCapabilitiesId() returns a non-default value,
@@ -552,7 +543,6 @@ struct InstCaps
 private:
     std::vector<std::string> m_extensions;
     std::pair<bool, bool> m_destroyAllDevices;
-    bool m_dontCreateDefaultDevice;
     bool m_shouldRemoveInstanceOnTestExit;
     vk::VkPhysicalDevice selectDevice(    //
         const vk::InstanceInterface &vki, //
@@ -577,8 +567,6 @@ class ContextManager
     const de::SharedPtr<vk::ResourceInterface> m_resourceInterface;
     const uint32_t m_availableInstanceVersion;
     const uint32_t m_usedInstanceVersion;
-    const std::pair<uint32_t, uint32_t> m_deviceVersions;
-    const uint32_t m_usedApiVersion;
     const std::vector<std::string> m_instanceExtensions;
 #ifndef CTS_USES_VULKANSC
     using DebugReportRecorderPtr = de::SharedPtr<vk::DebugReportRecorder>;
@@ -596,6 +584,7 @@ class ContextManager
 #endif // CTS_USES_VULKANSC
     const vk::VkPhysicalDevice m_physicalDevice;
     const uint32_t m_deviceVersion;
+    const uint32_t m_usedApiVersion; // Lower of the instance and device versions, without patch number
     const int m_maxCustomDevices;
     const std::vector<std::string> m_deviceExtensions;
     const std::vector<const char *> m_creationExtensions;
@@ -606,7 +595,6 @@ class ContextManager
     std::vector<Item> m_contexts;
     std::deque<de::SharedPtr<ContextManager>> m_customManagers;
     const std::pair<bool, bool> m_destroyAllDevices;
-    const bool m_dontCreateDefaultDevice;
     const bool m_shouldBeRemovedOnTestExit;
 
     friend class TestCaseExecutor;
@@ -616,7 +604,7 @@ class ContextManager
                    Det_ icapsDet_);
     ContextManager(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
                    de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices, const InstCaps &icaps);
-    void keepMaxCustomDeviceCount();
+    void keepMaxCustomDeviceCount(int additionalDevicesToBeCreated);
     void print(tcu::TestLog &log, const vk::VkDeviceCreateInfo &createInfo) const;
     void setContextManager(de::SharedPtr<const ContextManager> cm, vkt::TestCase *testCase);
 
@@ -679,10 +667,6 @@ public:
     {
         return *m_instanceInterface;
     }
-    auto getDeviceVersions() const -> std::pair<uint32_t, uint32_t>
-    {
-        return m_deviceVersions;
-    }
     uint32_t getDeviceVersion() const
     {
         return m_deviceVersion;
@@ -729,10 +713,6 @@ public:
     auto findCustomManager(vkt::TestCase *testCase, de::SharedPtr<ContextManager> defaultContextManager,
                            const InstCaps *hintCaps) -> de::SharedPtr<ContextManager>;
     auto getCustomManagerById(const std::string &managerId) const -> de::SharedPtr<ContextManager>;
-    bool dontCreateDefaultDevice() const
-    {
-        return m_dontCreateDefaultDevice;
-    }
     bool shouldBeRemovedOnTestExit() const
     {
         return m_shouldBeRemovedOnTestExit;

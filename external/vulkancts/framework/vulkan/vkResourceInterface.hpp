@@ -118,8 +118,7 @@ public:
     std::vector<uint8_t> exportData() const;
     void importData(std::vector<uint8_t> &importText) const;
     virtual void importPipelineCacheData(const PlatformInterface &vkp, VkInstance instance,
-                                         const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                         uint32_t queueIndex) = 0;
+                                         const InstanceInterface &vki, VkPhysicalDevice physicalDevice) = 0;
     void registerObjectHash(uint64_t handle, std::size_t hashValue) const;
     const std::map<uint64_t, std::size_t> &getObjectHashes() const;
 
@@ -202,7 +201,6 @@ protected:
     mutable std::map<VkPipeline, VkPipelineOfflineCreateInfo> m_pipelineIdentifiers;
     mutable std::vector<vksc_server::VulkanPipelineSize> m_pipelineSizes;
     std::vector<VkPipelinePoolSize> m_pipelinePoolSizes;
-    tcu::Maybe<uint32_t> m_version;
     tcu::Maybe<bool> m_vulkanSC;
     bool m_enabledHandleDestroy;
 #endif // CTS_USES_VULKANSC
@@ -318,7 +316,7 @@ public:
     void increaseCommandBufferSize(VkCommandBuffer commandBuffer, VkDeviceSize commandSize) const override;
     void resetCommandPool(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags) const override;
     void importPipelineCacheData(const PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
-                                 VkPhysicalDevice physicalDevice, uint32_t queueIndex) override;
+                                 VkPhysicalDevice physicalDevice) override;
     void resetObjects() override;
     void resetPipelineCaches() override;
     bool resetPipelineCache(VkDevice device, bool onlyIfInSubprocess) override;
@@ -354,7 +352,7 @@ public:
                                 bool normalMode) const override;
 
     void importPipelineCacheData(const PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
-                                 VkPhysicalDevice physicalDevice, uint32_t queueIndex) override;
+                                 VkPhysicalDevice physicalDevice) override;
 
 protected:
     vk::ProgramBinary *compileProgram(const vk::ProgramIdentifier &progId, const vk::GlslSource &source,

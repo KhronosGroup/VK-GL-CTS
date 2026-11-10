@@ -297,8 +297,8 @@ void DRLRFeedbackLoopCase::checkSupport(Context &context) const
 // As used by the shaders to avoid optimizations, but its usage should result in a no-op.
 struct Modifiers
 {
-    const tcu::Vec4 zeros;
-    const tcu::Vec4 ones;
+    tcu::Vec4 zeros;
+    tcu::Vec4 ones;
 
     Modifiers() : zeros(0.0f, 0.0f, 0.0f, 0.0f), ones(1.0f, 1.0f, 1.0f, 1.0f)
     {

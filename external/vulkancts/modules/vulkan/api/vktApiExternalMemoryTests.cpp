@@ -4408,9 +4408,32 @@ void checkSupportWithAhb(Context &context, const ImageTestConfig config)
     commonCheckSupport(context, config);
 }
 
+void checkMemoryHandleTypeEnumSupport(Context &context, vk::VkExternalMemoryHandleTypeFlagBits externalType)
+{
+    switch (externalType)
+    {
+    case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT:
+        context.requireDeviceFunctionality("VK_EXT_external_memory_dma_buf");
+        break;
+    case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID:
+        context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
+        break;
+    case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA:
+        context.requireDeviceFunctionality("VK_FUCHSIA_external_memory");
+        break;
+    case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT:
+    case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT:
+        context.requireDeviceFunctionality("VK_EXT_external_memory_metal");
+        break;
+    default:
+        break;
+    }
+}
+
 void checkMemoryQueriesSupport(Context &context, vk::VkExternalMemoryHandleTypeFlagBits externalType)
 {
     checkInstanceExtensionsSupport(context, 0u, externalType, 0u);
+    checkMemoryHandleTypeEnumSupport(context, externalType);
 }
 
 de::MovePtr<tcu::TestCaseGroup> createFenceTests(tcu::TestContext &testCtx,
@@ -5137,6 +5160,7 @@ tcu::TestStatus AhbExternalFormatResolveApiInstance::iterate(void)
 void checkMaintenance5(Context &context, vk::VkExternalMemoryHandleTypeFlagBits flagBits)
 {
     checkInstanceExtensionsSupport(context, 0u, flagBits, 0u);
+    checkMemoryHandleTypeEnumSupport(context, flagBits);
     context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 

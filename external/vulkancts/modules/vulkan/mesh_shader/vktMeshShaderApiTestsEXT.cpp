@@ -706,9 +706,10 @@ tcu::TestStatus MeshApiInstance::iterate(void)
             VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
 
             drawIndirectCount2Info.addressRange      = {indirectBufferAddress + indirectArgs.offset,
-                                                        indirectBuffer->getBufferSize(), indirectArgs.stride};
+                                                        indirectBuffer->getBufferSize() - indirectArgs.offset,
+                                                        indirectArgs.stride};
             drawIndirectCount2Info.countAddressRange = {countBufferAddress + indirectCountOffset,
-                                                        countBuffer->getBufferSize()};
+                                                        countBuffer->getBufferSize() - indirectCountOffset};
             drawIndirectCount2Info.maxDrawCount      = maxCount;
 
             // use different valid addressFlags in some cases to test them

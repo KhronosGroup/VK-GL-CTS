@@ -38,6 +38,8 @@
 #include "tcuStringTemplate.hpp"
 #include "tcuTestLog.hpp"
 
+#include <array>
+
 using namespace glw;
 using namespace glu;
 
@@ -143,10 +145,11 @@ const glw::GLchar* texture_stencil8_multisample_frag =
     )";
 // clang-format on
 
-constexpr glw::GLenum g_multisampleTexTargets[2] = {GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY};
-constexpr size_t g_maxMultisampleTexTargets = (sizeof(g_multisampleTexTargets) / sizeof(g_multisampleTexTargets[0]));
-constexpr GLubyte g_stencilRef[4]           = {0, 64, 128, 255};
-constexpr unsigned g_numLayers              = 3;
+constexpr std::array<glw::GLenum, 2> g_multisampleTexTargets = {GL_TEXTURE_2D_MULTISAMPLE,
+                                                                GL_TEXTURE_2D_MULTISAMPLE_ARRAY};
+constexpr size_t g_maxMultisampleTexTargets                  = g_multisampleTexTargets.size();
+constexpr GLubyte g_stencilRef[4]                            = {0, 64, 128, 255};
+constexpr unsigned g_numLayers                               = 3;
 
 glw::GLint g_numMultisampleTexTargets =
     1; // will be raised to 2 depending on support for OES_texture_storage_multisample_2d_array
@@ -254,7 +257,7 @@ bool TextureMultisampledStencilTestCase::createTexturesTexStorageMultisample(GLu
 
     for (unsigned t = 0; t < (unsigned)g_numMultisampleTexTargets; ++t)
     {
-        textures[t] = createForTargetTexStorageMultisample(g_multisampleTexTargets[t], numSamples);
+        textures[t] = createForTargetTexStorageMultisample(g_multisampleTexTargets.at(t), numSamples);
         success     = success && textures[t];
     }
     if (!success)

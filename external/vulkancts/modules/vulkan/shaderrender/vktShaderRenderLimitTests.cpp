@@ -248,7 +248,7 @@ TestCaseGroup *createLimitTests(TestContext &testCtx)
     // Fragment input component case
     uint16_t fragmentComponentMaxLimits[] = {64u, 128u, 256u};
 
-    for (uint16_t limitNdx = 0; limitNdx < DE_LENGTH_OF_ARRAY(fragmentComponentMaxLimits); limitNdx++)
+    for (int limitNdx = 0; limitNdx < DE_LENGTH_OF_ARRAY(fragmentComponentMaxLimits); limitNdx++)
     {
         for (int16_t cases = 5; cases > 0; cases--)
             inputComponentsGroup->addChild(new FragmentInputComponentCase(

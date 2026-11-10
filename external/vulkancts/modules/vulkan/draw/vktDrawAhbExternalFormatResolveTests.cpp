@@ -27,6 +27,7 @@
 
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktDrawBaseClass.hpp"
 
@@ -59,6 +60,7 @@ struct TestParams
     bool m_isClearOnly;
     bool m_partialDraw;
     bool m_isInputAttachment; // Tests input attachment
+    bool m_useDescriptorHeap;
 };
 
 struct DrawResources
@@ -90,6 +92,10 @@ struct DrawResources
     Move<VkDescriptorPool> m_descriptorPool;
     Move<VkDescriptorSetLayout> m_descriptorSetLayout;
     Move<VkDescriptorSet> m_descriptorSet;
+
+    // Resources for descriptor heap
+    de::MovePtr<BufferWithMemory> m_resourceHeap;
+    VkBindHeapInfoEXT m_resourceHeapBindInfo = initVulkanStructure();
 };
 
 class AhbExternalFormatResolveTestInstance : public TestInstance
@@ -119,11 +125,13 @@ protected:
     void buildReferenceImage(tcu::TextureLevel &reference, bool performDownsample,
                              bool ahbFormatVulkanFormatAlphaMismatch) const;
 
+    VkImageViewCreateInfo makeImageViewCreateInfo(VkImage image, VkFormat format) const;
     Move<VkImageView> createImageView(VkImage image, vk::VkFormat format);
     void createImagesAndViews(AndroidHardwareBufferInstance &androidBuffer);
     void createRenderPass(void);
     void createFramebuffer(void);
     void createDescriptors(void);
+    void createDescriptorHeap(void);
     void createPipelineLayouts(void);
     void createPipelines(void);
 
@@ -151,6 +159,7 @@ protected:
     const bool m_isClearOnly;
     bool m_partialDraw;
     const bool m_isInputAttachment;
+    const bool m_useDescriptorHeap;
 };
 
 AhbExternalFormatResolveTestInstance::AhbExternalFormatResolveTestInstance(Context &context, const TestParams &params)
@@ -164,6 +173,7 @@ AhbExternalFormatResolveTestInstance::AhbExternalFormatResolveTestInstance(Conte
     , m_isClearOnly(params.m_isClearOnly)
     , m_partialDraw(params.m_partialDraw)
     , m_isInputAttachment(params.m_isInputAttachment)
+    , m_useDescriptorHeap(params.m_useDescriptorHeap)
 {
 }
 
@@ -206,7 +216,8 @@ tcu::TestStatus AhbExternalFormatResolveTestInstance::iterate(void)
     else
     {
         // Need to destroy Vulkan image that has a reference to the android hardware buffer
-        m_resources.~DrawResources();
+        DrawResources emptyResources;
+        m_resources = emptyResources;
 
         if (!androidBuffer.lock(AndroidHardwareBufferInstance::Usage::CPU_READ))
         {
@@ -729,10 +740,9 @@ void AhbExternalFormatResolveTestInstance::buildReferenceImage(tcu::TextureLevel
     }
 }
 
-Move<VkImageView> AhbExternalFormatResolveTestInstance::createImageView(VkImage image, vk::VkFormat format)
+VkImageViewCreateInfo AhbExternalFormatResolveTestInstance::makeImageViewCreateInfo(VkImage image,
+                                                                                    VkFormat format) const
 {
-    const vk::DeviceInterface &vk              = m_context.getDeviceInterface();
-    const vk::VkDevice device                  = m_context.getDevice();
     const vk::VkImageViewCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,                // VkStructureType            sType
         nullptr,                                                     // const void*                pNext
@@ -743,6 +753,15 @@ Move<VkImageView> AhbExternalFormatResolveTestInstance::createImageView(VkImage 
         makeComponentMappingIdentity(),                              // VkComponentMapping        components
         vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, // VkImageSubresourceRange    subresourceRange
                                       0u, VK_REMAINING_MIP_LEVELS, 0u, VK_REMAINING_ARRAY_LAYERS)};
+
+    return createInfo;
+}
+
+Move<VkImageView> AhbExternalFormatResolveTestInstance::createImageView(VkImage image, VkFormat format)
+{
+    const DeviceInterface &vk              = m_context.getDeviceInterface();
+    const VkDevice device                  = m_context.getDevice();
+    const VkImageViewCreateInfo createInfo = makeImageViewCreateInfo(image, format);
 
     return vk::createImageView(vk, device, &createInfo);
 }
@@ -1120,6 +1139,12 @@ void AhbExternalFormatResolveTestInstance::createDescriptors(void)
     if (!m_isInputAttachment)
         return;
 
+    if (m_useDescriptorHeap)
+    {
+        createDescriptorHeap();
+        return;
+    }
+
     const vk::DeviceInterface &vk = m_context.getDeviceInterface();
     const vk::VkDevice device     = m_context.getDevice();
 
@@ -1192,6 +1217,58 @@ void AhbExternalFormatResolveTestInstance::createDescriptors(void)
     vk.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
 }
 
+VkDeviceSize alignUp(VkDeviceSize value, VkDeviceSize alignment)
+{
+    DE_ASSERT(deIsPowerOfTwo64(alignment));
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+void AhbExternalFormatResolveTestInstance::createDescriptorHeap(void)
+{
+    const DeviceInterface &vk  = m_context.getDeviceInterface();
+    const VkDevice device      = m_context.getDevice();
+    const auto &heapProperties = m_context.getDescriptorHeapPropertiesEXT();
+
+    const VkDeviceSize bufferDescriptorStride =
+        alignUp(heapProperties.bufferDescriptorSize, heapProperties.bufferDescriptorAlignment);
+    const VkDeviceSize imageDescriptorStride =
+        alignUp(heapProperties.imageDescriptorSize, heapProperties.imageDescriptorAlignment);
+    const VkDeviceSize resourceStride             = de::max(bufferDescriptorStride, imageDescriptorStride);
+    const VkDeviceSize resourceHeapReservedOffset = resourceStride;
+    const VkDeviceSize resourceHeapSize = resourceHeapReservedOffset + heapProperties.minResourceHeapReservedRange;
+
+    const VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(
+        resourceHeapSize, VK_BUFFER_USAGE_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    m_resources.m_resourceHeap = de::MovePtr<BufferWithMemory>(
+        new BufferWithMemory(vk, device, m_context.getDefaultAllocator(), bufferCreateInfo,
+                             MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress));
+
+    VkBindHeapInfoEXT &bindInfo  = m_resources.m_resourceHeapBindInfo;
+    bindInfo.heapRange.address   = getBufferDeviceAddress(vk, device, m_resources.m_resourceHeap->get());
+    bindInfo.heapRange.size      = resourceHeapSize;
+    bindInfo.reservedRangeOffset = resourceHeapReservedOffset;
+    bindInfo.reservedRangeSize   = heapProperties.minResourceHeapReservedRange;
+
+    const VkImageViewCreateInfo viewCreateInfo =
+        m_nullColorAttachment ?
+            makeImageViewCreateInfo(m_resources.m_androidExternalImage.get(), VK_FORMAT_UNDEFINED) :
+            makeImageViewCreateInfo(m_resources.m_androidColorAttachmentImage->get(), m_colorAttachmentFormat);
+
+    VkImageDescriptorInfoEXT imageDescriptorInfo = initVulkanStructure();
+    imageDescriptorInfo.pView                    = &viewCreateInfo;
+    imageDescriptorInfo.layout                   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    VkResourceDescriptorInfoEXT resourceDescriptorInfo = initVulkanStructure();
+    resourceDescriptorInfo.type                        = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    resourceDescriptorInfo.data.pImage                 = &imageDescriptorInfo;
+
+    VkHostAddressRangeEXT hostRange;
+    hostRange.address = m_resources.m_resourceHeap->getAllocation().getHostPtr();
+    hostRange.size    = static_cast<size_t>(heapProperties.imageDescriptorSize);
+    VK_CHECK(vk.writeResourceDescriptorsEXT(device, 1u, &resourceDescriptorInfo, &hostRange));
+    flushAlloc(vk, device, m_resources.m_resourceHeap->getAllocation());
+}
+
 void AhbExternalFormatResolveTestInstance::createPipelineLayouts(void)
 {
     const vk::DeviceInterface &vk = m_context.getDeviceInterface();
@@ -1209,7 +1286,7 @@ void AhbExternalFormatResolveTestInstance::createPipelineLayouts(void)
 
     m_resources.m_basePipelineLayout = vk::createPipelineLayout(vk, device, &createInfo);
 
-    if (m_isInputAttachment)
+    if (m_isInputAttachment && !m_useDescriptorHeap)
     {
         createInfo.setLayoutCount                   = 1u;
         createInfo.pSetLayouts                      = &m_resources.m_descriptorSetLayout.get();
@@ -1384,9 +1461,30 @@ void AhbExternalFormatResolveTestInstance::createPipelines(void)
 
     if (m_isInputAttachment)
     {
-        stages[1].module                      = m_resources.m_fragmentShaderInput.get();
-        createInfo.layout                     = m_resources.m_inputAttachmentPipelineLayout.get();
-        createInfo.subpass                    = 1u;
+        VkDescriptorSetAndBindingMappingEXT mapping = initVulkanStructure();
+        mapping.descriptorSet                       = 0u;
+        mapping.firstBinding                        = 0u;
+        mapping.bindingCount                        = 1u;
+        mapping.resourceMask                        = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+        mapping.source                              = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+        VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+        mappingInfo.mappingCount                                  = 1u;
+        mappingInfo.pMappings                                     = &mapping;
+
+        VkPipelineCreateFlags2CreateInfo pipelineCreateFlags2 = initVulkanStructure();
+        pipelineCreateFlags2.pNext                            = createInfo.pNext;
+        pipelineCreateFlags2.flags                            = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+        stages[1].module   = m_resources.m_fragmentShaderInput.get();
+        createInfo.subpass = 1u;
+        if (m_useDescriptorHeap)
+        {
+            stages[1].pNext   = &mappingInfo;
+            createInfo.pNext  = &pipelineCreateFlags2;
+            createInfo.layout = VK_NULL_HANDLE;
+        }
+        else
+            createInfo.layout = m_resources.m_inputAttachmentPipelineLayout.get();
         m_resources.m_inputAttachmentPipeline = vk::createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &createInfo);
     }
 }
@@ -1503,9 +1601,12 @@ void AhbExternalFormatResolveTestInstance::drawCommands(vk::VkCommandBuffer cmd,
             {
                 vk.cmdBindPipeline(cmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
                                    m_resources.m_inputAttachmentPipeline.get());
-                vk.cmdBindDescriptorSets(cmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                         m_resources.m_inputAttachmentPipelineLayout.get(), 0u, 1u,
-                                         &m_resources.m_descriptorSet.get(), 0u, nullptr);
+                if (m_useDescriptorHeap)
+                    vk.cmdBindResourceHeapEXT(cmd, &m_resources.m_resourceHeapBindInfo);
+                else
+                    vk.cmdBindDescriptorSets(cmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             m_resources.m_inputAttachmentPipelineLayout.get(), 0u, 1u,
+                                             &m_resources.m_descriptorSet.get(), 0u, nullptr);
                 vk.cmdDraw(cmd, 4u, 1u, 0u, 0u);
             }
         }
@@ -1647,6 +1748,9 @@ void AhbExternalFormatResolveTestCase::checkSupport(Context &context) const
 
     if (m_params.m_groupParams.useDynamicRendering)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+    if (m_params.m_useDescriptorHeap)
+        context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
 }
 
 void createAhbExternalFormatResolveDrawTests(tcu::TestCaseGroup *testGroup, const SharedGroupParams groupParams)
@@ -1667,6 +1771,7 @@ void createAhbExternalFormatResolveDrawTests(tcu::TestCaseGroup *testGroup, cons
         false,                 // bool                                        m_isClearOnly
         false,                 // bool                                        m_partialDraw
         false,                 // bool                                        m_isInputAttachment
+        false,                 // bool                                        m_useDescriptorHeap
     };
 
     std::vector<vk::VkRect2D> partialRenderAreas(10u);
@@ -1686,7 +1791,9 @@ void createAhbExternalFormatResolveDrawTests(tcu::TestCaseGroup *testGroup, cons
     // Draw tests
     tcu::TestCaseGroup *drawGroup       = new tcu::TestCaseGroup(testGroup->getTestContext(), "draw");
     tcu::TestCaseGroup *inputAttachment = new tcu::TestCaseGroup(testGroup->getTestContext(), "input_attachment");
-    tcu::TestCaseGroup *clearGroup      = new tcu::TestCaseGroup(testGroup->getTestContext(), "clear");
+    tcu::TestCaseGroup *inputAttachmentHeap =
+        new tcu::TestCaseGroup(testGroup->getTestContext(), "input_attachment_heap");
+    tcu::TestCaseGroup *clearGroup = new tcu::TestCaseGroup(testGroup->getTestContext(), "clear");
     for (uint32_t i = 0; i < AndroidHardwareBufferInstance::Format::COUNT; ++i)
     {
         params.m_format = static_cast<AndroidHardwareBufferInstance::Format>(i);
@@ -1730,23 +1837,34 @@ void createAhbExternalFormatResolveDrawTests(tcu::TestCaseGroup *testGroup, cons
             params.m_usage             = gpuFramebufferSampled;
             params.m_renderArea        = defaultRenderArea;
 
-            tcu::TestCaseGroup *formatGroup = new tcu::TestCaseGroup(testGroup->getTestContext(), formatName.c_str());
-
-            params.m_renderArea = defaultRenderArea;
-            // Draw to full render area of external format
-            formatGroup->addChild(
-                new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "full_render_area", params));
-
-            params.m_partialDraw = true;
-            for (size_t renderAreaIndex = 0u; renderAreaIndex < partialRenderAreas.size(); ++renderAreaIndex)
+            for (const bool useDescriptorHeap : {false, true})
             {
-                params.m_renderArea = partialRenderAreas[renderAreaIndex];
-                formatGroup->addChild(new AhbExternalFormatResolveTestCase(
-                    testGroup->getTestContext(), "partial_render_area_" + std::to_string(renderAreaIndex), params));
-            }
-            params.m_partialDraw = false;
+                params.m_useDescriptorHeap = useDescriptorHeap;
 
-            inputAttachment->addChild(formatGroup);
+                tcu::TestCaseGroup *formatGroup =
+                    new tcu::TestCaseGroup(testGroup->getTestContext(), formatName.c_str());
+
+                params.m_renderArea = defaultRenderArea;
+                // Draw to full render area of external format
+                formatGroup->addChild(
+                    new AhbExternalFormatResolveTestCase(testGroup->getTestContext(), "full_render_area", params));
+
+                params.m_partialDraw = true;
+                for (size_t renderAreaIndex = 0u; renderAreaIndex < partialRenderAreas.size(); ++renderAreaIndex)
+                {
+                    params.m_renderArea = partialRenderAreas[renderAreaIndex];
+                    formatGroup->addChild(new AhbExternalFormatResolveTestCase(
+                        testGroup->getTestContext(), "partial_render_area_" + std::to_string(renderAreaIndex), params));
+                }
+                params.m_partialDraw = false;
+
+                if (useDescriptorHeap)
+                    inputAttachmentHeap->addChild(formatGroup);
+                else
+                    inputAttachment->addChild(formatGroup);
+            }
+
+            params.m_useDescriptorHeap = false;
             params.m_usage             = gpuFramebufferCpuRead;
             params.m_isInputAttachment = false;
         }
@@ -1769,6 +1887,7 @@ void createAhbExternalFormatResolveDrawTests(tcu::TestCaseGroup *testGroup, cons
     testGroup->addChild(clearGroup);
     testGroup->addChild(drawGroup);
     testGroup->addChild(inputAttachment);
+    testGroup->addChild(inputAttachmentHeap);
 }
 
 } // namespace

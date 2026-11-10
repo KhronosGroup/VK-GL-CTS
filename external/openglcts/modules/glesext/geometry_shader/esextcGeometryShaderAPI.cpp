@@ -28,6 +28,7 @@
 #include "tcuTestLog.hpp"
 #include <cstring>
 #include <memory>
+#include <vector>
 
 namespace glcts
 {
@@ -1891,8 +1892,8 @@ tcu::TestNode::IterateResult GeometryShaderMaxShaderStorageBlocksTest::iterate()
     glw::GLfloat *ptrTF_data                  = nullptr;
     bool result                               = true;
     glw::GLint ssbo_alignment                 = 0;
-    glw::GLint *ssbo_data                     = nullptr;
-    glw::GLint ssbo_data_size                 = 0;
+    std::vector<glw::GLint> ssbo_data;
+    glw::GLint ssbo_data_size = 0;
 
     std::string fs_code_specialized     = "";
     const char *fs_code_specialized_raw = nullptr;
@@ -1998,7 +1999,7 @@ tcu::TestNode::IterateResult GeometryShaderMaxShaderStorageBlocksTest::iterate()
 
     int_alignment  = ssbo_alignment / int_size;
     ssbo_data_size = m_gl_max_geometry_shader_storage_blocks_ext_value * ssbo_alignment;
-    ssbo_data      = new glw::GLint[ssbo_data_size];
+    ssbo_data.resize(ssbo_data_size);
 
     if ((ssbo_alignment % int_size) != 0)
     {
@@ -2027,12 +2028,8 @@ tcu::TestNode::IterateResult GeometryShaderMaxShaderStorageBlocksTest::iterate()
     gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssbo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer() call failed for GL_SHADER_STORAGE_BUFFER pname.");
 
-    gl.bufferData(GL_SHADER_STORAGE_BUFFER, ssbo_data_size, ssbo_data, GL_DYNAMIC_COPY);
+    gl.bufferData(GL_SHADER_STORAGE_BUFFER, ssbo_data_size, ssbo_data.data(), GL_DYNAMIC_COPY);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData() call failed.");
-
-    /* Free unused memory. */
-    delete[] ssbo_data;
-    ssbo_data = NULL;
 
     /* Bind specific m_ssbo_id buffer region to a specific Shader Storage Buffer binding point. */
     for (glw::GLint n_ssb = 0; n_ssb < (m_gl_max_geometry_shader_storage_blocks_ext_value); ++n_ssb)

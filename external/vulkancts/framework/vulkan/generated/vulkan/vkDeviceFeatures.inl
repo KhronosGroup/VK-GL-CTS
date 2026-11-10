@@ -317,6 +317,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceLegacyVertexAttributesFeatur
 template<> void initFeatureFromBlob<VkPhysicalDeviceLinearColorAttachmentFeaturesNV>(VkPhysicalDeviceLinearColorAttachmentFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMaintenance10FeaturesKHR>(VkPhysicalDeviceMaintenance10FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMaintenance11FeaturesKHR>(VkPhysicalDeviceMaintenance11FeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceMaintenance12FeaturesKHR>(VkPhysicalDeviceMaintenance12FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMaintenance7FeaturesKHR>(VkPhysicalDeviceMaintenance7FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMaintenance8FeaturesKHR>(VkPhysicalDeviceMaintenance8FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceMaintenance9FeaturesKHR>(VkPhysicalDeviceMaintenance9FeaturesKHR&, const AllFeaturesBlobs&) {}
@@ -506,6 +507,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceLineRasterizationFeatures
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceLinearColorAttachmentFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINEAR_COLOR_ATTACHMENT_FEATURES_NV, VK_NV_LINEAR_COLOR_ATTACHMENT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMaintenance10FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_FEATURES_KHR, VK_KHR_MAINTENANCE_10_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMaintenance11FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_11_FEATURES_KHR, VK_KHR_MAINTENANCE_11_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMaintenance12FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_12_FEATURES_KHR, VK_KHR_MAINTENANCE_12_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMaintenance4Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES, VK_KHR_MAINTENANCE_4_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMaintenance5Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES, VK_KHR_MAINTENANCE_5_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMaintenance6Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES, VK_KHR_MAINTENANCE_6_EXTENSION_NAME}; }
@@ -728,6 +730,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceLinearColorAttachmentFeaturesNV>, VK_NV_LINEAR_COLOR_ATTACHMENT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMaintenance10FeaturesKHR>, VK_KHR_MAINTENANCE_10_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMaintenance11FeaturesKHR>, VK_KHR_MAINTENANCE_11_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceMaintenance12FeaturesKHR>, VK_KHR_MAINTENANCE_12_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMaintenance4Features>, VK_KHR_MAINTENANCE_4_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMaintenance5Features>, VK_KHR_MAINTENANCE_5_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMaintenance6Features>, VK_KHR_MAINTENANCE_6_EXTENSION_NAME },

@@ -25,6 +25,7 @@
 #include "vktMeshShaderConditionalRenderingTestsEXT.hpp"
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkObjUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -41,6 +42,7 @@
 #include "tcuTextureUtil.hpp"
 
 #include <vector>
+#include <array>
 #include <sstream>
 #include <memory>
 
@@ -598,142 +600,155 @@ tcu::TestStatus ConditionalRenderingInstance::iterate()
 
 tcu::TestCaseGroup *createMeshShaderConditionalRenderingTestsEXT(tcu::TestContext &testCtx)
 {
-    GroupPtr mainGroup(new tcu::TestCaseGroup(testCtx, "conditional_rendering"));
-
-    const struct
+    struct DrawTypeCase
     {
         DrawType drawType;
         const char *name;
-    } drawTypeCases[] = {
-        {DrawType::DRAW, "draw"},
-        {DrawType::DRAW_INDIRECT, "draw_indirect"},
-        {DrawType::DRAW_INDIRECT_WITH_COUNT, "draw_indirect_count"},
     };
 
-    const struct
+    struct CmdBufferTypeCase
     {
         CmdBufferType cmdBufferType;
         const char *name;
-    } cmdBufferTypeCases[] = {
-        {CmdBufferType::PRIMARY, "primary_cmd_buffer"},
-        {CmdBufferType::SECONDARY, "secondary_cmd_buffer"},
-        {CmdBufferType::SECONDARY_WITH_INHERITANCE, "secondary_cmd_buffer_inheritance"},
     };
 
-    const struct
+    struct BindWithOffsetCase
     {
         bool bindWithOffset;
         const char *name;
-    } bindWithOffsetCases[] = {
-        {false, "bind_without_offset"},
-        {true, "bind_with_offset"},
     };
 
-    const struct
+    struct CondWithOffsetCase
     {
         bool condWithOffset;
         const char *name;
-    } condWithOffsetCases[] = {
-        {false, "cond_without_offset"},
-        {true, "cond_with_offset"},
     };
 
-    const struct
+    struct InversionCase
     {
         bool inverted;
         const char *name;
-    } inversionCases[] = {
-        {false, "normal_cond"},
-        {true, "inverted_cond"},
     };
 
-    const struct
+    struct UseTaskCase
     {
         bool useTask;
         const char *name;
-    } useTaskCases[] = {
-        {false, "mesh_only"},
-        {true, "mesh_and_task"},
     };
 
-    const auto condValues = getCondValues();
+    using DrawTypeCaseArray       = std::array<DrawTypeCase, 3>;
+    using CmdBufferTypeCaseArray  = std::array<CmdBufferTypeCase, 3>;
+    using BindWithOffsetCaseArray = std::array<BindWithOffsetCase, 2>;
+    using CondWithOffsetCaseArray = std::array<CondWithOffsetCase, 2>;
+    using InversionCaseArray      = std::array<InversionCase, 2>;
+    using UseTaskCaseArray        = std::array<UseTaskCase, 2>;
 
-    for (const auto &drawTypeCase : drawTypeCases)
-    {
-        GroupPtr drawTypeGroup(new tcu::TestCaseGroup(testCtx, drawTypeCase.name));
+    const auto drawTypeCases = std::make_shared<const DrawTypeCaseArray>(DrawTypeCaseArray{{
+        {DrawType::DRAW, "draw"},
+        {DrawType::DRAW_INDIRECT, "draw_indirect"},
+        {DrawType::DRAW_INDIRECT_WITH_COUNT, "draw_indirect_count"},
+    }});
 
-        for (const auto &cmdBufferTypeCase : cmdBufferTypeCases)
+    const auto cmdBufferTypeCases = std::make_shared<const CmdBufferTypeCaseArray>(CmdBufferTypeCaseArray{{
+        {CmdBufferType::PRIMARY, "primary_cmd_buffer"},
+        {CmdBufferType::SECONDARY, "secondary_cmd_buffer"},
+        {CmdBufferType::SECONDARY_WITH_INHERITANCE, "secondary_cmd_buffer_inheritance"},
+    }});
+
+    const auto bindWithOffsetCases = std::make_shared<const BindWithOffsetCaseArray>(BindWithOffsetCaseArray{{
+        {false, "bind_without_offset"},
+        {true, "bind_with_offset"},
+    }});
+
+    const auto condWithOffsetCases = std::make_shared<const CondWithOffsetCaseArray>(CondWithOffsetCaseArray{{
+        {false, "cond_without_offset"},
+        {true, "cond_with_offset"},
+    }});
+
+    const auto inversionCases = std::make_shared<const InversionCaseArray>(InversionCaseArray{{
+        {false, "normal_cond"},
+        {true, "inverted_cond"},
+    }});
+
+    const auto useTaskCases = std::make_shared<const UseTaskCaseArray>(UseTaskCaseArray{{
+        {false, "mesh_only"},
+        {true, "mesh_and_task"},
+    }});
+
+    // clang-format off
+    return createTestGroup2(testCtx, "conditional_rendering", [=](tcu::TestCaseGroup *mainGroup){
+        for (size_t drawTypeIdx = 0; drawTypeIdx < drawTypeCases->size(); ++drawTypeIdx)
         {
-            GroupPtr cmdBufferTypeGroup(new tcu::TestCaseGroup(testCtx, cmdBufferTypeCase.name));
-
-            for (const auto &bindWithOffsetCase : bindWithOffsetCases)
-            {
-                GroupPtr bindWithOffsetGroup(new tcu::TestCaseGroup(testCtx, bindWithOffsetCase.name));
-
-                for (const auto &condWithOffsetCase : condWithOffsetCases)
+            addTestGroup2(mainGroup, drawTypeCases->at(drawTypeIdx).name, [=](tcu::TestCaseGroup *drawTypeGroup){
+                for (size_t cmdBufferTypeIdx = 0; cmdBufferTypeIdx < cmdBufferTypeCases->size(); ++cmdBufferTypeIdx)
                 {
-                    GroupPtr condWithOffsetGroup(new tcu::TestCaseGroup(testCtx, condWithOffsetCase.name));
-
-                    for (const auto &inversionCase : inversionCases)
-                    {
-                        GroupPtr inversionGroup(new tcu::TestCaseGroup(testCtx, inversionCase.name));
-
-                        for (const auto &useTaskCase : useTaskCases)
+                    addTestGroup2(drawTypeGroup, cmdBufferTypeCases->at(cmdBufferTypeIdx).name, [=](tcu::TestCaseGroup *cmdBufferTypeGroup){
+                        for (size_t bindWithOffsetIdx = 0; bindWithOffsetIdx < bindWithOffsetCases->size(); ++bindWithOffsetIdx)
                         {
-                            GroupPtr useTaskGroup(new tcu::TestCaseGroup(testCtx, useTaskCase.name));
-
-                            for (const auto &condValue : condValues)
-                            {
-                                for (const auto multiView : {false, true})
+                            addTestGroup2(cmdBufferTypeGroup, bindWithOffsetCases->at(bindWithOffsetIdx).name, [=](tcu::TestCaseGroup *bindWithOffsetGroup){
+                                for (size_t condWithOffsetIdx = 0; condWithOffsetIdx < condWithOffsetCases->size(); ++condWithOffsetIdx)
                                 {
-                                    if (multiView)
-                                    {
-                                        // Skip some multiview combinations which are not that interesting.
-                                        if (condValue != 0u && condValue != 1u)
-                                            continue;
+                                    addTestGroup2(bindWithOffsetGroup, condWithOffsetCases->at(condWithOffsetIdx).name, [=](tcu::TestCaseGroup *condWithOffsetGroup){
+                                        for (size_t inversionIdx = 0; inversionIdx < inversionCases->size(); ++inversionIdx)
+                                        {
+                                            addTestGroup2(condWithOffsetGroup, inversionCases->at(inversionIdx).name, [=](tcu::TestCaseGroup *inversionGroup){
+                                                for (size_t useTaskIdx = 0; useTaskIdx < useTaskCases->size(); ++useTaskIdx)
+                                                {
+                                                    addTestGroup2(inversionGroup, useTaskCases->at(useTaskIdx).name, [=](tcu::TestCaseGroup *useTaskGroup){
+                                                        const auto &drawTypeCase = drawTypeCases->at(drawTypeIdx);
+                                                        const auto &cmdBufferTypeCase = cmdBufferTypeCases->at(cmdBufferTypeIdx);
+                                                        const auto &bindWithOffsetCase = bindWithOffsetCases->at(bindWithOffsetIdx);
+                                                        const auto &condWithOffsetCase = condWithOffsetCases->at(condWithOffsetIdx);
+                                                        const auto &inversionCase = inversionCases->at(inversionIdx);
+                                                        const auto &useTaskCase = useTaskCases->at(useTaskIdx);
 
-                                        if (bindWithOffsetCase.bindWithOffset)
-                                            continue;
+                                                        const auto condValues = getCondValues();
+                                                        for (const auto &condValue : condValues)
+                                                        {
+                                                            for (const auto multiView : {false, true})
+                                                            {
+                                                                if (multiView)
+                                                                {
+                                                                    // Skip some multiview combinations which are not that interesting.
+                                                                    if (condValue != 0u && condValue != 1u)
+                                                                        continue;
 
-                                        if (condWithOffsetCase.condWithOffset)
-                                            continue;
-                                    }
+                                                                    if (bindWithOffsetCase.bindWithOffset)
+                                                                        continue;
 
-                                    const auto testName =
-                                        "value_" + paddedHex(condValue) + (multiView ? "_multiview" : "");
-                                    const TestParams params = {
-                                        drawTypeCase.drawType,             // DrawType drawType;
-                                        cmdBufferTypeCase.cmdBufferType,   // CmdBufferType cmdBufferType;
-                                        bindWithOffsetCase.bindWithOffset, // bool bindWithOffset;
-                                        condWithOffsetCase.condWithOffset, // bool condWithOffset;
-                                        condValue,                         // uint32_t condValue;
-                                        inversionCase.inverted,            // bool inverted;
-                                        useTaskCase.useTask,               // bool useTask;
-                                        multiView,                         // bool multiView;
-                                    };
-                                    useTaskGroup->addChild(new ConditionalRenderingCase(testCtx, testName, params));
+                                                                    if (condWithOffsetCase.condWithOffset)
+                                                                        continue;
+                                                                }
+
+                                                                const auto testName =
+                                                                    "value_" + paddedHex(condValue) + (multiView ? "_multiview" : "");
+                                                                const TestParams params = {
+                                                                    drawTypeCase.drawType,             // DrawType drawType;
+                                                                    cmdBufferTypeCase.cmdBufferType,   // CmdBufferType cmdBufferType;
+                                                                    bindWithOffsetCase.bindWithOffset, // bool bindWithOffset;
+                                                                    condWithOffsetCase.condWithOffset, // bool condWithOffset;
+                                                                    condValue,                         // uint32_t condValue;
+                                                                    inversionCase.inverted,            // bool inverted;
+                                                                    useTaskCase.useTask,               // bool useTask;
+                                                                    multiView,                         // bool multiView;
+                                                                };
+                                                                useTaskGroup->addChild(new ConditionalRenderingCase(useTaskGroup->getTestContext(), testName, params));
+                                                            }
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        }
+                                    });
                                 }
-                            }
-
-                            inversionGroup->addChild(useTaskGroup.release());
+                            });
                         }
-
-                        condWithOffsetGroup->addChild(inversionGroup.release());
-                    }
-
-                    bindWithOffsetGroup->addChild(condWithOffsetGroup.release());
+                    });
                 }
-
-                cmdBufferTypeGroup->addChild(bindWithOffsetGroup.release());
-            }
-
-            drawTypeGroup->addChild(cmdBufferTypeGroup.release());
+            });
         }
-
-        mainGroup->addChild(drawTypeGroup.release());
-    }
-
-    return mainGroup.release();
+    });
+    // clang-format on
 }
 
 } // namespace MeshShader

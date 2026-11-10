@@ -441,17 +441,6 @@ public:
     virtual std::string getRequiredCapabilitiesId() const override;
     virtual void initDeviceCapabilities(DevCaps &caps) override;
 
-#ifdef CTS_USES_VULKANSC
-    virtual std::string getInstanceCapabilitiesId() const override
-    {
-        return getRequiredCapabilitiesId();
-    }
-    virtual void initInstanceCapabilities(InstCaps &caps) override
-    {
-        caps.shouldRemoveInstanceOnTestExit(true);
-    }
-#endif
-
 private:
     const vk::PipelineConstructionType m_pipelineConstructionType;
     const uint32_t m_numInstances;

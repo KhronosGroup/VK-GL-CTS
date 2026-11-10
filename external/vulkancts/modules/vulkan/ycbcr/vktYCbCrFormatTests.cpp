@@ -28,28 +28,22 @@
 #include "vktShaderExecutor.hpp"
 #include "vktYCbCrUtil.hpp"
 
-#include "vkStrUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkImageUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
 
 #include "deStringUtil.hpp"
-#include "deSharedPtr.hpp"
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
-#include "deSTLUtil.hpp"
 
-namespace vkt
-{
-namespace ycbcr
+namespace vkt::ycbcr
 {
 namespace
 {
@@ -292,8 +286,8 @@ ShaderSpec getShaderSpec(const TestParameters &params)
 {
     ShaderSpec spec;
 
-    spec.inputs.push_back(Symbol("texCoord", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP)));
-    spec.outputs.push_back(Symbol("result", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP)));
+    spec.inputs.emplace_back("texCoord", glu::VarType(glu::TYPE_FLOAT_VEC2, glu::PRECISION_HIGHP));
+    spec.outputs.emplace_back("result", glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP));
 
     if (params.useArrayLayers)
     {
@@ -311,6 +305,9 @@ ShaderSpec getShaderSpec(const TestParameters &params)
 
 void checkSupport(Context &context, const TestParameters params)
 {
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+
     checkImageSupport(context, params.format, params.flags, params.tiling);
 
     if (params.useArrayLayers)
@@ -319,7 +316,7 @@ void checkSupport(Context &context, const TestParameters params)
             TCU_THROW(NotSupportedError, "VK_EXT_ycbcr_image_arrays is not supported");
 
         VkImageFormatProperties properties = getPhysicalDeviceImageFormatProperties(
-            context.getInstanceInterface(), context.getPhysicalDevice(), params.format, VK_IMAGE_TYPE_2D, params.tiling,
+            vki, physicalDevice, params.format, VK_IMAGE_TYPE_2D, params.tiling,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, params.flags);
         if (properties.maxArrayLayers < 2)
             TCU_THROW(NotSupportedError, "Image format does not support more than 1 maxArrayLayers");
@@ -334,6 +331,14 @@ void checkSupport(Context &context, const TestParameters params)
 
     if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
         context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
+
+    const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(vki, physicalDevice, params.format);
+    const VkFormatFeatureFlags featureFlags   = params.tiling == VK_IMAGE_TILING_OPTIMAL ?
+                                                    formatProperties.optimalTilingFeatures :
+                                                    formatProperties.linearTilingFeatures;
+
+    if (!(featureFlags & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT))
+        TCU_THROW(NotSupportedError, "Format does not support midpoint chroma subsampling");
 }
 
 void generateLookupCoordinates(const UVec2 &imageSize, vector<Vec2> *dst)
@@ -371,17 +376,7 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
         allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags,
                                    mappedMemory ? MemoryRequirement::HostVisible : MemoryRequirement::Any));
 
-    const VkFormatProperties formatProperties =
-        getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-    const VkFormatFeatureFlags featureFlags = tiling == VK_IMAGE_TILING_OPTIMAL ?
-                                                  formatProperties.optimalTilingFeatures :
-                                                  formatProperties.linearTilingFeatures;
-
-    // VUID-VkSamplerYcbcrConversionCreateInfo-xChromaOffset-01652
-    if (!(featureFlags & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT))
-        TCU_THROW(NotSupportedError, "Format does not support midpoint chroma subsampling");
-
-    const VkSamplerYcbcrConversionCreateInfo conversionInfo = {
+    const VkSamplerYcbcrConversionCreateInfo conversionInfo{
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
         nullptr,
         format,
@@ -736,5 +731,4 @@ tcu::TestCaseGroup *createFormatTests(tcu::TestContext &testCtx)
     return createTestGroup(testCtx, "format", populateFormatGroup);
 }
 
-} // namespace ycbcr
-} // namespace vkt
+} // namespace vkt::ycbcr

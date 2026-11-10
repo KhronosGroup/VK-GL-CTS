@@ -893,11 +893,12 @@ TestStatus BuiltinFragDepthCaseInstance::iterate(void)
              0u,                                               // uint32_t                dstQueueFamilyIndex
              *depthImage,                                      // VkImage                image
              {
-                 VK_IMAGE_ASPECT_DEPTH_BIT, // VkImageAspectFlags        aspectMask
-                 0u,                        // uint32_t                    baseMipLevel
-                 1u,                        // uint32_t                    levelCount
-                 0u,                        // uint32_t                    baseArrayLayer
-                 1u                         // uint32_t                    layerCount
+                 // VUID-VkImageMemoryBarrier-image-03320
+                 getImageAspectFlags(mapVkFormat(m_format)), // VkImageAspectFlags        aspectMask
+                 0u,                                         // uint32_t                    baseMipLevel
+                 1u,                                         // uint32_t                    levelCount
+                 0u,                                         // uint32_t                    baseArrayLayer
+                 1u                                          // uint32_t                    layerCount
              }},
             {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType        sType
              nullptr,                                // const void*            pNext
@@ -2679,8 +2680,10 @@ TestCaseGroup *createBuiltinVarTests(TestContext &testCtx)
     builtinGroup->addChild(fragCoordMsaaInputGroup.release());
     builtinGroup->addChild(simpleGroup.release());
 
-    for (uint16_t shaderType = 0;
-         shaderType <= (SHADER_INPUT_BUILTIN_BIT | SHADER_INPUT_VARYING_BIT | SHADER_INPUT_CONSTANT_BIT); ++shaderType)
+    const ShaderInputTypes allShaderInputs =
+        SHADER_INPUT_BUILTIN_BIT | SHADER_INPUT_VARYING_BIT | SHADER_INPUT_CONSTANT_BIT;
+
+    for (ShaderInputTypes shaderType = 0; shaderType <= allShaderInputs; ++shaderType)
     {
         inputVariationsGroup->addChild(
             new BuiltinInputVariationsCase(testCtx, shaderInputTypeToString(shaderType), shaderType));

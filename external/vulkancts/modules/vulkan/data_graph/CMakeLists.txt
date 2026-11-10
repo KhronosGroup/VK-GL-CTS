@@ -4,7 +4,6 @@ include_directories(
 	..
 	../util
 	./tosa
-	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_DATA_GRAPH_SRCS

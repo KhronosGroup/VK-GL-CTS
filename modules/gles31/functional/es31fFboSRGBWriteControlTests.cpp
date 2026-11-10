@@ -1042,6 +1042,7 @@ void Renderer::draw(void)
 
 void Renderer::storeShaderProgramInfo(void)
 {
+    TCU_CHECK_INTERNAL(m_shaderProgram);
     m_shaderProgramInfo    = m_shaderProgram->getLogInfo();
     m_hasShaderProgramInfo = true;
 }

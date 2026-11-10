@@ -354,6 +354,7 @@ void fillRandomNoNaN(de::Random *randomGen, uint8_t *const data, uint32_t size, 
         while (ndx < size)
         {
             data[ndx] = 0;
+            ++ndx;
         }
     }
     else

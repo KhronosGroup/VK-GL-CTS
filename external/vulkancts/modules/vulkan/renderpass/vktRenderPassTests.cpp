@@ -55,6 +55,7 @@
 #include "vktRenderPassPerformanceCountersByRegionTests.hpp"
 #include "vktRenderPassMultiviewPerViewTests.hpp"
 #include "vktDynamicRenderingMultiviewClearTests.hpp"
+#include "vktRenderPassInputAttachmentIndicesTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 #include "vktTestGroupUtil.hpp"
@@ -7073,8 +7074,8 @@ void addAttachmentAllocationTests(tcu::TestCaseGroup *group, const TestConfigExt
                                 VkImageAspectFlags aspect = 0u;
                                 if (testConfigExternal.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
                                 {
-                                    bool col = colorAttachments.find(inputAttachmentIndex) != colorAttachments.end();
-                                    aspect   = col ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
+                                    const VkFormat format = attachments[inputAttachmentIndex].getFormat();
+                                    aspect                = getImageAspectFlags(format);
                                 }
                                 inputAttachmentReferences.push_back(
                                     AttachmentReference((uint32_t)subpassInputAttachments[inputAttachmentNdx],
@@ -7149,6 +7150,23 @@ void addAttachmentAllocationTests(tcu::TestCaseGroup *group, const TestConfigExt
                             if (lastUseOfAttachment[attachmentIndex] &&
                                 (*lastUseOfAttachment[attachmentIndex]) != subpassIndex)
                                 preserveAttachments.push_back(attachmentIndex);
+                        }
+
+                        // A preserved attachment needs a dependency from a prior subpass that uses or preserves it
+                        // (VUID-VkRenderPassCreateInfo-None-10915). The previous subpass does.
+                        if (!preserveAttachments.empty())
+                        {
+                            bool foundDependency = false;
+
+                            for (const SubpassDependency &dependency : deps)
+                                if (dependency.getSrcPass() == subpassIndex - 1 &&
+                                    dependency.getDstPass() == subpassIndex)
+                                    foundDependency = true;
+
+                            if (!foundDependency)
+                                deps.push_back(SubpassDependency(
+                                    subpassIndex - 1, subpassIndex, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, 0u));
                         }
 
                         // Use random image layout when possible
@@ -8900,6 +8918,7 @@ void createChildren(tcu::TestCaseGroup *group)
     group->addChild(createRenderPass2Tests(testCtx, "renderpass2"));
 #ifndef CTS_USES_VULKANSC
     group->addChild(createDynamicRenderingTests(testCtx, "dynamic_rendering"));
+    group->addChild(createRenderPassInputAttachmentIndicesTests(testCtx));
 #endif
 }
 

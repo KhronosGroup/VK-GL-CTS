@@ -14444,6 +14444,8 @@ std::string InitializerListTest::getVectorValues(GLuint column, GLuint size)
     case 4:
         init_template = "uni_matrix[COLUMN].z, uni_matrix[COLUMN].y, uni_matrix[COLUMN].z, uni_matrix[COLUMN].w";
         break;
+    default:
+        TCU_FAIL("Invalid enum");
     }
 
     switch (column)
@@ -14460,6 +14462,8 @@ std::string InitializerListTest::getVectorValues(GLuint column, GLuint size)
     case 3:
         column_index = "3";
         break;
+    default:
+        TCU_FAIL("Invalid enum");
     }
 
     std::string initializer = init_template;
@@ -17415,6 +17419,8 @@ void BuiltInAssignmentTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, b
     case 1:
         verification_snippet = max_verification_snippet;
         break;
+    default:
+        TCU_FAIL("Invalid enum");
     }
 
     out_source.m_parts[0].m_code = shader_template;

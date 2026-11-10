@@ -1072,6 +1072,58 @@ tcu::TestStatus createDeviceWithQueuePrioritiesContentionTest(Context &context)
     return tcu::TestStatus::pass("Pass");
 }
 
+void checkMaintenance12Support(Context &context)
+{
+    context.requireDeviceFunctionality("VK_KHR_maintenance12");
+}
+
+tcu::TestStatus createDeviceWithNullQueuePrioritiesTest(Context &context)
+{
+    const InstanceWrapper instance(createCustomInstanceFromContext(context));
+    const auto &instanceDriver(instance.getDriver());
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
+    const uint32_t queueFamilyIndex       = 0;
+    const uint32_t queueCount             = 1;
+    const uint32_t queueIndex             = 0;
+
+    const vector<VkQueueFamilyProperties> queueFamilyProperties =
+        getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+    std::vector<const char *> enabledExtensions;
+    if (de::contains(context.getDeviceExtensions(), std::string("VK_KHR_maintenance12")))
+        enabledExtensions.push_back("VK_KHR_maintenance12");
+
+    const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        nullptr,
+        (VkDeviceQueueCreateFlags)0u,
+        queueFamilyIndex, //queueFamilyIndex;
+        queueCount,       //queueCount;
+        nullptr,          //pQueuePriorities;
+    };
+
+    const VkDeviceCreateInfo deviceCreateInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
+        nullptr,                              //pNext;
+        (VkDeviceCreateFlags)0u,
+        1,                                  //queueRecordCount;
+        &deviceQueueCreateInfo,             //pRequestedQueues;
+        0,                                  //layerCount;
+        nullptr,                            //ppEnabledLayerNames;
+        (uint32_t)enabledExtensions.size(), //extensionCount;
+        enabledExtensions.data(),           //ppEnabledExtensionNames;
+        nullptr,                            //pEnabledFeatures;
+    };
+
+    const DeviceWrapper device = instance.createCustomDevice(physicalDevice, &deviceCreateInfo);
+    const auto &deviceDriver   = device.getDriver();
+    const VkQueue queue        = getDeviceQueue(deviceDriver, device, queueFamilyIndex, queueIndex);
+
+    VK_CHECK(deviceDriver.queueWaitIdle(queue));
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 void checkGlobalPrioritySupport(Context &context, bool useKhrGlobalPriority)
 {
     const std::string extName = (useKhrGlobalPriority ? "VK_KHR_global_priority" : "VK_EXT_global_priority");
@@ -1221,6 +1273,105 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
                 || (error.getError() == VK_ERROR_INITIALIZATION_FAILED && mustFail)
 #endif // CTS_USES_VULKANSC
             )
+            {
+                continue;
+            }
+            else
+            {
+                log << TestLog::Message << "exception thrown " << error.getMessage()
+                    << ", globalPriority = " << globalPriority << ", queueCreateInfo " << queueCreateInfo
+                    << ", Error Code: " << error.getError() << TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void checkMaintenance12GlobalPrioritySupport(Context &context, bool useKhrGlobalPriority)
+{
+    context.requireDeviceFunctionality("VK_KHR_maintenance12");
+    const std::string extName = (useKhrGlobalPriority ? "VK_KHR_global_priority" : "VK_EXT_global_priority");
+    context.requireDeviceFunctionality(extName);
+}
+
+tcu::TestStatus createDeviceWithNullQueuePrioritiesAndGlobalPriorityTest(Context &context, bool useKhrGlobalPriority)
+{
+    tcu::TestLog &log                              = context.getTestContext().getLog();
+    const auto instance                            = InstanceWrapper(context);
+    const VkPhysicalDevice physicalDevice          = instance.getPhysicalDevice();
+    const VkQueueGlobalPriority globalPriorities[] = {
+        VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR,
+        VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR};
+
+    std::vector<const char *> enabledExtensions = {"VK_KHR_maintenance12", "VK_EXT_global_priority"};
+    if (useKhrGlobalPriority)
+        enabledExtensions = {"VK_KHR_maintenance12", "VK_KHR_global_priority"};
+
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
+    {
+        enabledExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
+    }
+
+    for (VkQueueGlobalPriority globalPriority : globalPriorities)
+    {
+        const VkDeviceQueueGlobalPriorityCreateInfo queueGlobalPriority{
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR, //sType;
+            nullptr,                                                        //pNext;
+            globalPriority                                                  //globalPriority;
+        };
+
+        const VkDeviceQueueCreateInfo queueCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, //sType;
+            &queueGlobalPriority,                       //pNext;
+            (VkDeviceQueueCreateFlags)0u,               //flags;
+            0,                                          //queueFamilyIndex;
+            1,                                          //queueCount;
+            nullptr                                     //pQueuePriorities;
+        };
+
+        const VkDeviceCreateInfo deviceCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, //sType;
+            nullptr,                              //pNext;
+            (VkDeviceCreateFlags)0u,              //flags;
+            1,                                    //queueRecordCount;
+            &queueCreateInfo,                     //pRequestedQueues;
+            0,                                    //layerCount;
+            nullptr,                              //ppEnabledLayerNames;
+            (uint32_t)enabledExtensions.size(),   //extensionCount;
+            enabledExtensions.data(),             //ppEnabledExtensionNames;
+            nullptr,                              //pEnabledFeatures;
+        };
+
+        const bool mayBeDenied = globalPriority > VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR;
+
+        try
+        {
+            const DeviceWrapper device(instance.createCustomDevice(physicalDevice, &deviceCreateInfo));
+            const auto &deviceDriver(device.getDriver());
+            const uint32_t queueFamilyIndex = deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex;
+            const VkQueue queue             = getDeviceQueue(deviceDriver, device, queueFamilyIndex, 0);
+
+            TCU_CHECK(!!queue);
+
+            const VkResult result = deviceDriver.queueWaitIdle(queue);
+            if (result == VK_ERROR_NOT_PERMITTED_KHR && mayBeDenied)
+            {
+                continue;
+            }
+
+            if (result != VK_SUCCESS)
+            {
+                log << TestLog::Message << "vkQueueWaitIdle failed"
+                    << ", globalPriority = " << globalPriority << ", queueCreateInfo " << queueCreateInfo
+                    << ", Error Code: " << result << TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+        }
+        catch (const Error &error)
+        {
+            if (error.getError() == VK_ERROR_NOT_PERMITTED_KHR && mayBeDenied)
             {
                 continue;
             }
@@ -2067,6 +2218,91 @@ tcu::TestStatus createDeviceQueue2WithTwoQueuesSmokeTest(Context &context)
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+#ifndef CTS_USES_VULKANSC
+void checkInternallySynchronizedQueuesSupport(Context &context)
+{
+    if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
+        TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
+
+    context.requireDeviceFunctionality("VK_KHR_internally_synchronized_queues");
+}
+
+tcu::TestStatus createDeviceQueue2InternallySynchronizedSplitTest(Context &context)
+{
+    const InstanceWrapper instance(context);
+    const auto &instanceDriver            = instance.getDriver();
+    const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
+    tcu::TestLog &log                     = context.getTestContext().getLog();
+
+    const vector<VkQueueFamilyProperties> queueFamilyProperties =
+        getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
+    const uint32_t queueFamilyCount = static_cast<uint32_t>(queueFamilyProperties.size());
+    uint32_t queueFamilyIndex       = queueFamilyCount;
+
+    for (uint32_t queueNdx = 0; queueNdx < queueFamilyCount; queueNdx++)
+    {
+        if (queueFamilyProperties[queueNdx].queueCount > 1u)
+        {
+            queueFamilyIndex = queueNdx;
+            break;
+        }
+    }
+
+    if (queueFamilyIndex == queueFamilyCount)
+        TCU_THROW(NotSupportedError, "No queue family that with queueCount > 1");
+
+    const float queuePriority = 1.0f;
+
+    VkDeviceQueueCreateInfo queueCreateInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                    // const void* pNext;
+        (VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
+        queueFamilyIndex,                           // uint32_t queueFamilyIndex;
+        1u,                                         // uint32_t queueCount;
+        &queuePriority,                             // const float* pQueuePriorities;
+    };
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    queueCreateInfos.push_back(queueCreateInfo);
+    queueCreateInfo.flags = VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR;
+    queueCreateInfos.push_back(queueCreateInfo);
+
+    VkPhysicalDeviceInternallySynchronizedQueuesFeaturesKHR internallySynchronizedQueuesFeatures =
+        initVulkanStructure();
+    internallySynchronizedQueuesFeatures.internallySynchronizedQueues = VK_TRUE;
+    const VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&internallySynchronizedQueuesFeatures);
+
+    const char *const extensionName = "VK_KHR_internally_synchronized_queues";
+
+    const VkDeviceCreateInfo deviceCreateInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
+        &features2,                           // const void* pNext;
+        (VkDeviceCreateFlags)0u,              // VkDeviceCreateFlags flags;
+        (uint32_t)queueCreateInfos.size(),    // uint32_t queueCreateInfoCount;
+        queueCreateInfos.data(),              // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        0,                                    // uint32_t enabledLayerCount;
+        nullptr,                              // const char* const* ppEnabledLayerNames;
+        1u,                                   // uint32_t enabledExtensionCount;
+        &extensionName,                       // const char* const* ppEnabledExtensionNames;
+        nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+    };
+
+    const DeviceWrapper device(instance.createCustomDevice(physicalDevice, &deviceCreateInfo));
+    const auto &deviceDriver = device.getDriver();
+
+    tcu::ResultCollector results(log);
+    vector<VkQueue> queues;
+
+    const VkQueue queue1 = getDeviceQueue2WithOptions(deviceDriver, *device, 0u, queueFamilyIndex, 0u);
+    const VkQueue queue2 = getDeviceQueue2WithOptions(
+        deviceDriver, *device, VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR, queueFamilyIndex, 0u);
+    DE_UNREF(queue1);
+    DE_UNREF(queue2);
+
+    return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+#endif // CTS_USES_VULKANSC
+
 tcu::TestStatus createDeviceQueue2WithAllProtectedQueues(Context &context)
 {
     const bool dumpExtraInfo = true;
@@ -2846,6 +3082,8 @@ tcu::TestCaseGroup *createDeviceInitializationTests(tcu::TestContext &testCtx)
         addFunctionCase(subgroup.get(), "concurrent_submission", createDeviceWithQueuePrioritiesContentionTest);
         deviceInitializationTests->addChild(subgroup.release());
     }
+    addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_null_queue_priorities",
+                                 checkMaintenance12Support, createDeviceWithNullQueuePrioritiesTest);
     addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_global_priority",
                                  checkGlobalPrioritySupport, createDeviceWithGlobalPriorityTest, false);
 #ifndef CTS_USES_VULKANSC
@@ -2855,6 +3093,14 @@ tcu::TestCaseGroup *createDeviceInitializationTests(tcu::TestContext &testCtx)
                                  checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest, false);
     addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_global_priority_query_khr",
                                  checkGlobalPriorityQuerySupport, createDeviceWithQueriedGlobalPriorityTest, true);
+#endif // CTS_USES_VULKANSC
+    addFunctionCaseInNewSubgroup(
+        testCtx, deviceInitializationTests.get(), "create_device_null_queue_priorities_global_priority",
+        checkMaintenance12GlobalPrioritySupport, createDeviceWithNullQueuePrioritiesAndGlobalPriorityTest, false);
+#ifndef CTS_USES_VULKANSC
+    addFunctionCaseInNewSubgroup(
+        testCtx, deviceInitializationTests.get(), "create_device_null_queue_priorities_global_priority_khr",
+        checkMaintenance12GlobalPrioritySupport, createDeviceWithNullQueuePrioritiesAndGlobalPriorityTest, true);
 #endif // CTS_USES_VULKANSC
     addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_features2",
                                  createDeviceFeatures2Test);
@@ -2882,6 +3128,11 @@ tcu::TestCaseGroup *createDeviceInitializationTests(tcu::TestContext &testCtx)
                                  checkProtectedMemorySupport, createDeviceQueue2WithAllUnprotectedQueues);
     addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2_split",
                                  checkProtectedMemorySupport, createDeviceQueue2WithNProtectedAndMUnprotectedQueues);
+#ifndef CTS_USES_VULKANSC
+    addFunctionCaseInNewSubgroup(
+        testCtx, deviceInitializationTests.get(), "create_device_queue2_internally_synchronized_split",
+        checkInternallySynchronizedQueuesSupport, createDeviceQueue2InternallySynchronizedSplitTest);
+#endif // CTS_USES_VULKANSC
 
     // Tests using multiple Queue Families when creating a device.
     addFunctionCaseInNewSubgroup(testCtx, deviceInitializationTests.get(), "create_device_queue2_all_families",

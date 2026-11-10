@@ -77,6 +77,11 @@ struct ShaderTensorOoBAccessLineAccess
 inline constexpr std::array<ShaderTensorOoBAccessLineAccess, 4> shaderTensorOoBAccessLineAccesses{
     {{-1, 24}, {0, 42}, {13, 0}, {65537, 84}}};
 
+// nullDescriptor tensor Read/Write
+std::string genShaderTensorNullDescriptorAccess(const size_t rank, const VkFormat tensorFormat,
+                                                const AccessVariant variant);
+inline constexpr uint32_t shaderTensorNullDescriptorAccessWorkgroupSize = 128;
+
 } // namespace tensor
 } // namespace vkt
 #endif // _VKTTENSORSHADERS_HPP

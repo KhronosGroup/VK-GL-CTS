@@ -234,12 +234,12 @@ using Cmake.
 #### Windows
 
 Requirements:
-- Visual Studio (2015 or newer recommended) or Windows SDK
+- Visual Studio (2019 or newer recommended) or Windows SDK
 - For GL/ES2/ES3.x tests: OpengGL, OpenGL ES 2 or ES 3.x libraries and headers
 
 To choose the backend build system for CMake, choose one of the following Generator Names for the
 command line examples in the next steps:
-- VS2015: "Visual Studio 14"
+- VS2022: "Visual Studio 17 2022" (select the architecture with `-A x64` or `-A Win32`)
 - NMake (must be run in VS or SDK command prompt): "NMake Makefiles"
 
 Building GL, ES2, or ES3.x conformance tests:

@@ -86,7 +86,8 @@ struct TestParams
 {
     PipelineConstructionType constructionType;
     ResolveMethod resolveMethod;
-    VkFormat imageFormat;
+    VkFormat msFormat;
+    VkFormat ssFormat;
     VkImageAspectFlags resolveAspects;
     VkResolveModeFlagBits resolveMode;
     ResolveArea resolveArea;
@@ -94,7 +95,7 @@ struct TestParams
 
     uint32_t getRandomSeed() const
     {
-        return ((imageFormat << 24) | (static_cast<uint32_t>(resolveMethod) << 22) | (resolveAspects << 16) |
+        return ((msFormat << 24) | (static_cast<uint32_t>(resolveMethod) << 22) | (resolveAspects << 16) |
                 (static_cast<uint32_t>(resolveMode) << 12) | (static_cast<uint32_t>(sRGBFlags) << 10));
     }
 
@@ -147,9 +148,9 @@ struct TestParams
     {
         if (isDepthStencil())
             return "";
-        if (isUintFormat(imageFormat))
+        if (isUintFormat(msFormat))
             return "uvec4";
-        if (isIntFormat(imageFormat))
+        if (isIntFormat(msFormat))
             return "ivec4";
         return "vec4";
     }
@@ -186,7 +187,7 @@ struct TestParams
             0u,
             0u, // flags
             getMultiSampleImageType(),
-            imageFormat,
+            msFormat,
             makeExtent3D(getMultiSampleExtent()),
             1u,
             getMultiSampleLayers(),
@@ -222,6 +223,7 @@ struct TestParams
     {
         VkImageCreateInfo createInfo = getMultiSampleCreateInfo();
 
+        createInfo.format      = ssFormat;
         createInfo.samples     = VK_SAMPLE_COUNT_1_BIT;
         createInfo.imageType   = getSingleSampleImageType();
         createInfo.extent      = makeExtent3D(getSingleSampleExtent());
@@ -277,6 +279,11 @@ void Maint10ResolveCase::checkSupport(Context &context) const
     checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
     context.requireDeviceFunctionality("VK_KHR_maintenance10");
 
+    if (isDepthStencilFormat(m_params.msFormat) && m_params.msFormat != m_params.ssFormat)
+    {
+        context.requireDeviceFunctionality("VK_KHR_maintenance12");
+    }
+
     if (m_params.resolveMethod == ResolveMethod::CMD)
         context.requireDeviceFunctionality("VK_KHR_copy_commands2");
     else if (m_params.resolveMethod == ResolveMethod::DYNAMIC_RENDER)
@@ -290,6 +297,9 @@ void Maint10ResolveCase::checkSupport(Context &context) const
 
     if (multiLayer)
     {
+        // Fragment shaders using gl_Layer use OpCapability Geometry in SPIR-V.
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
         if (context.getUsedApiVersion() < VK_API_VERSION_1_2)
             TCU_THROW(NotSupportedError, "Vulkan 1.2 required");
 
@@ -300,7 +310,8 @@ void Maint10ResolveCase::checkSupport(Context &context) const
 
     const bool resolveDepth   = (m_params.resolveAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
     const bool resolveStencil = (m_params.resolveAspects & VK_IMAGE_ASPECT_STENCIL_BIT);
-    const auto tcuFormat      = mapVkFormat(m_params.imageFormat);
+    const auto tcuFormatSS    = mapVkFormat(m_params.ssFormat);
+    const auto tcuFormatMS    = mapVkFormat(m_params.msFormat);
 
     if (resolveDepth || resolveStencil)
     {
@@ -318,19 +329,30 @@ void Maint10ResolveCase::checkSupport(Context &context) const
             if ((dsResolveProps.supportedStencilResolveModes & m_params.resolveMode) == 0u)
                 TCU_THROW(NotSupportedError, "Required stencil resolve mode not supported");
 
-            // This is needed because we will store the stencil per-sample value using stencil exports.
-            context.requireDeviceFunctionality("VK_EXT_shader_stencil_export");
+            // When resolveAspects includes stencil, we need to populate a multisample stencil buffer with pseudorandom
+            // values. The "regular" method, as used when setting depth, is reading the stencil value from a buffer,
+            // using a global sample index, and setting the reference stencil value from the shader, with the stencil
+            // test enabled to replace the stencil value with that of the reference. However, some implementations do
+            // not support exporting the stencil reference so, instead, we draw one triangle per sample and set the
+            // stencil ref dynamically per sample to populate the stencil buffer. As this method is slower (due to the
+            // number of state changes, commands and draw calls), we only use it in variants that really need it. They
+            // require standard sample locations to work.
+            const auto &limits = context.getDeviceProperties().limits;
+            if (!limits.standardSampleLocations)
+                TCU_THROW(NotSupportedError, "standardSampleLocations not supported");
         }
 
-        if ((tcu::hasDepthComponent(tcuFormat.order) && !resolveDepth) ||
-            (tcu::hasStencilComponent(tcuFormat.order) && !resolveStencil))
+        if (((tcu::hasDepthComponent(tcuFormatSS.order) || tcu::hasDepthComponent(tcuFormatMS.order)) &&
+             !resolveDepth) ||
+            ((tcu::hasStencilComponent(tcuFormatSS.order) || tcu::hasStencilComponent(tcuFormatMS.order)) &&
+             !resolveStencil))
         {
             if (!dsResolveProps.independentResolveNone)
                 TCU_THROW(NotSupportedError, "independentResolveNone not supported");
         }
     }
 
-    if (tcu::isSRGB(tcuFormat))
+    if (tcu::isSRGB(tcuFormatSS))
     {
         if (m_params.sRGBFlags != SRGBFlags::NONE)
         {
@@ -375,27 +397,21 @@ void Maint10ResolveCase::initPrograms(vk::SourceCollections &programCollection) 
     const bool multiLayer      = (layerCount > 1u);
     const auto glslFragOutType = m_params.getGLSLFragOutType();
     const bool resolveDepth    = (m_params.resolveAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
-    const bool resolveStencil  = (m_params.resolveAspects & VK_IMAGE_ASPECT_STENCIL_BIT);
-    const ShaderBuildOptions spv14Options(programCollection.usedVulkanVersion, SPIRV_VERSION_1_4, 0u, true);
+    const ShaderBuildOptions spv15Options(programCollection.usedVulkanVersion, SPIRV_VERSION_1_5, 0u, false);
     const ShaderBuildOptions defaultOptions;
 
     std::ostringstream vert;
     vert << "#version 460\n"
          << (multiLayer ? "#extension GL_ARB_shader_viewport_layer_array : require\n" : "")
-         << "const vec4 vertices[] = vec4[](\n"
-         << "    vec4(-1.0, -1.0, 0.0, 1.0),\n"
-         << "    vec4(-1.0,  3.0, 0.0, 1.0),\n"
-         << "    vec4( 3.0, -1.0, 0.0, 1.0)\n"
-         << ");\n"
+         << "layout (location=0) in vec4 inPos;\n"
          << "void main (void) {\n"
-         << "    gl_Position = vertices[gl_VertexIndex % 3];\n"
+         << "    gl_Position = inPos;\n"
          << (multiLayer ? "    gl_Layer = gl_InstanceIndex;\n" : "") << "}\n";
     programCollection.glslSources.add("vert")
-        << glu::VertexSource(vert.str()) << (multiLayer ? spv14Options : defaultOptions);
+        << glu::VertexSource(vert.str()) << (multiLayer ? spv15Options : defaultOptions);
 
     std::ostringstream frag;
     frag << "#version 460\n"
-         << (resolveStencil ? "#extension GL_ARB_shader_stencil_export : require\n" : "")
          << (glslFragOutType.empty() ? "" : "layout (location=0) out " + glslFragOutType + " outColor;\n")
          << "struct PixelData {\n"
          << "    " << (glslFragOutType.empty() ? "vec4" : glslFragOutType.c_str()) << " colorValue;\n"
@@ -414,8 +430,7 @@ void Maint10ResolveCase::initPrograms(vk::SourceCollections &programCollection) 
          << "    const uint pixelIndex = uint(floor(gl_FragCoord.y) * pc.width + floor(gl_FragCoord.x)) + prevPixels;\n"
          << "    const uint sampleIndex = pixelIndex * " << m_params.getSampleCount() << " + uint(gl_SampleID);\n"
          << (glslFragOutType.empty() ? "" : "    outColor = pixels.values[sampleIndex].colorValue;\n")
-         << (resolveDepth ? "    gl_FragDepth = pixels.values[sampleIndex].dsValue.x;\n" : "")
-         << (resolveStencil ? "    gl_FragStencilRefARB = int(pixels.values[sampleIndex].dsValue.y);\n" : "") << "}\n";
+         << (resolveDepth ? "    gl_FragDepth = pixels.values[sampleIndex].dsValue.x;\n" : "") << "}\n";
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
@@ -535,27 +550,30 @@ tcu::Vec4 getColorFormatThreshold(VkFormat format)
 tcu::TestStatus Maint10ResolveInstance::iterate(void)
 {
     const auto ctx          = m_context.getContextCommonData();
-    const auto tcuFormat    = mapVkFormat(m_params.imageFormat);
+    const auto tcuMSFormat  = mapVkFormat(m_params.msFormat);
+    const auto tcuSSFormat  = mapVkFormat(m_params.ssFormat);
     const auto msLayerCount = m_params.getMultiSampleLayers();
     const auto ssLayerCount = m_params.getSingleSampleLayers();
     const auto fullExtent   = m_params.getExtent();
     const auto msViewType   = m_params.getMultiSampleViewType();
     const auto ssViewType   = m_params.getSingleSampleViewType();
     const auto bindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    const auto isSRGB       = tcu::isSRGB(tcuFormat);
+    const auto isSRGB       = tcu::isSRGB(tcuMSFormat);
     const auto is3DSS       = m_params.is3DSingleSample();
 
     // Create the multisample image.
     const auto msCreateInfo = m_params.getMultiSampleCreateInfo();
     ImageWithMemory msImage(ctx.vkd, ctx.device, ctx.allocator, msCreateInfo, MemoryRequirement::Any);
-    const auto msSRR = makeImageSubresourceRange(getImageAspectFlags(tcuFormat), 0u, 1u, 0u, msCreateInfo.arrayLayers);
-    const auto msImageView = makeImageView(ctx.vkd, ctx.device, *msImage, msViewType, m_params.imageFormat, msSRR);
+    const auto msSRR =
+        makeImageSubresourceRange(getImageAspectFlags(tcuMSFormat), 0u, 1u, 0u, msCreateInfo.arrayLayers);
+    const auto msImageView = makeImageView(ctx.vkd, ctx.device, *msImage, msViewType, m_params.msFormat, msSRR);
 
     // Create the single sample image, similar to the multi-sample one with a few changes.
     const auto ssCreateInfo = m_params.getSingleSampleCreateInfo();
     ImageWithMemory ssImage(ctx.vkd, ctx.device, ctx.allocator, ssCreateInfo, MemoryRequirement::Any);
-    const auto ssSRR = makeImageSubresourceRange(getImageAspectFlags(tcuFormat), 0u, 1u, 0u, ssCreateInfo.arrayLayers);
-    const auto ssImageView = makeImageView(ctx.vkd, ctx.device, *ssImage, ssViewType, m_params.imageFormat, ssSRR);
+    const auto ssSRR =
+        makeImageSubresourceRange(getImageAspectFlags(tcuSSFormat), 0u, 1u, 0u, ssCreateInfo.arrayLayers);
+    const auto ssImageView = makeImageView(ctx.vkd, ctx.device, *ssImage, ssViewType, m_params.ssFormat, ssSRR);
 
     // This is equivalent to the frag shaders's PixelData structure.
     struct PixelData
@@ -653,8 +671,8 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     const auto totalSamples     = layerSampleCount * msCreateInfo.arrayLayers;
     std::vector<PixelData> pixelDataVec(totalSamples, PixelData());
 
-    const bool isInt   = isIntFormat(m_params.imageFormat);
-    const bool isUint  = isUintFormat(m_params.imageFormat);
+    const bool isInt   = isIntFormat(m_params.msFormat);
+    const bool isUint  = isUintFormat(m_params.msFormat);
     const bool isFloat = !(isInt || isUint);
 
     const bool resolveDepth   = (m_params.resolveAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -691,7 +709,9 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
                         if (resolveColor)
                         {
-                            const auto bitDepth = tcu::getTextureFormatBitDepth(tcuFormat);
+                            DE_ASSERT(m_params.msFormat == m_params.ssFormat);
+
+                            const auto bitDepth = tcu::getTextureFormatBitDepth(tcuMSFormat);
                             if (isInt)
                             {
                                 for (int i = 0; i < 4; ++i)
@@ -770,7 +790,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
     if (resolveColor)
     {
-        const auto pixelBytes = tcu::getPixelSize(tcuFormat);
+        const auto pixelBytes = tcu::getPixelSize(tcuSSFormat);
         colorLayerBytes       = slicePixelCount * pixelBytes;
         const auto bufferSize = colorLayerBytes * msLayerCount;
 
@@ -780,7 +800,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
     if (resolveDepth)
     {
-        depthCopyFormat       = getDepthCopyFormat(m_params.imageFormat);
+        depthCopyFormat       = getDepthCopyFormat(m_params.ssFormat);
         const auto pixelBytes = tcu::getPixelSize(depthCopyFormat);
         depthLayerBytes       = slicePixelCount * pixelBytes;
         const auto bufferSize = depthLayerBytes * msLayerCount;
@@ -791,7 +811,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
     if (resolveStencil)
     {
-        stencilCopyFormat     = getStencilCopyFormat(m_params.imageFormat);
+        stencilCopyFormat     = getStencilCopyFormat(m_params.ssFormat);
         const auto pixelBytes = tcu::getPixelSize(stencilCopyFormat);
         stencilLayerBytes     = slicePixelCount * pixelBytes;
         const auto bufferSize = stencilLayerBytes * msLayerCount;
@@ -826,6 +846,64 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     setUpdateBuilder.writeSingle(*descSet, binding(0u), descType, &descBufferInfo);
     setUpdateBuilder.update(ctx.vkd, ctx.device);
 
+    // Lets create a vertex buffer with one triangle per sample.
+    std::vector<tcu::Vec4> vertices;
+    const auto triangleVertices = 3u;
+    if (resolveStencil)
+    {
+        vertices.reserve(totalSamples * triangleVertices);
+        const auto floatExtent = fullExtent.asFloat();
+
+        const std::vector<tcu::Vec4> stdSampleOffsets{
+            tcu::Vec4(0.375f, 0.125f, 0.0f, 0.0f),
+            tcu::Vec4(0.875f, 0.375f, 0.0f, 0.0f),
+            tcu::Vec4(0.125f, 0.625f, 0.0f, 0.0f),
+            tcu::Vec4(0.625f, 0.875f, 0.0f, 0.0f),
+        };
+        const float vtxDelta = 0.0625f; // To separate the vertices from the sample center.
+        const std::vector<tcu::Vec4> vertexOffsets{
+            tcu::Vec4(-vtxDelta, vtxDelta, 0.0f, 0.0f),
+            tcu::Vec4(vtxDelta, vtxDelta, 0.0f, 0.0f),
+            tcu::Vec4(0.0f, -vtxDelta, 0.0f, 0.0f),
+        };
+        const tcu::Vec4 xySize(floatExtent.x(), floatExtent.y(), 1.0f, 1.0f);
+        const tcu::Vec4 normFbSize(2.0f, 2.0f, 1.0f, 1.0f);
+        const tcu::Vec4 normFbOffset(-1.0f, -1.0f, 0.0f, 0.0f);
+
+        for (int y = 0; y < fullExtent.y(); ++y)
+            for (int x = 0; x < fullExtent.x(); ++x)
+            {
+                const tcu::Vec4 baseCoord(static_cast<float>(x), static_cast<float>(y), 0.0f, 1.0f);
+                for (int s = 0; s < sampleCount; ++s)
+                {
+                    const auto sampleCenter = baseCoord + stdSampleOffsets.at(s);
+                    for (const auto &vtxOffset : vertexOffsets)
+                    {
+                        const auto unormCoords = sampleCenter + vtxOffset;
+                        const auto normCoords  = unormCoords / xySize * normFbSize + normFbOffset;
+                        vertices.push_back(normCoords);
+                    }
+                }
+            }
+    }
+    else
+    {
+        vertices.reserve(triangleVertices);
+        vertices.emplace_back(-1.0, -1.0, 0.0, 1.0);
+        vertices.emplace_back(-1.0, 3.0, 0.0, 1.0);
+        vertices.emplace_back(3.0, -1.0, 0.0, 1.0);
+    }
+
+    const auto vertexBufferSize  = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vertexBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    const auto vertexBufferInfo  = makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, HostIntent::W);
+    {
+        auto &alloc = vertexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
     // Shaders.
     const auto &binaries = m_context.getBinaryCollection();
     ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
@@ -836,7 +914,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
     std::vector<VkAttachmentDescription2> attachmentDescriptions;
 
-    const bool isDS   = isDepthStencilFormat(m_params.imageFormat);
+    const bool isDS   = isDepthStencilFormat(m_params.msFormat);
     const bool ssInRP = (m_params.resolveMethod != ResolveMethod::CMD); // Include single-sample att in render pass.
 
     // Multisample attachment: if we resolve it with a cmd we need to store results. Otherwise it's resolved in the
@@ -850,7 +928,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
         VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
         nullptr,
         0u,
-        m_params.imageFormat,
+        m_params.msFormat,
         sampleCount,
         msLoadOp,
         msStoreOp,
@@ -880,7 +958,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
             nullptr,
             attFlags,
-            m_params.imageFormat,
+            m_params.ssFormat,
             VK_SAMPLE_COUNT_1_BIT,
             ssLoadOp,
             ssStoreOp,
@@ -975,7 +1053,17 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
                                      msCreateInfo.arrayLayers);
     }
 
-    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+    const VkVertexInputBindingDescription vtxBinding{
+        0u,
+        DE_SIZEOF32(tcu::Vec4),
+        VK_VERTEX_INPUT_RATE_VERTEX,
+    };
+
+    const VkVertexInputAttributeDescription vtxAttrib{0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, 0u};
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, nullptr, 0u, 1u, &vtxBinding, 1u, &vtxAttrib,
+    };
 
     const auto stencilOpState = makeStencilOpState(VK_STENCIL_OP_REPLACE, VK_STENCIL_OP_REPLACE, VK_STENCIL_OP_REPLACE,
                                                    VK_COMPARE_OP_ALWAYS, 0xFFu, 0xFFu, 0u);
@@ -1032,9 +1120,9 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
         nullptr,
         0u,
         (isDS ? 0u : 1u),
-        &m_params.imageFormat,
-        (resolveDepth ? m_params.imageFormat : VK_FORMAT_UNDEFINED),
-        (resolveStencil ? m_params.imageFormat : VK_FORMAT_UNDEFINED),
+        &m_params.msFormat,
+        (resolveDepth ? m_params.msFormat : VK_FORMAT_UNDEFINED),
+        (resolveStencil ? m_params.msFormat : VK_FORMAT_UNDEFINED),
     };
 
     PipelineRenderingCreateInfoWrapper rciWrapper(isDynamicRendering ? &pipelineRenderingCreateInfo : nullptr);
@@ -1042,10 +1130,22 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     PipelineRenderingCreateInfoWrapper rciWrapper(nullptr);
 #endif
 
+    std::vector<VkDynamicState> dynamicStates;
+    if (resolveStencil)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_STENCIL_REFERENCE);
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
     GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
                                      m_params.constructionType);
     pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
         .setDefaultRasterizationState()
+        .setDynamicState(&dynamicStateCreateInfo)
         .setupVertexInputState(&vertexInputStateCreateInfo)
         .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u, vertShader,
                                           nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
@@ -1063,8 +1163,34 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), tcu::Vec4(0.0f));
     ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descSet.get(), 0u, nullptr);
     ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, dataStages, 0u, pcSize, &pcData);
+    const VkDeviceSize vertexBufferOffset = 0ull;
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
     pipeline.bind(cmdBuffer);
-    ctx.vkd.cmdDraw(cmdBuffer, 3u, msCreateInfo.arrayLayers, 0u, 0u);
+    if (resolveStencil)
+    {
+        for (uint32_t z = 0; z < msCreateInfo.arrayLayers; ++z)
+            for (int y = 0; y < fullExtent.y(); ++y)
+                for (int x = 0; x < fullExtent.x(); ++x)
+                    for (int s = 0; s < sampleCount; ++s)
+                    {
+                        if (resolveStencil)
+                        {
+                            const auto prevPixels  = z * fullExtent.x() * fullExtent.y();
+                            const auto pixelIndex  = y * fullExtent.x() + x + prevPixels;
+                            const auto sampleIndex = pixelIndex * sampleCount + s;
+                            const auto stencilValue =
+                                static_cast<uint32_t>(pixelDataVec.at(sampleIndex).depthStencil.y());
+                            ctx.vkd.cmdSetStencilReference(cmdBuffer, VK_STENCIL_FACE_FRONT_AND_BACK, stencilValue);
+                        }
+                        const auto firstVertex =
+                            static_cast<uint32_t>((y * fullExtent.x() + x) * sampleCount + s) * triangleVertices;
+                        ctx.vkd.cmdDraw(cmdBuffer, triangleVertices, 1u, firstVertex, z);
+                    }
+    }
+    else
+    {
+        ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), msCreateInfo.arrayLayers, 0u, 0u);
+    }
     renderPass.end(ctx.vkd, cmdBuffer);
 
     if (m_params.resolveMethod == ResolveMethod::CMD)
@@ -1264,7 +1390,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
     {
         auto &alloc = colorVerifBuffer->getAllocation();
         invalidateAlloc(ctx.vkd, ctx.device, alloc);
-        colorResult.reset(new tcu::ConstPixelBufferAccess(tcuFormat, fullExtent, alloc.getHostPtr()));
+        colorResult.reset(new tcu::ConstPixelBufferAccess(tcuSSFormat, fullExtent, alloc.getHostPtr()));
     }
 
     if (depthVerifBuffer)
@@ -1309,7 +1435,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
 
     if (resolveColor)
     {
-        colorRefLevel.reset(new tcu::TextureLevel(tcuFormat, fullExtent.x(), fullExtent.y(), fullExtent.z()));
+        colorRefLevel.reset(new tcu::TextureLevel(tcuSSFormat, fullExtent.x(), fullExtent.y(), fullExtent.z()));
         tcu::PixelBufferAccess colorReference = colorRefLevel->getAccess();
         tcu::clear(colorReference, tcu::Vec4(0.0f));
 
@@ -1504,7 +1630,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             }
             else
             {
-                const auto threshold = getColorFormatThreshold(m_params.imageFormat);
+                const auto threshold = getColorFormatThreshold(m_params.ssFormat);
                 if (!tcu::floatThresholdCompare(log, setName.c_str(), "", refLayer, resLayer, threshold,
                                                 tcu::COMPARE_LOG_ON_ERROR))
                     pass = false;
@@ -1526,7 +1652,7 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             // than 2 for UNORM formats. For SFLOAT, which has 24 mantissa bits (23 explicitly stored), we make it
             // similar to D24.
             float depthThreshold = 0.0f;
-            switch (m_params.imageFormat)
+            switch (m_params.ssFormat)
             {
             case VK_FORMAT_D16_UNORM:
             case VK_FORMAT_D16_UNORM_S8_UINT:
@@ -1597,7 +1723,7 @@ tcu::TestCaseGroup *createMultisampleResolveMaint10Tests(tcu::TestContext &testC
     };
 
     // Test a mix of formats with varying bit widths, numeric types and total size.
-    const VkFormat formatList[] = {
+    const std::vector<VkFormat> colorFormats{
         VK_FORMAT_R8_UNORM,
         VK_FORMAT_R8_UINT,
         VK_FORMAT_R8_SINT,
@@ -1651,13 +1777,17 @@ tcu::TestCaseGroup *createMultisampleResolveMaint10Tests(tcu::TestContext &testC
         VK_FORMAT_R32G32B32A32_UINT,
         VK_FORMAT_R32G32B32A32_SINT,
         VK_FORMAT_R32G32B32A32_SFLOAT,
-        VK_FORMAT_D16_UNORM,
-        VK_FORMAT_D32_SFLOAT,
-        VK_FORMAT_S8_UINT,
-        VK_FORMAT_D16_UNORM_S8_UINT,
-        VK_FORMAT_D24_UNORM_S8_UINT,
-        VK_FORMAT_D32_SFLOAT_S8_UINT,
     };
+
+    const std::vector<VkFormat> dsFormats{
+        VK_FORMAT_D16_UNORM,         VK_FORMAT_D32_SFLOAT,        VK_FORMAT_S8_UINT,
+        VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT,
+    };
+
+    std::vector<VkFormat> formatList;
+    formatList.reserve(colorFormats.size() + dsFormats.size());
+    formatList.insert(formatList.end(), colorFormats.begin(), colorFormats.end());
+    formatList.insert(formatList.end(), dsFormats.begin(), dsFormats.end());
 
     const struct
     {
@@ -1759,7 +1889,9 @@ tcu::TestCaseGroup *createMultisampleResolveMaint10Tests(tcu::TestContext &testC
 
                 for (const auto &resolveModeCase : resolveModeCases)
                 {
-                    if (isDepthStencilFormat(format))
+                    const bool isDS = isDepthStencilFormat(format);
+
+                    if (isDS)
                     {
                         // Spec 1.4.317 2025-06-24 for supportedStencilResolveModes:
                         // "VK_RESOLVE_MODE_AVERAGE_BIT must not be included in the set"
@@ -1804,10 +1936,11 @@ tcu::TestCaseGroup *createMultisampleResolveMaint10Tests(tcu::TestContext &testC
                             if (srgbFlagsCase.sRGBFlags != SRGBFlags::NONE && !isSRGB)
                                 continue;
 
-                            const TestParams params{
+                            TestParams params{
                                 // clang-format off
                                 pipelineConstructionType,
                                 resolveMethodCase.resolveMethod,
+                                format,
                                 format,
                                 resolveAspects.resolveAspects,
                                 resolveModeCase.resolveMode,
@@ -1816,6 +1949,51 @@ tcu::TestCaseGroup *createMultisampleResolveMaint10Tests(tcu::TestContext &testC
                                 // clang-format on
                             };
                             resolveAreaGrp->addChild(new Maint10ResolveCase(testCtx, srgbFlagsCase.name, params));
+
+                            // Add more cases to vary the DS resolve format.
+                            if (isDS && resolveMethodCase.resolveMethod == ResolveMethod::CMD)
+                            {
+                                for (const auto resolveFormat : dsFormats)
+                                {
+                                    if (resolveFormat == format)
+                                        continue;
+
+                                    const auto tcuResolveFormat = mapVkFormat(resolveFormat);
+
+                                    const bool resolveFormatHasDepth = tcu::hasDepthComponent(tcuResolveFormat.order);
+                                    const bool resolveFormatHasStencil =
+                                        tcu::hasStencilComponent(tcuResolveFormat.order);
+
+                                    if (resolveDepth && !resolveFormatHasDepth)
+                                        continue;
+
+                                    if (resolveStencil && !resolveFormatHasStencil)
+                                        continue;
+
+                                    if (tcu::hasDepthComponent(tcuFormat.order) && resolveFormatHasDepth)
+                                    {
+                                        const auto msDepthFormat = getDepthCopyFormat(format);
+                                        const auto ssDepthFormat = getDepthCopyFormat(resolveFormat);
+
+                                        if (msDepthFormat != ssDepthFormat)
+                                            continue;
+                                    }
+
+                                    if (tcu::hasStencilComponent(tcuFormat.order) && resolveFormatHasStencil)
+                                    {
+                                        const auto msStencilFormat = getStencilCopyFormat(format);
+                                        const auto ssStencilFormat = getStencilCopyFormat(resolveFormat);
+
+                                        if (msStencilFormat != ssStencilFormat)
+                                            continue;
+                                    }
+
+                                    params.ssFormat     = resolveFormat;
+                                    const auto testName = srgbFlagsCase.name + std::string("_resolve_to_") +
+                                                          getFormatSimpleName(resolveFormat);
+                                    resolveAreaGrp->addChild(new Maint10ResolveCase(testCtx, testName, params));
+                                }
+                            }
                         }
 
                         resolveModeGrp->addChild(resolveAreaGrp.release());

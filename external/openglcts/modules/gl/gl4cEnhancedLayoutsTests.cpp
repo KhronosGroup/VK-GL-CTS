@@ -5774,7 +5774,7 @@ bool BufferTestBase::testCase(GLuint test_case_index)
         Utils::VertexArray vao(m_context);
 
         /* Get captured varyings */
-        GLint xfb_components;
+        GLint xfb_components = 0;
         getCapturedVaryings(test_case_index, captured_varyings, &xfb_components);
 
         /* Don't generate shaders that try to capture more XFB components than the implementation's limit */

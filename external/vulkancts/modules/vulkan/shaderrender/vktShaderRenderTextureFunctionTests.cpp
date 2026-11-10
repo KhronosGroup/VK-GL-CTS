@@ -5254,7 +5254,8 @@ static void createCaseGroup(tcu::TestCaseGroup *parent, const char *groupName, c
         }
 
         if (cases[ndx].flags & COMPUTE &&
-            !cases[ndx].lookupSpec.pcOffset) // Remove pcOffset cases as spec requires offset to be constant
+            !cases[ndx].lookupSpec.pcOffset && // Remove pcOffset cases as spec requires offset to be constant
+            cases[ndx].texSpec.sampler.compare == tcu::Sampler::COMPAREMODE_NONE) // Depth needs a graphics queue
         {
 #ifndef CTS_USES_VULKANSC
             if (sparseSupported)
@@ -8564,9 +8565,10 @@ void ShaderTextureFunctionTests::init(void)
                 group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"),
                                                      caseSpec.samplerName, caseSpec.textureSpec, false,
                                                      QUERYFUNCTION_TEXTURESIZE));
-                group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_compute"),
-                                                     caseSpec.samplerName, caseSpec.textureSpec, false,
-                                                     QUERYFUNCTION_TEXTURESIZE, 0u, true));
+                if (caseSpec.textureSpec.sampler.compare == tcu::Sampler::COMPAREMODE_NONE)
+                    group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_compute"),
+                                                         caseSpec.samplerName, caseSpec.textureSpec, false,
+                                                         QUERYFUNCTION_TEXTURESIZE, 0u, true));
             }
 
             // additional coverage for textureSize special cases
@@ -8720,9 +8722,10 @@ void ShaderTextureFunctionTests::init(void)
                 group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_fragment"),
                                                      caseSpec.samplerName, caseSpec.textureSpec, false,
                                                      QUERYFUNCTION_TEXTUREQUERYLEVELS));
-                group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_compute"),
-                                                     caseSpec.samplerName, caseSpec.textureSpec, false,
-                                                     QUERYFUNCTION_TEXTUREQUERYLEVELS, 0u, true));
+                if (caseSpec.textureSpec.sampler.compare == tcu::Sampler::COMPAREMODE_NONE)
+                    group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_compute"),
+                                                         caseSpec.samplerName, caseSpec.textureSpec, false,
+                                                         QUERYFUNCTION_TEXTUREQUERYLEVELS, 0u, true));
             }
 
             queryGroup->addChild(group.release());

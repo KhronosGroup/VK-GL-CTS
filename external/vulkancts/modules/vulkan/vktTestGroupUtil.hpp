@@ -26,7 +26,8 @@
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
 
-#include <functional>
+#include <optional>
+#include <utility>
 
 namespace vkt
 {
@@ -58,6 +59,7 @@ public:
     {
         if (m_cleanupGroup)
             m_cleanupGroup(this);
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -65,41 +67,41 @@ private:
     const CleanupGroupFunc m_cleanupGroup;
 };
 
-// Like TestGroupHelper0, but the stored and used types are std::function objects, which makes it possible to use
+// Like TestGroupHelper0, but using std::optional and templated callback function types, which makes it possible to use
 // almost any callable as the create children and cleanup group callbacks, including lambdas with non-empty captures.
-class TestGroupHelper0StdFunction : public tcu::TestCaseGroup
+template <class CreateChildrenCallback, class CleanupGroupCallback>
+class TestGroupHelper0_T : public tcu::TestCaseGroup
 {
 public:
-    using CreateChildrenFunc = std::function<void(tcu::TestCaseGroup *)>;
-    using CleanupGroupFunc   = std::function<void(tcu::TestCaseGroup *)>;
-
-    TestGroupHelper0StdFunction(tcu::TestContext &testCtx, const std::string &name, CreateChildrenFunc createChildren,
-                                CleanupGroupFunc cleanupGroup)
+    TestGroupHelper0_T(tcu::TestContext &testCtx, const std::string &name,
+                       std::optional<CreateChildrenCallback> createChildren = std::nullopt,
+                       std::optional<CleanupGroupCallback> cleanupGroup     = std::nullopt)
         : tcu::TestCaseGroup(testCtx, name.c_str())
-        , m_createChildren(createChildren)
-        , m_cleanupGroup(cleanupGroup)
+        , m_createChildren(std::move(createChildren))
+        , m_cleanupGroup(std::move(cleanupGroup))
     {
     }
 
-    ~TestGroupHelper0StdFunction(void)
+    ~TestGroupHelper0_T(void)
     {
     }
 
     void init(void)
     {
-        m_createChildren(this);
+        if (m_createChildren)
+            (*m_createChildren)(this);
     }
 
     void deinit(void)
     {
         if (m_cleanupGroup)
-            m_cleanupGroup(this);
+            (*m_cleanupGroup)(this);
         tcu::TestCaseGroup::deinit();
     }
 
 private:
-    const CreateChildrenFunc m_createChildren;
-    const CleanupGroupFunc m_cleanupGroup;
+    const std::optional<CreateChildrenCallback> m_createChildren;
+    const std::optional<CleanupGroupCallback> m_cleanupGroup;
 };
 
 template <typename Arg0>
@@ -126,6 +128,7 @@ public:
     {
         if (m_cleanupGroup)
             m_cleanupGroup(this, m_arg0);
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -159,6 +162,7 @@ public:
     {
         if (m_cleanupGroup)
             m_cleanupGroup(this, m_arg0, m_arg1);
+        tcu::TestCaseGroup::deinit();
     }
 
 private:
@@ -176,11 +180,21 @@ inline tcu::TestCaseGroup *createTestGroup(tcu::TestContext &testCtx, const std:
 }
 
 // Like the previous template but allowing functors as callbacks.
-inline tcu::TestCaseGroup *createTestGroup2(
-    tcu::TestContext &testCtx, const std::string &name, TestGroupHelper0StdFunction::CreateChildrenFunc createChildren,
-    TestGroupHelper0StdFunction::CleanupGroupFunc cleanupGroup = TestGroupHelper0StdFunction::CleanupGroupFunc())
+template <class CreateChildrenCallback>
+inline tcu::TestCaseGroup *createTestGroup2(tcu::TestContext &testCtx, const std::string &name,
+                                            CreateChildrenCallback createChildren)
 {
-    return new TestGroupHelper0StdFunction(testCtx, name, createChildren, cleanupGroup);
+    return new TestGroupHelper0_T<CreateChildrenCallback, void (*)(tcu::TestCaseGroup *)>(
+        testCtx, name, std::optional<CreateChildrenCallback>(createChildren), std::nullopt);
+}
+
+template <class CreateChildrenCallback, class CleanupGroupCallback>
+inline tcu::TestCaseGroup *createTestGroup2(tcu::TestContext &testCtx, const std::string &name,
+                                            CreateChildrenCallback createChildren, CleanupGroupCallback cleanupGroup)
+{
+    return new TestGroupHelper0_T<CreateChildrenCallback, CleanupGroupCallback>(
+        testCtx, name, std::optional<CreateChildrenCallback>(createChildren),
+        std::optional<CleanupGroupCallback>(cleanupGroup));
 }
 
 template <typename Arg0>
@@ -220,6 +234,18 @@ void addTestGroup(tcu::TestCaseGroup *parent, const std::string &name,
 {
     parent->addChild(
         createTestGroup<Arg0, Arg1>(parent->getTestContext(), name, createChildren, arg0, arg1, cleanupGroup));
+}
+
+template <typename InitFunc>
+void addTestGroup2(tcu::TestCaseGroup *parent, const std::string &name, InitFunc initFunc)
+{
+    parent->addChild(createTestGroup2(parent->getTestContext(), name, initFunc));
+}
+
+template <typename InitFunc, typename CleanupFunc>
+void addTestGroup2(tcu::TestCaseGroup *parent, const std::string &name, InitFunc initFunc, CleanupFunc cleanupFunc)
+{
+    parent->addChild(createTestGroup2(parent->getTestContext(), name, initFunc, cleanupFunc));
 }
 
 } // namespace vkt

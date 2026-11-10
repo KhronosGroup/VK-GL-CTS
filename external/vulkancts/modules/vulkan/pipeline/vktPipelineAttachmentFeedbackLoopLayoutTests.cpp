@@ -856,32 +856,14 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         if (m_useMaintenance5)
             m_graphicsPipeline.setPipelineCreateFlags2(translateCreateFlag(m_params.pipelineCreateFlags));
 
-        VkFormat colorAttachmentFormat = m_colorFormat;
-        VkFormat dsAttachmentFormat    = m_useImageAsColorOrDSAttachment ? m_imageFormat : VK_FORMAT_UNDEFINED;
-
-        vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
-            vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
-            nullptr,                                              // const void*        pNext
-            0u,                                                   // uint32_t            viewMask
-            1u,                                                   // uint32_t            colorAttachmentCount
-            &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
-            dsAttachmentFormat,                                   // VkFormat            depthAttachmentFormat
-            dsAttachmentFormat,                                   // VkFormat            stencilAttachmentFormat
-        };
-
-        PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfoPtr(
-            m_useGeneralLayout ? &pipelineRenderingCreateInfo : nullptr);
-
         m_graphicsPipeline.setDynamicState(&dynamicStateInfo)
             .setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
-            .setRenderingColorAttachmentsInfo(pipelineRenderingCreateInfoPtr)
             .setDefaultDepthStencilState()
             .setDefaultRasterizationState()
             .setDefaultMultisampleState()
             .setupVertexInputState(&vertexInputStateParams)
             .setupPreRasterizationShaderState(viewports, scissors, m_preRasterizationStatePipelineLayout, *m_renderPass,
-                                              0u, m_vertexShaderModule, nullptr, {}, {}, {}, nullptr, nullptr,
-                                              pipelineRenderingCreateInfoPtr)
+                                              0u, m_vertexShaderModule)
             .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
             .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
             .buildPipeline();
@@ -1627,7 +1609,7 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::v
         (m_interleaveReadWriteComponents && (m_subresourceRange.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT));
     // ImageSamplingInstance::verifyImage() doesn't support stencil sampling.
     if (!m_useImageAsColorOrDSAttachment && !isStencil)
-        return ImageSamplingInstance::verifyImage(useGeneralLayout);
+        return AttachmentFeedbackLoopLayoutImageSamplingInstance::verifyImage(useGeneralLayout);
 
     const tcu::Vec4 fThreshold(0.005f);
     const tcu::UVec4 uThreshold(

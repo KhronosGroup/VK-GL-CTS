@@ -192,9 +192,9 @@ private:
     const DeviceInterface *m_vk;
     VkDevice m_device;
     VkPipelineLayoutCreateFlags m_flags;
-    uint32_t m_setLayoutCount;
+    uint32_t m_setLayoutCount = 0u;
     std::vector<VkDescriptorSetLayout> m_setLayouts;
-    uint32_t m_pushConstantRangeCount;
+    uint32_t m_pushConstantRangeCount = 0u;
     std::vector<VkPushConstantRange> m_pushConstantRanges;
     vk::Move<VkPipelineLayout> m_pipelineLayout;
 };
@@ -505,6 +505,9 @@ public:
 
     // Pre-rasterization shader state uses default ViewportState, this method extends the internal structure.
     GraphicsPipelineWrapper &setViewportStatePnext(const void *pNext);
+
+    // Extends the fragment shaders VkPipelineShaderStageCreateInfo or VkShaderCreateInfoEXT
+    GraphicsPipelineWrapper &setFragmentShaderStagePnext(const void *pNext);
 
 #ifndef CTS_USES_VULKANSC
     GraphicsPipelineWrapper &setRenderingColorAttachmentsInfo(

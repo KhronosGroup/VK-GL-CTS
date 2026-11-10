@@ -1040,8 +1040,10 @@ tcu::TestNode::IterateResult TestCaseBase<API>::limit_active_shader_storage_bloc
         gl.getIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &res);
         if (static_cast<size_t>(res) < num)
         {
-            tcu::NotSupportedError(
-                "The number of active vertex shader storage blocks exceeds implementation-dependent limits.");
+            context_id.getTestContext().getLog()
+                << tcu::TestLog::Message
+                << "The number of active vertex shader storage blocks exceeds implementation-dependent limits."
+                << tcu::TestLog::EndMessage;
             return STOP;
         }
         break;
@@ -1049,8 +1051,10 @@ tcu::TestNode::IterateResult TestCaseBase<API>::limit_active_shader_storage_bloc
         gl.getIntegerv(GL_MAX_TESS_CONTROL_SHADER_STORAGE_BLOCKS, &res);
         if (static_cast<size_t>(res) < num)
         {
-            tcu::NotSupportedError(
-                "The number of active TC shader storage blocks exceeds implementation-dependent limits.");
+            context_id.getTestContext().getLog()
+                << tcu::TestLog::Message
+                << "The number of active TC shader storage blocks exceeds implementation-dependent limits."
+                << tcu::TestLog::EndMessage;
             return STOP;
         }
         break;
@@ -1058,8 +1062,10 @@ tcu::TestNode::IterateResult TestCaseBase<API>::limit_active_shader_storage_bloc
         gl.getIntegerv(GL_MAX_TESS_EVALUATION_SHADER_STORAGE_BLOCKS, &res);
         if (static_cast<size_t>(res) < num)
         {
-            tcu::NotSupportedError(
-                "The number of active TE shader storage blocks exceeds implementation-dependent limits.");
+            context_id.getTestContext().getLog()
+                << tcu::TestLog::Message
+                << "The number of active TE shader storage blocks exceeds implementation-dependent limits."
+                << tcu::TestLog::EndMessage;
             return STOP;
         }
         break;
@@ -1067,8 +1073,10 @@ tcu::TestNode::IterateResult TestCaseBase<API>::limit_active_shader_storage_bloc
         gl.getIntegerv(GL_MAX_GEOMETRY_SHADER_STORAGE_BLOCKS, &res);
         if (static_cast<size_t>(res) < num)
         {
-            tcu::NotSupportedError(
-                "The number of active geometry shader storage blocks exceeds implementation-dependent limits.");
+            context_id.getTestContext().getLog()
+                << tcu::TestLog::Message
+                << "The number of active geometry shader storage blocks exceeds implementation-dependent limits."
+                << tcu::TestLog::EndMessage;
             return STOP;
         }
         break;
@@ -3140,14 +3148,14 @@ void ExpressionsIndexingScalar4<API>::test_shader_compilation(
  */
 
 static const std::string ExpressionsIndexingArray1_variable_initializations[] = {
-    "x[0]                      = float[1][1][1][1][1][1][1]("
-    "float[1][1][1][1][1][1](float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0)))))));"
-    "\n",
-    "x[0][0]                   = "
-    "float[1][1][1][1][1][1](float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0))))));"
-    "\n",
-    "x[0][0][0]                = "
-    "float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0)))));\n",
+    ("x[0]                      = float[1][1][1][1][1][1][1]("
+     "float[1][1][1][1][1][1](float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0)))))));"
+     "\n"),
+    ("x[0][0]                   = "
+     "float[1][1][1][1][1][1](float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0))))));"
+     "\n"),
+    ("x[0][0][0]                = "
+     "float[1][1][1][1][1](float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0)))));\n"),
     "x[0][0][0][0]             = float[1][1][1][1](float[1][1][1](float[1][1](float[1](1.0))));\n",
     "x[0][0][0][0][0]          = float[1][1][1](float[1][1](float[1](1.0)));\n",
     "x[0][0][0][0][0][0]       = float[1][1](float[1](1.0));\n",
@@ -7540,25 +7548,25 @@ void InteractionInterfaceArrays2<API>::test_shader_compilation(
 {
     /* Shader source with invalid input (input cannot be of arrays of arrays type). */
     const std::string input_variable_shader_source[] = {"in  float inout_variable",
-                                                        "[2][2];\n"
-                                                        "out float result",
-                                                        ";\n\n"
-                                                        "void main()\n"
-                                                        "{\n"
-                                                        "    result",
+                                                        ("[2][2];\n"
+                                                         "out float result"),
+                                                        (";\n\n"
+                                                         "void main()\n"
+                                                         "{\n"
+                                                         "    result"),
                                                         " = inout_variable", "[0][0];\n"};
     /* Shader source with invalid output (output cannot be of arrays of arrays type). */
     const std::string output_variable_shader_source[] = {"out float inout_variable",
-                                                         "[2][2];\n\n"
-                                                         "void main()\n"
-                                                         "{\n"
-                                                         "    inout_variable",
-                                                         "[0][0] = 0.0;\n"
-                                                         "    inout_variable",
-                                                         "[0][1] = 1.0;\n"
-                                                         "    inout_variable",
-                                                         "[1][0] = 2.0;\n"
-                                                         "    inout_variable",
+                                                         ("[2][2];\n\n"
+                                                          "void main()\n"
+                                                          "{\n"
+                                                          "    inout_variable"),
+                                                         ("[0][0] = 0.0;\n"
+                                                          "    inout_variable"),
+                                                         ("[0][1] = 1.0;\n"
+                                                          "    inout_variable"),
+                                                         ("[1][0] = 2.0;\n"
+                                                          "    inout_variable"),
                                                          "[1][1] = 3.0;\n"};
 
     const typename TestCaseBase<API>::TestShaderType &output_shader_type =
@@ -7978,31 +7986,31 @@ void InteractionInterfaceArrays4<API>::test_shader_compilation(
     typename TestCaseBase<API>::TestShaderType input_shader_type)
 {
     /* Shader source with invalid input (input cannot be of arrays of arrays type). */
-    const std::string input_block_shader_source[] = {"in  InOutBlock {\n"
-                                                     "    float inout_variable;\n"
-                                                     "} inout_block",
-                                                     "[2][2];\n"
-                                                     "out float result",
-                                                     ";\n\n"
-                                                     "void main()\n"
-                                                     "{\n"
-                                                     "    result",
-                                                     " = inout_block", "[0][0].inout_variable;\n"};
-    /* Shader source with invalid output (output cannot be of arrays of arrays type). */
-    const std::string output_block_shader_source[] = {"out InOutBlock {\n"
+    const std::string input_block_shader_source[] = {("in  InOutBlock {\n"
                                                       "    float inout_variable;\n"
-                                                      "} inout_block",
-                                                      "[2][2];\n"
-                                                      "\n"
+                                                      "} inout_block"),
+                                                     ("[2][2];\n"
+                                                      "out float result"),
+                                                     (";\n\n"
                                                       "void main()\n"
                                                       "{\n"
-                                                      "    inout_block",
-                                                      "[0][0].inout_variable = 0.0;\n"
-                                                      "    inout_block",
-                                                      "[0][1].inout_variable = 1.0;\n"
-                                                      "    inout_block",
-                                                      "[1][0].inout_variable = 2.0;\n"
-                                                      "    inout_block",
+                                                      "    result"),
+                                                     " = inout_block", "[0][0].inout_variable;\n"};
+    /* Shader source with invalid output (output cannot be of arrays of arrays type). */
+    const std::string output_block_shader_source[] = {("out InOutBlock {\n"
+                                                       "    float inout_variable;\n"
+                                                       "} inout_block"),
+                                                      ("[2][2];\n"
+                                                       "\n"
+                                                       "void main()\n"
+                                                       "{\n"
+                                                       "    inout_block"),
+                                                      ("[0][0].inout_variable = 0.0;\n"
+                                                       "    inout_block"),
+                                                      ("[0][1].inout_variable = 1.0;\n"
+                                                       "    inout_block"),
+                                                      ("[1][0].inout_variable = 2.0;\n"
+                                                       "    inout_block"),
                                                       "[1][1].inout_variable = 3.0;\n"};
 
     const typename TestCaseBase<API>::TestShaderType &output_shader_type =

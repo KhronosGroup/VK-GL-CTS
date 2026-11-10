@@ -1,7 +1,5 @@
 # dEQP-VK
 
-set(DEQP_INL_DIR ${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
-
 add_subdirectory(api)
 add_subdirectory(pipeline)
 add_subdirectory(binding_model)
@@ -107,7 +105,6 @@ include_directories(
 	mesh_shader
 	fragment_shading_barycentric
 	cooperative_vector
-	${DEQP_INL_DIR}
 	sc
 	shader_object
 	device_generated_commands

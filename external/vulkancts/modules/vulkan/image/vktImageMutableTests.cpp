@@ -22,7 +22,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktImageMutableTests.hpp"
-#include "vktImageLoadStoreUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktImageTexture.hpp"
 #include "vktCustomInstancesDevices.hpp"
@@ -36,8 +35,6 @@
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
 #include "vkWsiUtil.hpp"
-#include "vkDeviceUtil.hpp"
-#include "vkSafetyCriticalUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
@@ -46,7 +43,6 @@
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuPlatform.hpp"
-#include "tcuCommandLine.hpp"
 
 #include <string>
 #include <vector>
@@ -782,6 +778,8 @@ Move<VkCommandBuffer> makeCommandBuffer(const DeviceInterface &vk, const VkDevic
 vector<Vec4> genVertexData(const CaseDef &caseDef)
 {
     vector<Vec4> vectorData;
+    vectorData.reserve(caseDef.numLayers * 4 * 2);
+
     const bool isIntegerFormat = isUintFormat(caseDef.viewFormat) || isIntFormat(caseDef.viewFormat);
 
     const float position = caseDef.isLoadOpClearTest ? 0.5f : 1.0f;
@@ -804,13 +802,13 @@ vector<Vec4> genVertexData(const CaseDef &caseDef)
             color = COLOR_TABLE_FLOAT[colorIdx];
         }
 
-        vectorData.push_back(Vec4(-position, -position, 0.0f, 1.0f));
+        vectorData.emplace_back(-position, -position, 0.0f, 1.0f);
         vectorData.push_back(color);
-        vectorData.push_back(Vec4(-position, position, 0.0f, 1.0f));
+        vectorData.emplace_back(-position, position, 0.0f, 1.0f);
         vectorData.push_back(color);
-        vectorData.push_back(Vec4(position, -position, 0.0f, 1.0f));
+        vectorData.emplace_back(position, -position, 0.0f, 1.0f);
         vectorData.push_back(color);
-        vectorData.push_back(Vec4(position, position, 0.0f, 1.0f));
+        vectorData.emplace_back(position, position, 0.0f, 1.0f);
         vectorData.push_back(color);
     }
 
@@ -1092,7 +1090,6 @@ void UploadDownloadExecutor::run(Context &context, VkBuffer buffer)
     const VkImageCreateFlags imageFlags =
         VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | (m_haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
     const VkImageCreateFlags imageFlagsNonMutable = (m_haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
-    VkImageFormatProperties properties;
 
     if (m_caseDef.resolveAttachmentTestType)
     {
@@ -1105,14 +1102,6 @@ void UploadDownloadExecutor::run(Context &context, VkBuffer buffer)
         const vk::VkSampleCountFlagBits samples =
             getMaxAvailableSampleCount(context, format, imageType, imageUsage, msImgflags);
 
-        if ((samples == VK_SAMPLE_COUNT_1_BIT) ||
-            (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                 context.getPhysicalDevice(), format, getImageType(m_caseDef.imageType), VK_IMAGE_TILING_OPTIMAL,
-                 imageUsage, msImgflags, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
-        {
-            TCU_THROW(NotSupportedError, "Format not supported for multisampled image");
-        }
-
         m_multisampledImageHolder =
             makeImage(m_vk, m_device, msImgflags, imageType, format, m_caseDef.viewFormat, m_caseDef.isFormatListTest,
                       m_caseDef.size, 1u, m_caseDef.numLayers, imageUsage, samples);
@@ -1124,13 +1113,6 @@ void UploadDownloadExecutor::run(Context &context, VkBuffer buffer)
         (m_caseDef.resolveAttachmentTestType == ResolveAttachmentTestType::RA_TEST_CA_MUTABLE) ? imageFlagsNonMutable :
                                                                                                  imageFlags;
     const VkFormat imgFormat = (imgFlags == imageFlagsNonMutable) ? m_caseDef.viewFormat : m_caseDef.imageFormat;
-
-    if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-             context.getPhysicalDevice(), imgFormat, getImageType(m_caseDef.imageType), VK_IMAGE_TILING_OPTIMAL,
-             imageUsage, imgFlags, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
-    {
-        TCU_THROW(NotSupportedError, "Format not supported");
-    }
 
     m_imageHolder =
         makeImage(m_vk, m_device, imgFlags, getImageType(m_caseDef.imageType), imgFormat, m_caseDef.viewFormat,
@@ -1813,7 +1795,7 @@ tcu::TestStatus testMutable(Context &context, const CaseDef caseDef)
     }
 }
 
-void checkSupport(Context &context, const CaseDef caseDef)
+void commonCheckSupport(Context &context, const CaseDef caseDef)
 {
     const InstanceInterface &vki      = context.getInstanceInterface();
     const VkPhysicalDevice physDevice = context.getPhysicalDevice();
@@ -1888,16 +1870,48 @@ void checkSupport(Context &context, const CaseDef caseDef)
         TCU_THROW(NotSupportedError, "Base image format is not supported");
     }
 
-    const vk::VkImageUsageFlags usage = getImageUsageForTestCase(caseDef);
+    const VkImageUsageFlags usage = getImageUsageForTestCase(caseDef);
     const VkImageCreateFlags imageFlags =
         VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | (haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
+    const VkImageCreateFlags imageFlagsNonMutable = (haveMaintenance2 ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT : 0);
 
-    if (getMaxAvailableSampleCount(context, caseDef.imageFormat, getImageType(caseDef.imageType), usage, imageFlags) ==
-        VK_SAMPLE_COUNT_1_BIT)
+    const vk::VkImageType imageType = getImageType(caseDef.imageType);
+    if (getMaxAvailableSampleCount(context, caseDef.imageFormat, imageType, usage, imageFlags) == VK_SAMPLE_COUNT_1_BIT)
         TCU_THROW(NotSupportedError, "Maximum available sample count is VK_SAMPLE_COUNT_1_BIT");
 
     if (caseDef.extendedFlags)
         context.requireDeviceFunctionality("VK_KHR_extended_flags");
+
+    VkImageFormatProperties properties;
+    if (caseDef.resolveAttachmentTestType)
+    {
+        const VkImageCreateFlags msImgflags =
+            (caseDef.resolveAttachmentTestType == ResolveAttachmentTestType::RA_TEST_RA_MUTABLE) ?
+                imageFlagsNonMutable :
+                imageFlags;
+        const VkFormat format = (msImgflags == imageFlagsNonMutable) ? caseDef.viewFormat : caseDef.imageFormat;
+        const vk::VkSampleCountFlagBits samples =
+            getMaxAvailableSampleCount(context, format, imageType, usage, msImgflags);
+
+        if ((samples == VK_SAMPLE_COUNT_1_BIT) ||
+            (vki.getPhysicalDeviceImageFormatProperties(physDevice, format, imageType, VK_IMAGE_TILING_OPTIMAL, usage,
+                                                        msImgflags, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+        {
+            TCU_THROW(NotSupportedError, "Format not supported for multisampled image");
+        }
+    }
+
+    const VkImageCreateFlags imgFlags =
+        (caseDef.resolveAttachmentTestType == ResolveAttachmentTestType::RA_TEST_CA_MUTABLE) ? imageFlagsNonMutable :
+                                                                                               imageFlags;
+    const VkFormat imgFormat = (imgFlags == imageFlagsNonMutable) ? caseDef.viewFormat : caseDef.imageFormat;
+
+    if ((vki.getPhysicalDeviceImageFormatProperties(physDevice, imgFormat, getImageType(caseDef.imageType),
+                                                    VK_IMAGE_TILING_OPTIMAL, usage, imgFlags,
+                                                    &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+    {
+        TCU_THROW(NotSupportedError, "Format not supported");
+    }
 }
 
 tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
@@ -1944,13 +1958,13 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                             std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" +
                                                    getFormatShortString(s_formats[viewFormatNdx]) + "_" +
                                                    getUploadString(upload) + "_" + getDownloadString(download);
-                            addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport,
+                            addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, commonCheckSupport,
                                                         initPrograms, testMutable, caseDef);
 
                             caseDef.isFormatListTest       = true;
                             std::string formatListCaseName = caseName + "_format_list";
-                            addFunctionCaseWithPrograms(groupByImageViewType.get(), formatListCaseName, checkSupport,
-                                                        initPrograms, testMutable, caseDef);
+                            addFunctionCaseWithPrograms(groupByImageViewType.get(), formatListCaseName,
+                                                        commonCheckSupport, initPrograms, testMutable, caseDef);
 
                             if (s_formats[imageFormatNdx] == VK_FORMAT_R32G32B32A32_SFLOAT ||
                                 s_formats[imageFormatNdx] == VK_FORMAT_R8G8B8A8_UNORM ||
@@ -1960,7 +1974,7 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                                 caseDef.extendedFlags             = true;
                                 std::string extendedFlagsCaseName = caseName + "_extended_flags";
                                 addFunctionCaseWithPrograms(groupByImageViewType.get(), extendedFlagsCaseName,
-                                                            checkSupport, initPrograms, testMutable, caseDef);
+                                                            commonCheckSupport, initPrograms, testMutable, caseDef);
                             }
                         }
                     }
@@ -1987,7 +2001,7 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                                                    getFormatShortString(s_formats[viewFormatNdx]) + "_" +
                                                    getUploadString(UPLOAD_DRAW) + "_" +
                                                    getDownloadString(DOWNLOAD_COPY) + "_resolve";
-                        addFunctionCaseWithPrograms(groupByImageViewType.get(), baseCaseName, checkSupport,
+                        addFunctionCaseWithPrograms(groupByImageViewType.get(), baseCaseName, commonCheckSupport,
                                                     initPrograms, testMutable, caseDef);
 
                         // Resolve attachment is mutable and color attachment is non-mutable
@@ -1995,7 +2009,7 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                             caseDef.resolveAttachmentTestType = ResolveAttachmentTestType::RA_TEST_RA_MUTABLE;
 
                             std::string case1Name = baseCaseName + "_mutable_resolve_att";
-                            addFunctionCaseWithPrograms(groupByImageViewType.get(), case1Name, checkSupport,
+                            addFunctionCaseWithPrograms(groupByImageViewType.get(), case1Name, commonCheckSupport,
                                                         initPrograms, testMutable, caseDef);
                         }
 
@@ -2004,7 +2018,7 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                             caseDef.resolveAttachmentTestType = ResolveAttachmentTestType::RA_TEST_CA_MUTABLE;
 
                             std::string case2Name = baseCaseName + "_mutable_color_att";
-                            addFunctionCaseWithPrograms(groupByImageViewType.get(), case2Name, checkSupport,
+                            addFunctionCaseWithPrograms(groupByImageViewType.get(), case2Name, commonCheckSupport,
                                                         initPrograms, testMutable, caseDef);
                         }
                     }
@@ -2033,8 +2047,8 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
                                                getFormatShortString(s_formats[viewFormatNdx]) + "_" +
                                                getUploadString(UPLOAD_DRAW) + "_" + getDownloadString(DOWNLOAD_COPY) +
                                                "_load_op_clear";
-                        addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport, initPrograms,
-                                                    testMutable, caseDef);
+                        addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, commonCheckSupport,
+                                                    initPrograms, testMutable, caseDef);
                     }
                 }
             }
@@ -2047,23 +2061,9 @@ tcu::TestCaseGroup *createImageMutableTests(TestContext &testCtx)
 
 typedef vector<VkExtensionProperties> Extensions;
 
-void checkAllSupported(const Extensions &supportedExtensions, const vector<string> &requiredExtensions)
+std::vector<std::string> getRequiredInstanceExtensions(Context &context, Type wsiType)
 {
-    for (vector<string>::const_iterator requiredExtName = requiredExtensions.begin();
-         requiredExtName != requiredExtensions.end(); ++requiredExtName)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
-            TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-    }
-}
-
-CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
-                                     const VkAllocationCallbacks *pAllocator = nullptr)
-{
-    vector<string> extensions;
-
-    extensions.push_back("VK_KHR_surface");
-    extensions.push_back(getExtensionName(wsiType));
+    std::vector<std::string> extensions{"VK_KHR_surface", getExtensionName(wsiType)};
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
@@ -2091,17 +2091,20 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     // 2) Enable VK_EXT_swapchain colorspace if advertised by the driver.
     //
     // We opt for (2) as it provides basic coverage for the extension as a bonus.
-    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
+    if (context.isInstanceFunctionalitySupported("VK_EXT_swapchain_colorspace"))
         extensions.push_back("VK_EXT_swapchain_colorspace");
 
-    checkAllSupported(supportedExtensions, extensions);
+    return extensions;
+}
 
+CustomInstance createInstanceWithWsi(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
+{
+    auto extensions = getRequiredInstanceExtensions(context, wsiType);
     return createCustomInstanceWithExtensions(context, extensions, pAllocator);
 }
 
 static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, VkPhysicalDevice physicalDevice,
-                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                        const VkAllocationCallbacks *pAllocator)
+                                        const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
@@ -2123,12 +2126,6 @@ static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, VkPhysi
                                              DE_ARRAY_BEGIN(extensions),     // ppEnabledExtensionNames
                                              &features};
 
-    for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(extensions); ++ndx)
-    {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(extensions[ndx])))
-            TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
-    }
-
     return instance.createCustomDevice(physicalDevice, &deviceParams, pAllocator);
 }
 
@@ -2140,7 +2137,7 @@ struct InstanceHelper
 
     InstanceHelper(Context &context, Type wsiType, const VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
-        , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, pAllocator))
+        , instance(createInstanceWithWsi(context, wsiType, pAllocator))
         , vki(instance.getDriver())
     {
     }
@@ -2158,9 +2155,7 @@ struct DeviceHelper
                  const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(instanceHelper.instance.getPhysicalDevice())
         , queueFamilyIndex(chooseQueueFamilyIndex(instanceHelper.vki, physicalDevice, surface))
-        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice,
-                                     enumerateDeviceExtensionProperties(instanceHelper.vki, physicalDevice, nullptr),
-                                     queueFamilyIndex, pAllocator))
+        , device(createDeviceWithWsi(instanceHelper.instance, physicalDevice, queueFamilyIndex, pAllocator))
         , vkd(device.getDriver())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
     {
@@ -2265,6 +2260,32 @@ Move<VkSwapchainKHR> makeSwapchain(const DeviceInterface &vk, const VkDevice dev
     return createWsiSwapchain(wsiType, vk, device, &swapchainInfo);
 }
 
+void checkSwapchainMutableSupport(Context &context, const CaseDef caseDef)
+{
+    const InstanceInterface &vki      = context.getInstanceInterface();
+    const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
+    for (const auto &ext : getRequiredInstanceExtensions(context, caseDef.wsiType))
+        context.requireInstanceFunctionality(ext);
+
+    for (const auto &ext : {"VK_KHR_swapchain", "VK_KHR_swapchain_mutable_format"})
+        context.requireDeviceFunctionality(ext);
+
+    const auto imageType          = getImageType(caseDef.imageType);
+    const VkImageUsageFlags usage = getImageUsageForTestCase(caseDef);
+    VkImageFormatProperties properties;
+
+    for (auto format : {caseDef.imageFormat, caseDef.viewFormat})
+    {
+        VkResult result = vki.getPhysicalDeviceImageFormatProperties(physDevice, format, imageType,
+                                                                     VK_IMAGE_TILING_OPTIMAL, usage, 0, &properties);
+        if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+            TCU_THROW(NotSupportedError, "Image format is not supported for required usage");
+    }
+
+    commonCheckSupport(context, caseDef);
+}
+
 tcu::TestStatus testSwapchainMutable(Context &context, CaseDef caseDef)
 {
     const Type wsiType(caseDef.wsiType);
@@ -2280,31 +2301,7 @@ tcu::TestStatus testSwapchainMutable(Context &context, CaseDef caseDef)
     const VkPhysicalDevice physDevice = devHelper.physicalDevice;
     SimpleAllocator allocator(vk, device, getPhysicalDeviceMemoryProperties(vki, physDevice));
 
-    const VkImageUsageFlags imageUsage = getImageUsageForTestCase(caseDef);
-
-    {
-        VkImageFormatProperties properties;
-        VkResult result;
-
-        result =
-            vki.getPhysicalDeviceImageFormatProperties(physDevice, caseDef.imageFormat, getImageType(caseDef.imageType),
-                                                       VK_IMAGE_TILING_OPTIMAL, imageUsage, 0, &properties);
-
-        if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-        {
-            TCU_THROW(NotSupportedError, "Image format is not supported for required usage");
-        }
-
-        result =
-            vki.getPhysicalDeviceImageFormatProperties(physDevice, caseDef.viewFormat, getImageType(caseDef.imageType),
-                                                       VK_IMAGE_TILING_OPTIMAL, imageUsage, 0, &properties);
-
-        if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-        {
-            TCU_THROW(NotSupportedError, "Image view format is not supported for required usage");
-        }
-    }
-
+    const VkImageUsageFlags imageUsage          = getImageUsageForTestCase(caseDef);
     const VkSurfaceCapabilitiesKHR capabilities = getPhysicalDeviceSurfaceCapabilities(vki, physDevice, *surface);
 
     if (caseDef.numLayers > capabilities.maxImageArrayLayers)
@@ -2441,8 +2438,9 @@ tcu::TestCaseGroup *createSwapchainImageMutableTests(TestContext &testCtx)
                                                        getUploadString(upload) + "_" + getDownloadString(download) +
                                                        "_format_list";
 
-                                addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, checkSupport,
-                                                            initPrograms, testSwapchainMutable, caseDef);
+                                addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName,
+                                                            checkSwapchainMutableSupport, initPrograms,
+                                                            testSwapchainMutable, caseDef);
                             }
                         }
                     }

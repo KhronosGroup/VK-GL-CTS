@@ -635,7 +635,7 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
         imageUsageFlags2Info.usage                           = curParams.imageUsage;
         if (params.extendedFlags)
         {
-            curParams.pNext      = imageUsageFlags2Info.pNext;
+            curParams.pNext      = &imageUsageFlags2Info;
             curParams.imageUsage = 0u;
         }
 
@@ -672,6 +672,9 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
         else
         {
             VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&imageUsageFlags2Info);
+            imageFormatInfo2.format                           = curParams.imageFormat;
+            imageFormatInfo2.type                             = VK_IMAGE_TYPE_2D;
+            imageFormatInfo2.tiling                           = VK_IMAGE_TILING_OPTIMAL;
             VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
             propertiesResult                                  = instHelper.vki.getPhysicalDeviceImageFormatProperties2(
                 devHelper.physicalDevice, &imageFormatInfo2, &imageFormatProperties2);
@@ -777,6 +780,8 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
     const MultiQueueDeviceHelper devHelper(instHelper, *surface, extraExts);
     const vector<VkSwapchainCreateInfoKHR> cases(generateSwapchainParameterCases(
         params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
+    const VkSurfaceCapabilitiesKHR capabilities(
+        getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface));
 
     for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
     {
@@ -823,66 +828,80 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
         {
         case VK_SUCCESS:
         {
-            const Unique<VkSwapchainKHR> swapchain(
-                createWsiSwapchain(params.wsiType, devHelper.vkd, *devHelper.device, &curParams));
-
-            const int numSlots = 100;
-            typedef Unique<VkPrivateDataSlotEXT> PrivateDataSlotUp;
-            typedef SharedPtr<PrivateDataSlotUp> PrivateDataSlotSp;
-            vector<PrivateDataSlotSp> slots;
-
-            const VkPrivateDataSlotCreateInfoEXT createInfo = {
-                VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT, // VkStructureType                    sType;
-                nullptr,                                             // const void*                        pNext;
-                0u,                                                  // VkPrivateDataSlotCreateFlagsEXT    flags;
-            };
-
-            for (int i = 0; i < numSlots; ++i)
+            const bool tolerateOOM = params.dimension == TEST_DIMENSION_MIN_IMAGE_COUNT &&
+                                     curParams.minImageCount > capabilities.minImageCount;
+            try
             {
-                Move<VkPrivateDataSlotEXT> s =
-                    createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, nullptr);
-                slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
-            }
+                const Unique<VkSwapchainKHR> swapchain(
+                    createWsiSwapchain(params.wsiType, devHelper.vkd, *devHelper.device, &curParams));
 
-            // Based on code in vktApiObjectManagementTests.cpp
-            for (int r = 0; r < 3; ++r)
-            {
-                uint64_t data;
+                const int numSlots = 100;
+                typedef Unique<VkPrivateDataSlotEXT> PrivateDataSlotUp;
+                typedef SharedPtr<PrivateDataSlotUp> PrivateDataSlotSp;
+                vector<PrivateDataSlotSp> slots;
 
-                for (int i = 0; i < numSlots; ++i)
-                {
-                    data = 1234;
-                    devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(),
-                                                 HandleToInt(swapchain.get()), **slots[i], &data);
-                    // Don't test default value of zero on Android, due to spec erratum
-                    if (params.wsiType != TYPE_ANDROID)
-                    {
-                        if (data != 0)
-                            return tcu::TestStatus::fail("Expected initial value of zero");
-                    }
-                }
+                const VkPrivateDataSlotCreateInfoEXT createInfo = {
+                    VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO_EXT, // VkStructureType                    sType;
+                    nullptr,                                             // const void*                        pNext;
+                    0u,                                                  // VkPrivateDataSlotCreateFlagsEXT    flags;
+                };
 
-                for (int i = 0; i < numSlots; ++i)
-                    VK_CHECK(devHelper.vkd.setPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(),
-                                                          HandleToInt(swapchain.get()), **slots[i], i * i * i + 1));
-
-                for (int i = 0; i < numSlots; ++i)
-                {
-                    data = 1234;
-                    devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(),
-                                                 HandleToInt(swapchain.get()), **slots[i], &data);
-                    if (data != (uint64_t)(i * i * i + 1))
-                        return tcu::TestStatus::fail("Didn't read back set value");
-                }
-
-                // Destroy and realloc slots for the next iteration
-                slots.clear();
                 for (int i = 0; i < numSlots; ++i)
                 {
                     Move<VkPrivateDataSlotEXT> s =
                         createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, nullptr);
                     slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
                 }
+
+                // Based on code in vktApiObjectManagementTests.cpp
+                for (int r = 0; r < 3; ++r)
+                {
+                    uint64_t data;
+
+                    for (int i = 0; i < numSlots; ++i)
+                    {
+                        data = 1234;
+                        devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(),
+                                                     HandleToInt(swapchain.get()), **slots[i], &data);
+                        // Don't test default value of zero on Android, due to spec erratum
+                        if (params.wsiType != TYPE_ANDROID)
+                        {
+                            if (data != 0)
+                                return tcu::TestStatus::fail("Expected initial value of zero");
+                        }
+                    }
+
+                    for (int i = 0; i < numSlots; ++i)
+                        VK_CHECK(devHelper.vkd.setPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(),
+                                                              HandleToInt(swapchain.get()), **slots[i], i * i * i + 1));
+
+                    for (int i = 0; i < numSlots; ++i)
+                    {
+                        data = 1234;
+                        devHelper.vkd.getPrivateData(*devHelper.device, getObjectType<VkSwapchainKHR>(),
+                                                     HandleToInt(swapchain.get()), **slots[i], &data);
+                        if (data != (uint64_t)(i * i * i + 1))
+                            return tcu::TestStatus::fail("Didn't read back set value");
+                    }
+
+                    // Destroy and realloc slots for the next iteration
+                    slots.clear();
+                    for (int i = 0; i < numSlots; ++i)
+                    {
+                        Move<VkPrivateDataSlotEXT> s =
+                            createPrivateDataSlot(devHelper.vkd, *devHelper.device, &createInfo, nullptr);
+                        slots.push_back(PrivateDataSlotSp(new PrivateDataSlotUp(s)));
+                    }
+                }
+            }
+            catch (const OutOfMemoryError &e)
+            {
+                if (!tolerateOOM)
+                    throw;
+
+                log << TestLog::Message << subcase.str()
+                    << "vkCreateSwapchainKHR with minImageCount=" << capabilities.minImageCount << " encountered "
+                    << e.getError() << TestLog::EndMessage;
             }
         }
         break;

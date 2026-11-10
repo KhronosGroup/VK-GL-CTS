@@ -3426,7 +3426,7 @@ class QueryNotUsed : public SimpleShaders
         return "Create 2 programs, use one of them and query the other, verify the results.";
     }
 
-    virtual std::string VertexShader2()
+    virtual std::string UsedProgramVertexShader()
     {
         return "#version 310 es                      \n"
                "in mediump vec4 p;                   \n"
@@ -3436,7 +3436,7 @@ class QueryNotUsed : public SimpleShaders
                "}";
     }
 
-    virtual std::string FragmentShader2()
+    virtual std::string UsedProgramFragmentShader()
     {
         return "#version 310 es                \n"
                "out mediump vec4 c;            \n"
@@ -3450,7 +3450,7 @@ class QueryNotUsed : public SimpleShaders
         GLuint program = CreateProgram(VertexShader().c_str(), FragmentShader().c_str(), false);
         LinkProgram(program);
 
-        GLuint program2 = CreateProgram(VertexShader2().c_str(), FragmentShader2().c_str(), false);
+        GLuint program2 = CreateProgram(UsedProgramVertexShader().c_str(), UsedProgramFragmentShader().c_str(), false);
         LinkProgram(program2);
         glUseProgram(program2);
 

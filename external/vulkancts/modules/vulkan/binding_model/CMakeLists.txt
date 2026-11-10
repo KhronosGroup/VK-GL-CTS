@@ -3,7 +3,6 @@
 include_directories(
 	..
 	../amber
-	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_VKSC_BINDING_MODEL_SRCS

@@ -93,6 +93,7 @@ const vk::VkPhysicalDeviceLineRasterizationFeatures&						Context::getLineRaster
 const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&					Context::getLinearColorAttachmentFeatures					(void) const { return m_device->getLinearColorAttachmentFeatures();					}
 const vk::VkPhysicalDeviceMaintenance10FeaturesKHR&							Context::getMaintenance10Features							(void) const { return m_device->getMaintenance10Features();							}
 const vk::VkPhysicalDeviceMaintenance11FeaturesKHR&							Context::getMaintenance11Features							(void) const { return m_device->getMaintenance11Features();							}
+const vk::VkPhysicalDeviceMaintenance12FeaturesKHR&							Context::getMaintenance12Features							(void) const { return m_device->getMaintenance12Features();							}
 const vk::VkPhysicalDeviceMaintenance4Features&								Context::getMaintenance4Features							(void) const { return m_device->getMaintenance4Features();							}
 const vk::VkPhysicalDeviceMaintenance5Features&								Context::getMaintenance5Features							(void) const { return m_device->getMaintenance5Features();							}
 const vk::VkPhysicalDeviceMaintenance6Features&								Context::getMaintenance6Features							(void) const { return m_device->getMaintenance6Features();							}

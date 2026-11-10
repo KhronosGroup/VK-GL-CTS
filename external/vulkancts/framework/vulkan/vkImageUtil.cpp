@@ -4293,14 +4293,14 @@ float getRepresentableDiffUnorm(const VkFormat format, const uint32_t componentN
 {
     const uint32_t size(getFormatComponentWidth(format, componentNdx));
 
-    return 1.0f / float((1 << (size)) - 1);
+    return 1.0f / float(deUintMaxValue32(static_cast<int>(size)));
 }
 
 float getRepresentableDiffSnorm(const VkFormat format, const uint32_t componentNdx)
 {
     const uint32_t size(getFormatComponentWidth(format, componentNdx));
 
-    return 1.0f / float((1 << (size - 1)) - 1);
+    return 1.0f / float(deIntMaxValue32(static_cast<int>(size)));
 }
 
 static CompressedFormatParameters *getCompressedFormats(const VkFormat compressedFormat)

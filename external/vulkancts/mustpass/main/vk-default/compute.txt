@@ -30,8 +30,10 @@ dEQP-VK.compute.pipeline.basic.indirect_after_base_dispatch
 dEQP-VK.compute.pipeline.basic.max_local_size_x
 dEQP-VK.compute.pipeline.basic.max_local_size_y
 dEQP-VK.compute.pipeline.basic.max_local_size_z
+dEQP-VK.compute.pipeline.basic.mixed_block_padding
 dEQP-VK.compute.pipeline.basic.pk_immediate
 dEQP-VK.compute.pipeline.basic.pkadd_immediate
+dEQP-VK.compute.pipeline.basic.private_memory_in_loop
 dEQP-VK.compute.pipeline.basic.read_unbound_ssbo
 dEQP-VK.compute.pipeline.basic.remove_global_load_pass
 dEQP-VK.compute.pipeline.basic.replicated_composites_array_array_constant

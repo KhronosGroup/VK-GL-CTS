@@ -11172,6 +11172,7 @@ dEQP-VK.ray_query.acceleration_structures.operations.traditional_structures.frag
 dEQP-VK.ray_query.acceleration_structures.operations.traditional_structures.fragment_shader.serialization.gpu_built.bottom_acceleration_structure.triangles_dac
 dEQP-VK.ray_query.acceleration_structures.operations.traditional_structures.fragment_shader.serialization.gpu_built.top_acceleration_structure.aabbs_dac
 dEQP-VK.ray_query.acceleration_structures.operations.traditional_structures.fragment_shader.serialization.gpu_built.top_acceleration_structure.triangles_dac
+dEQP-VK.ray_query.amber.workgroup_barrier
 dEQP-VK.ray_query.misc.dynamic_indexing_inbounds
 dEQP-VK.ray_query.misc.dynamic_indexing_use_first
 dEQP-VK.ray_query.misc.preserve_flip_facing

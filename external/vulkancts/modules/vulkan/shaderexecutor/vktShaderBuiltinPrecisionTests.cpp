@@ -3003,8 +3003,9 @@ protected:
     tcu::DoubleFunc2 &m_func;
 };
 
+// Printed as an infix operator: (a op b).
 template <class T>
-class InfixOperator : public FloatFunc2<T>
+class InfixFunc2 : public FloatFunc2<T>
 {
 protected:
     virtual string getSymbol(void) const = 0;
@@ -3013,7 +3014,13 @@ protected:
     {
         os << "(" << *args[0] << " " << getSymbol() << " " << *args[1] << ")";
     }
+};
 
+// An infix operator with a correctly rounded result, like GLSL +, - and *.
+template <class T>
+class InfixOperator : public InfixFunc2<T>
+{
+protected:
     Interval applyPoint(const EvalContext &ctx, double x, double y) const
     {
         const double exact = this->applyExact(x, y);
@@ -3305,8 +3312,9 @@ protected:
     }
 };
 
+// Not an InfixOperator: GLSL division is accurate to 2.5 ULP, not correctly rounded.
 template <class T>
-class Div : public InfixOperator<T>
+class Div : public InfixFunc2<T>
 {
 public:
     string getName(void) const
@@ -4446,7 +4454,8 @@ public:
 
     void doPrint(ostream &os, const BaseArgExprs &args) const
     {
-        Func<Signature<T, T, T>>::doPrint(os, args);
+        // Printed as a function call, matrixCompMult(a, b), not as Mul's infix operator.
+        os << getName() << "(" << *args[0] << ", " << *args[1] << ")";
     }
 };
 
@@ -4647,32 +4656,30 @@ public:
     }
 
 protected:
-    ExprP<T> doExpand(ExpandContext &, const ArgExprs &args) const
+    ExprP<T> doExpand(ExpandContext &ctx, const ArgExprs &args) const
     {
         ExprP<T> op[Size];
-        // Precompute all products.
+        // Precompute all products, evaluated once.
         for (int ndx = 0; ndx < Size; ++ndx)
-            op[ndx] = args.a[ndx] * args.b[ndx];
+            op[ndx] = bindExpression("op", ctx, args.a[ndx] * args.b[ndx]);
 
         int idx[Size];
         //Prepare an array of indices.
         for (int ndx = 0; ndx < Size; ++ndx)
             idx[ndx] = ndx;
 
-        ExprP<T> res = op[0];
-        // Compute the first dot alternative: SUM(a[i]*b[i]), i = 0 .. Size-1
-        for (int ndx = 1; ndx < Size; ++ndx)
-            res = res + op[ndx];
-
-        // Generate all permutations of indices and
-        // using a permutation compute a dot alternative.
-        // Generates all possible variants fo summation of products in the dot product expansion expression.
+        // Every summation order of the products is an alternative. Orders that differ only in the first two
+        // products give the same result, so only the one with idx[0] < idx[1] is kept.
+        ExprP<T> res;
         do
         {
-            ExprP<T> alt = getConstZero<T>();
-            for (int ndx = 0; ndx < Size; ++ndx)
+            if (idx[0] > idx[1])
+                continue;
+
+            ExprP<T> alt = op[idx[0]];
+            for (int ndx = 1; ndx < Size; ++ndx)
                 alt = alt + op[idx[ndx]];
-            res = alternatives(res, alt);
+            res = res ? alternatives(res, alt) : alt;
         } while (std::next_permutation(idx, idx + Size));
 
         return res;

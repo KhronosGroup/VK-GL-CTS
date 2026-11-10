@@ -38,7 +38,8 @@ vk::VkShaderStageFlags getShaderObjectNextStages(vk::VkShaderStageFlagBits shade
 Move<vk::VkShaderEXT> createShaderFromBinary(const DeviceInterface &vk, VkDevice device,
                                              vk::VkShaderStageFlagBits shaderStage, size_t codeSize, const void *pCode,
                                              bool tessellationShaderFeature, bool geometryShaderFeature,
-                                             vk::VkDescriptorSetLayout descriptorSetLayout);
+                                             vk::VkDescriptorSetLayout descriptorSetLayout,
+                                             const vk::VkPushConstantRange *pushConstantRange = nullptr);
 
 void addBasicShaderObjectShaders(vk::SourceCollections &programCollection);
 

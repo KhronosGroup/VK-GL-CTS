@@ -3198,6 +3198,7 @@ public:
 
     static inline T test_lsr(T x, T y)
     {
+        DE_ASSERT(y >= static_cast<T>(0) && y < static_cast<T>(sizeof(T) * 8));
         if (x >= static_cast<T>(0) || y == static_cast<T>(0))
         {
             return static_cast<T>(x >> y);
@@ -3211,6 +3212,7 @@ public:
 
     static inline T test_asr(T x, T y)
     {
+        DE_ASSERT(y >= static_cast<T>(0) && y < static_cast<T>(sizeof(T) * 8));
         const T bitmask = static_cast<T>(uint64_t(1) << (sizeof(T) * 8u - 1u));
 
         if ((x & bitmask) && y > 0)

@@ -3013,7 +3013,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
                                         // mesh shader support only for point, line or triangle list topology
                                         continue;
 
-                                    if (useMeshShader && topologyInPipeline)
+                                    if (useMeshShader)
                                     {
                                         // topology is a dynamic state, so cannot use mesh shaders
                                         // """
@@ -3089,17 +3089,6 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
                                                            topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST))
                                     {
                                         // mesh shader support only for point, line or triangle list topology
-                                        continue;
-                                    }
-
-                                    if (useMeshShader && topologyInPipeline)
-                                    {
-                                        // topology is a dynamic state, so cannot use mesh shaders
-                                        // """
-                                        //  If the pipeline requires pre - rasterization shader state, and includes a mesh shader,
-                                        //  there must be no element of the pDynamicStates member of pDynamicState set to VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY,
-                                        //  or VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE
-                                        // """
                                         continue;
                                     }
 

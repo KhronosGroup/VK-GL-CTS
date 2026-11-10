@@ -507,6 +507,12 @@ bool validConversion(const T1 &orig, const T2 &result, bool sat)
         if (orig.isNaN())
             return true;
     }
+    // Without SignedZeroInfNanPreserve, OpFConvert may assume operands are not NaN.
+    else if constexpr (!t1IsInt)
+    {
+        if (orig.isNaN())
+            return true;
+    }
 
     // Build the set of acceptable conversions in a single expression so the vector is
     // initialized once via its initializer-list constructor (no default-construct +
@@ -1927,7 +1933,7 @@ tcu::TestCaseGroup *createPrecisionFconvertGroup(tcu::TestContext &testCtx)
                 {
                     continue;
                 }
-                // XXX TODO Do we need any floatcontrols stuff for inf/nan testing?
+                // NaN inputs may produce any result without float controls.
                 for (bool sat : {false, true})
                 {
                     for (bool bitcastExtract : {false, true})

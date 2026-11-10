@@ -21,7 +21,6 @@
  * \brief YCbCr multi-planar format rendering attachment tests
  *//*--------------------------------------------------------------------*/
 
-#include "tcuVectorUtil.hpp"
 #include "vkDefs.hpp"
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
@@ -355,11 +354,10 @@ void RenderAttachmentTestCase::checkSupport(Context &context) const
     // These multiplanar formats are provided by this extension
     context.requireDeviceFunctionality("VK_KHR_sampler_ycbcr_conversion");
 
-    const auto &instInt = context.getInstanceInterface();
+    const auto &vki     = context.getInstanceInterface();
     auto physicalDevice = context.getPhysicalDevice();
 
-    VkImageFormatProperties properties;
-    deMemset(&properties, 0, sizeof(properties));
+    VkImageFormatProperties properties{};
 
     VkImageUsageFlags usageFlags =
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -368,10 +366,13 @@ void RenderAttachmentTestCase::checkSupport(Context &context) const
         createFlags |= VK_IMAGE_CREATE_DISJOINT_BIT;
 
     // Check if this combination of format and flags are supported
-    if (instInt.getPhysicalDeviceImageFormatProperties(physicalDevice, m_format, VK_IMAGE_TYPE_2D,
-                                                       VK_IMAGE_TILING_OPTIMAL, usageFlags, createFlags,
-                                                       &properties) != VK_SUCCESS)
+    if (vki.getPhysicalDeviceImageFormatProperties(physicalDevice, m_format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+                                                   usageFlags, createFlags, &properties) != VK_SUCCESS)
         TCU_THROW(NotSupportedError, "Image format is not supported");
+
+    const auto formatProperties(getPhysicalDeviceFormatProperties(vki, physicalDevice, m_format));
+    if (m_disjoint && ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
+        TCU_THROW(NotSupportedError, "Format doesn't support disjoint planes");
 }
 
 TestInstance *RenderAttachmentTestCase::createInstance(Context &context) const

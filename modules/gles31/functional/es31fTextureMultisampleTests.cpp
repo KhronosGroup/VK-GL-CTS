@@ -904,7 +904,8 @@ void SampleMaskCase::updateTexture(int sample)
 
     if (m_flags & FLAGS_HIGH_BITS)
     {
-        const std::vector<uint32_t> bitmask       = genSetNthBitSampleMask(sample);
+        const std::vector<uint32_t> bitmask =
+            sample < 0 ? std::vector<uint32_t>(m_effectiveSampleMaskWordCount, 0) : genSetNthBitSampleMask(sample);
         const std::vector<uint32_t> effectiveMask = genAllSetToNthBitSampleMask(m_samples);
         std::vector<uint32_t> totalBitmask(effectiveMask.size());
 

@@ -572,10 +572,6 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
         VkFormatProperties formatProperties;
         vki.getPhysicalDeviceFormatProperties(physicalDevice, m_data.format, &formatProperties);
 
-#ifndef CTS_USES_VULKANSC
-        const VkFormatProperties3KHR formatProperties3 = context.getFormatProperties(m_data.format);
-#endif // CTS_USES_VULKANSC
-
         switch (m_data.descriptorType)
         {
         case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
@@ -587,18 +583,6 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
             if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT) !=
                 VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT)
                 TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT is not supported");
-#ifndef CTS_USES_VULKANSC
-            if ((!m_data.formatQualifier) &&
-                ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
-                 VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
-                TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
-            break;
-        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-            if ((!m_data.formatQualifier) &&
-                ((formatProperties3.bufferFeatures & VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR) !=
-                 VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT_KHR))
-                TCU_THROW(NotSupportedError, "VK_FORMAT_FEATURE_2_STORAGE_READ_WITHOUT_FORMAT_BIT is not supported");
-#endif // CTS_USES_VULKANSC
             break;
         case VERTEX_ATTRIBUTE_FETCH:
             if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) !=

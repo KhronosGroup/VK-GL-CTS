@@ -2019,10 +2019,7 @@ bool gl3cts::TransformFeedback::LinkingErrors::testTooManyVaryings(void)
                                                "were specified in INTERLEAVED mode."
                                             << tcu::TestLog::EndMessage;
 
-        if (program)
-        {
-            gl.deleteProgram(program);
-        }
+        gl.deleteProgram(program);
 
         return false;
     }
@@ -2038,10 +2035,7 @@ bool gl3cts::TransformFeedback::LinkingErrors::testTooManyVaryings(void)
                                                "varyings were specified in SEPARATE mode."
                                             << tcu::TestLog::EndMessage;
 
-        if (program)
-        {
-            gl.deleteProgram(program);
-        }
+        gl.deleteProgram(program);
 
         return false;
     }

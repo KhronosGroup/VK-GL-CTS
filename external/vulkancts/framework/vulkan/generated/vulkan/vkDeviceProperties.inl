@@ -262,6 +262,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceImageProcessingPropertiesQC
 template<> void initPropertyFromBlob<VkPhysicalDeviceLayeredApiPropertiesListKHR>(VkPhysicalDeviceLayeredApiPropertiesListKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT>(VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance10PropertiesKHR>(VkPhysicalDeviceMaintenance10PropertiesKHR&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance12PropertiesKHR>(VkPhysicalDeviceMaintenance12PropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance7PropertiesKHR>(VkPhysicalDeviceMaintenance7PropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceMaintenance9PropertiesKHR>(VkPhysicalDeviceMaintenance9PropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceMapMemoryPlacedPropertiesEXT>(VkPhysicalDeviceMapMemoryPlacedPropertiesEXT&, const AllPropertiesBlobs&) {}
@@ -343,6 +344,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceLayeredApiPropertiesLis
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LEGACY_VERTEX_ATTRIBUTES_PROPERTIES_EXT, VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceLineRasterizationProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES, VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance10PropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_PROPERTIES_KHR, VK_KHR_MAINTENANCE_10_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance12PropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_12_PROPERTIES_KHR, VK_KHR_MAINTENANCE_12_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance3Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES, VK_KHR_MAINTENANCE_3_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance4Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES, VK_KHR_MAINTENANCE_4_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceMaintenance5Properties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES, VK_KHR_MAINTENANCE_5_EXTENSION_NAME}; }
@@ -443,6 +445,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT>, VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceLineRasterizationProperties>, VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance10PropertiesKHR>, VK_KHR_MAINTENANCE_10_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance12PropertiesKHR>, VK_KHR_MAINTENANCE_12_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance3Properties>, VK_KHR_MAINTENANCE_3_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance4Properties>, VK_KHR_MAINTENANCE_4_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceMaintenance5Properties>, VK_KHR_MAINTENANCE_5_EXTENSION_NAME },

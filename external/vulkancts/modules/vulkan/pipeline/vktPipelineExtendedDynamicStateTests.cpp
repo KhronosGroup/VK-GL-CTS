@@ -7244,6 +7244,23 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
                 // Dynamically disable color blending
                 orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "color_blend_disable", config));
             }
+            {
+                TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+                const ColorBlendEq oldColorEq(vk::VK_BLEND_FACTOR_ZERO, vk::VK_BLEND_FACTOR_ONE, vk::VK_BLEND_OP_ADD,
+                                              vk::VK_BLEND_FACTOR_ZERO, vk::VK_BLEND_FACTOR_ONE, vk::VK_BLEND_OP_ADD);
+
+                config.colorBlendEquationConfig.staticValue  = oldColorEq;
+                config.colorBlendEquationConfig.dynamicValue = oldColorEq;
+
+                config.colorBlendEnableConfig.staticValue  = true;
+                config.colorBlendEnableConfig.dynamicValue = false;
+
+                config.clearColorValue = vk::makeClearValueColor(kTransparentClearColor);
+
+                orderingGroup->addChild(
+                    new ExtendedDynamicStateTest(testCtx, "color_blend_disable_dynamic_equation", config));
+            }
 
             // Color blend equation.
             {
@@ -8124,6 +8141,46 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
                 // Dynamically disable depth clamp
                 orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable", config));
             }
+            if (!vk::isConstructionTypeShaderObject(pipelineConstructionType))
+            {
+                {
+                    TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+                    config.meshParams[0].depth                = 1.5f;
+                    config.clearDepthValue                    = 0.625f;
+                    config.depthTestEnableConfig.staticValue  = true;
+                    config.depthWriteEnableConfig.staticValue = true;
+                    config.depthCompareOpConfig.staticValue   = vk::VK_COMPARE_OP_LESS;
+                    config.viewportConfig.staticValue =
+                        ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.0f, 0.5f));
+                    config.expectedDepth = 0.5f;
+
+                    config.depthClampEnableConfig.staticValue  = true;
+                    config.depthClampEnableConfig.dynamicValue = true;
+
+                    orderingGroup->addChild(
+                        new ExtendedDynamicStateTest(testCtx, "depth_clamp_enable_same_static", config));
+                }
+                {
+                    TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+
+                    config.meshParams[0].depth                = 1.5f;
+                    config.clearDepthValue                    = 1.0f;
+                    config.depthTestEnableConfig.staticValue  = true;
+                    config.depthWriteEnableConfig.staticValue = true;
+                    config.depthCompareOpConfig.staticValue   = vk::VK_COMPARE_OP_LESS;
+                    config.viewportConfig.staticValue =
+                        ViewportVec(1u, vk::makeViewport(0.0f, 0.0f, kWidthF, kHeightF, 0.0f, 0.5f));
+                    config.referenceColor.reset(new SingleColorGenerator(kDefaultClearColor));
+                    config.expectedDepth = 1.0f;
+
+                    config.depthClampEnableConfig.staticValue  = false;
+                    config.depthClampEnableConfig.dynamicValue = false;
+
+                    orderingGroup->addChild(
+                        new ExtendedDynamicStateTest(testCtx, "depth_clamp_disable_same_static", config));
+                }
+            }
 
             // "If the depth clamping state is changed dynamically, and the pipeline was not created with
             // VK_DYNAMIC_STATE_DEPTH_CLIP_ENABLE_EXT enabled nor includes VkPipelineRasterizationDepthClipStateCreateInfoEXT,
@@ -8272,6 +8329,10 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
                     {
                         config.rasterizationSamplesConfig.staticValue  = inactiveSampleCount;
                         config.rasterizationSamplesConfig.dynamicValue = activeSampleCount;
+                        // Shader objects set a static sample mask with the static sample count, which must not be
+                        // lower than the dynamic one (VUID-vkCmdDraw-samples-07473)
+                        if (multisample && vk::isConstructionTypeShaderObject(pipelineConstructionType))
+                            config.sampleMaskConfig.dynamicValue = SampleMaskVec(1u, 0xFFFFFFFFu);
                         // Dynamically set the rasterization sample count
                         orderingGroup->addChild(
                             new ExtendedDynamicStateTest(testCtx, namePrefix + "rasterization_samples", config));
@@ -9883,6 +9944,9 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
                 config.oversizedTriangle                       = true;
                 config.rasterizationSamplesConfig.staticValue  = kSingleSampleCount;
                 config.rasterizationSamplesConfig.dynamicValue = kMultiSampleCount;
+                // See multi_sample_rasterization_samples (VUID-vkCmdDraw-samples-07473)
+                if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
+                    config.sampleMaskConfig.dynamicValue = SampleMaskVec(1u, 0xFFFFFFFFu);
                 // Test number of frag shader invocations with sample shading enabled and dynamic sample counts
                 orderingGroup->addChild(new ExtendedDynamicStateTest(testCtx, "sample_shading_sample_count", config));
             }

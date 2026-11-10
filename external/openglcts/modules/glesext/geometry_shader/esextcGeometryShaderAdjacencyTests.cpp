@@ -951,7 +951,7 @@ void GeometryShaderAdjacencyTests::setLineStripPointsIndiced(AdjacencyTestData &
         ++travellerIndicesPtr;
     }
 
-    for (unsigned int n = 0; n < test_data.m_n_vertices - 3; ++n)
+    for (unsigned int n = 0; n + 3 < test_data.m_n_vertices; ++n)
     {
         AdjacencyGridPoint *pointN0 = test_data.m_grid->m_line_strip.m_points + test_data.m_index_data[n];
         AdjacencyGridPoint *pointN1 = test_data.m_grid->m_line_strip.m_points + test_data.m_index_data[n + 1];
@@ -1423,7 +1423,8 @@ void GeometryShaderAdjacencyTests::setTriangleStripPointsNonindiced(AdjacencyTes
  **/
 void GeometryShaderAdjacencyTests::setTriangleStripPointsIndiced(AdjacencyTestData &test_data)
 {
-    unsigned int nTriangles = (test_data.m_grid->m_triangle_strip.m_n_points - 4) / 2;
+    const unsigned int nPoints = test_data.m_grid->m_triangle_strip.m_n_points;
+    unsigned int nTriangles    = nPoints >= 4 ? (nPoints - 4) / 2 : 0;
 
     float *travellerExpectedAdjacencyGeometryPtr = 0;
     float *travellerExpectedGeometryPtr          = 0;

@@ -149,6 +149,7 @@ enum IndexType
 {
     INDEX_TYPE_CONST_LITERAL = 0,
     INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR,
+    INDEX_TYPE_DYNAMICALLY_NONUNIFORM_EXPR,
 
     INDEX_TYPE_LAST
 };
@@ -157,6 +158,7 @@ enum ComputeTestType
 {
     CTT_SIMPLE = 0,
     CTT_UNINITIALIZED,
+    CTT_NONUNIFORM_INDEX,
 
     CTT_LAST
 };
@@ -833,6 +835,19 @@ void PushConstantGraphicsDisjointInstance::updatePushConstants(VkCommandBuffer c
         color[3]                    = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
         color[3][DYNAMIC_ARR_INDEX] = DYNAMIC_ARR_CONSTANT;
         break;
+    case INDEX_TYPE_DYNAMICALLY_NONUNIFORM_EXPR:
+        // Vector and array values are V[i] = A[i] = i * 0.25 for i in 0..3;
+        // matrix values are M[i][0] = i * 0.25 for i in 0..1.
+        // The shader computes the index from a per-invocation built-in
+        // (gl_VertexIndex / gl_FragCoord), so the access is genuinely
+        // non-uniform within the invocation group.
+        color[0] = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+        color[1] = tcu::Vec4(0.0f, 0.25f, 0.5f, 0.75f);
+        // mat2 is column-major; columns are vec2(M[0][0], M[0][1]) and
+        // vec2(M[1][0], M[1][1]). Place 0.0 and 0.25 in the [.][0] slots.
+        color[2] = tcu::Vec4(0.0f, 0.0f, 0.25f, 0.0f);
+        color[3] = tcu::Vec4(0.0f, 0.25f, 0.5f, 0.75f);
+        break;
     default:
         DE_FATAL("Unhandled IndexType");
         break;
@@ -1156,6 +1171,15 @@ void PushConstantGraphicsTest::checkSupport(Context &context) const
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_pipelineConstructionType);
 
+    if (m_indexType == INDEX_TYPE_DYNAMICALLY_NONUNIFORM_EXPR)
+    {
+        context.requireDeviceFunctionality("VK_KHR_maintenance12");
+#ifndef CTS_USES_VULKANSC
+        if (!context.getMaintenance12Features().maintenance12)
+            TCU_THROW(NotSupportedError, "VkPhysicalDeviceMaintenance12FeaturesKHR::maintenance12 not supported");
+#endif
+    }
+
     if (m_pushConstant2)
         context.requireDeviceFunctionality("VK_KHR_maintenance6");
 
@@ -1342,6 +1366,7 @@ void PushConstantGraphicsDisjointTest::initPrograms(SourceCollections &sourceCol
                     }
                     break;
                 case INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR:
+                case INDEX_TYPE_DYNAMICALLY_NONUNIFORM_EXPR:
                     vertexSrc << "    layout(offset = 0)  vec4 index; \n"
                               << "    layout(offset = 16) vec4 vecType; \n"
                               << "    layout(offset = 32) mat2 matType; \n"
@@ -1476,6 +1501,25 @@ void PushConstantGraphicsDisjointTest::initPrograms(SourceCollections &sourceCol
                               << "        vtxColor = vec4(0.0, 0.5, 0.5, 1.0);\n";
 
                     vertexSrc << "}\n";
+                }
+                break;
+                case INDEX_TYPE_DYNAMICALLY_NONUNIFORM_EXPR:
+                {
+                    // Index is computed from gl_VertexIndex so it varies
+                    // per-invocation; the expected value for each index is
+                    // float(idx) * 0.25 (matches the data laid down in
+                    // updatePushConstants for INDEX_TYPE_DYNAMICALLY_NONUNIFORM_EXPR).
+                    vertexSrc << "    vtxColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                              << "    int vec_idx = gl_VertexIndex & 3;\n"
+                              << "    int mat_idx = gl_VertexIndex & 1;\n"
+                              << "    int arr_idx = (gl_VertexIndex + 1) & 3;\n"
+                              << "    if (matInst.vecType[vec_idx] != float(vec_idx) * 0.25)\n"
+                              << "        vtxColor += vec4(0.0, 0.5, 0.0, 1.0);\n"
+                              << "    if (matInst.matType[mat_idx][0] != float(mat_idx) * 0.25)\n"
+                              << "        vtxColor += vec4(0.0, 0.0, 0.5, 1.0);\n"
+                              << "    if (matInst.arrType[arr_idx] != float(arr_idx) * 0.25)\n"
+                              << "        vtxColor = vec4(0.0, 0.5, 0.5, 1.0);\n"
+                              << "}\n";
                 }
                 break;
                 default:
@@ -1662,6 +1706,31 @@ void PushConstantGraphicsDisjointTest::initPrograms(SourceCollections &sourceCol
                                 << "        fragColor = vec4(0.0, 0.5, 0.5, 1.0);\n";
 
                     fragmentSrc << "}\n";
+                }
+                break;
+                case INDEX_TYPE_DYNAMICALLY_NONUNIFORM_EXPR:
+                {
+                    fragmentSrc << "    layout(offset = 0)  vec4 index; \n"
+                                << "    layout(offset = 16) vec4 vecType; \n"
+                                << "    layout(offset = 32) mat2 matType; \n"
+                                << "    layout(offset = 48) float[4] arrType; \n"
+                                << "} matInst;\n";
+
+                    // Per-invocation index from gl_FragCoord.
+                    // Expected value for each index is float(idx) * 0.25.
+                    fragmentSrc << "void main (void)\n"
+                                << "{\n"
+                                << "    fragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                                << "    int vec_idx = int(gl_FragCoord.x) & 3;\n"
+                                << "    int mat_idx = int(gl_FragCoord.x) & 1;\n"
+                                << "    int arr_idx = int(gl_FragCoord.y) & 3;\n"
+                                << "    if (matInst.vecType[vec_idx] != float(vec_idx) * 0.25)\n"
+                                << "        fragColor += vec4(0.0, 0.5, 0.0, 1.0);\n"
+                                << "    if (matInst.matType[mat_idx][0] != float(mat_idx) * 0.25)\n"
+                                << "        fragColor += vec4(0.0, 0.0, 0.5, 1.0);\n"
+                                << "    if (matInst.arrType[arr_idx] != float(arr_idx) * 0.25)\n"
+                                << "        fragColor = vec4(0.0, 0.5, 0.5, 1.0);\n"
+                                << "}\n";
                 }
                 break;
                 default:
@@ -2046,24 +2115,71 @@ void PushConstantComputeTest::checkSupport(Context &context) const
 {
     if (CTT_UNINITIALIZED == m_testType)
         context.requireDeviceFunctionality("VK_KHR_maintenance4");
+
+    if (CTT_NONUNIFORM_INDEX == m_testType)
+    {
+        context.requireDeviceFunctionality("VK_KHR_maintenance12");
+#ifndef CTS_USES_VULKANSC
+        if (!context.getMaintenance12Features().maintenance12)
+            TCU_THROW(NotSupportedError, "VkPhysicalDeviceMaintenance12FeaturesKHR::maintenance12 not supported");
+#endif
+    }
 }
 
 void PushConstantComputeTest::initPrograms(SourceCollections &sourceCollections) const
 {
     std::ostringstream computeSrc;
 
-    computeSrc << "#version 450\n"
-               << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-               << "layout(std140, set = 0, binding = 0) writeonly buffer Output {\n"
+    computeSrc << "#version 450\n";
+    if (CTT_NONUNIFORM_INDEX == m_testType)
+        computeSrc << "layout(local_size_x = 8, local_size_y = 1, local_size_z = 1) in;\n";
+    else
+        computeSrc << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+
+    computeSrc << "layout(std140, set = 0, binding = 0) writeonly buffer Output {\n"
                << "  vec4 elements[];\n"
-               << "} outData;\n"
-               << "layout(push_constant) uniform Material{\n"
-               << "  vec4 element;\n"
-               << "} matInst;\n"
-               << "void main (void)\n"
-               << "{\n"
-               << "  outData.elements[gl_GlobalInvocationID.x] = matInst.element;\n"
-               << "}\n";
+               << "} outData;\n";
+
+    if (CTT_NONUNIFORM_INDEX == m_testType)
+    {
+        // Mirror the graphics non-uniform test: a single push-constant
+        // block with a vec4, a mat2, and a float[4] indexed at
+        // non-uniform indices derived from gl_GlobalInvocationID. Each
+        // invocation writes vec4(1,0,0,1) on success or a mismatch-tagged
+        // colour otherwise; the host expects vec4(1,0,0,1) for every
+        // invocation.
+        computeSrc << "layout(push_constant) uniform Material{\n"
+                   << "  layout(offset = 0)  vec4 index;\n"
+                   << "  layout(offset = 16) vec4 vecType;\n"
+                   << "  layout(offset = 32) mat2 matType;\n"
+                   << "  layout(offset = 48) float[4] arrType;\n"
+                   << "} matInst;\n"
+                   << "void main (void)\n"
+                   << "{\n"
+                   << "  uint gid = gl_GlobalInvocationID.x;\n"
+                   << "  int vec_idx = int(gid) & 3;\n"
+                   << "  int mat_idx = int(gid) & 1;\n"
+                   << "  int arr_idx = (int(gid) + 1) & 3;\n"
+                   << "  vec4 result = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                   << "  if (matInst.vecType[vec_idx] != float(vec_idx) * 0.25)\n"
+                   << "    result += vec4(0.0, 0.5, 0.0, 1.0);\n"
+                   << "  if (matInst.matType[mat_idx][0] != float(mat_idx) * 0.25)\n"
+                   << "    result += vec4(0.0, 0.0, 0.5, 1.0);\n"
+                   << "  if (matInst.arrType[arr_idx] != float(arr_idx) * 0.25)\n"
+                   << "    result = vec4(0.0, 0.5, 0.5, 1.0);\n"
+                   << "  outData.elements[gid] = result;\n"
+                   << "}\n";
+    }
+    else
+    {
+        computeSrc << "layout(push_constant) uniform Material{\n"
+                   << "  vec4 element;\n"
+                   << "} matInst;\n"
+                   << "void main (void)\n"
+                   << "{\n"
+                   << "  outData.elements[gl_GlobalInvocationID.x] = matInst.element;\n"
+                   << "}\n";
+    }
 
     sourceCollections.glslSources.add("compute") << glu::ComputeSource(computeSrc.str());
 }
@@ -2190,14 +2306,29 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance(Context &contex
                                  &(*m_descriptorSet), 0, nullptr);
 
         // update push constant
-        if (CTT_UNINITIALIZED != m_testType)
+        if (CTT_NONUNIFORM_INDEX == m_testType)
+        {
+            // Match the layout declared in the shader. mat2 is column-major,
+            // so the [i][0] slots live in components .x and .z of the matType
+            // vec4 image.
+            const tcu::Vec4 payload[4] = {
+                tcu::Vec4(0.00f, 0.00f, 0.00f, 0.00f), // unused
+                tcu::Vec4(0.00f, 0.25f, 0.50f, 0.75f), // vecType
+                tcu::Vec4(0.00f, 0.00f, 0.25f, 0.00f), // matType
+                tcu::Vec4(0.00f, 0.25f, 0.50f, 0.75f), // arrType
+            };
+            vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange.range.shaderStage,
+                                m_pushConstantRange.range.offset, m_pushConstantRange.range.size, payload);
+        }
+        else if (CTT_UNINITIALIZED != m_testType)
         {
             tcu::Vec4 value = tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
             vk.cmdPushConstants(*m_cmdBuffer, *m_pipelineLayout, m_pushConstantRange.range.shaderStage,
                                 m_pushConstantRange.range.offset, m_pushConstantRange.range.size, &value);
         }
 
-        vk.cmdDispatch(*m_cmdBuffer, 8, 1, 1);
+        const uint32_t workGroupCountX = (CTT_NONUNIFORM_INDEX == m_testType ? 1u : 8u);
+        vk.cmdDispatch(*m_cmdBuffer, workGroupCountX, 1, 1);
 
         const VkBufferMemoryBarrier buf_barrier = {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //    VkStructureType    sType;
@@ -3466,7 +3597,19 @@ tcu::TestCaseGroup *createPushConstantTests(tcu::TestContext &testCtx,
          1u,
          {{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 64, false}, {0, 64}}},
          false,
-         INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR}};
+         INDEX_TYPE_DYNAMICALLY_UNIFORM_EXPR},
+        // non-uniform indexing of vector, matrix, and array in vertex shader
+        {"non_uniform_index_vert",
+         1u,
+         {{{VK_SHADER_STAGE_VERTEX_BIT, 0, 64, false}, {0, 64}}},
+         false,
+         INDEX_TYPE_DYNAMICALLY_NONUNIFORM_EXPR},
+        // non-uniform indexing of vector, matrix, and array in fragment shader
+        {"non_uniform_index_frag",
+         1u,
+         {{{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 64, false}, {0, 64}}},
+         false,
+         INDEX_TYPE_DYNAMICALLY_NONUNIFORM_EXPR}};
 
     static const struct
     {
@@ -3520,6 +3663,12 @@ tcu::TestCaseGroup *createPushConstantTests(tcu::TestContext &testCtx,
             "uninitialized",
             CTT_UNINITIALIZED,
             {{VK_SHADER_STAGE_COMPUTE_BIT, 0, 16, false}, {0, 16}},
+        },
+        // non-uniform indexing of a push constant vector, matrix, and array
+        {
+            "non_uniform_index",
+            CTT_NONUNIFORM_INDEX,
+            {{VK_SHADER_STAGE_COMPUTE_BIT, 0, 64, false}, {0, 64}},
         },
     };
 

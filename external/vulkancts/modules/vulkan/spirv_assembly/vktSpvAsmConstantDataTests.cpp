@@ -392,8 +392,7 @@ tcu::TestStatus runTest(Context &context, TestParamsPtr params)
     {
         const auto prevSize = specData.size();
 
-        specData.resize(prevSize + dataBytes.size());
-        memcpy(&specData.at(prevSize), dataBytes.c_str(), dataBytes.size());
+        specData.insert(specData.end(), dataBytes.begin(), dataBytes.end());
 
         const VkSpecializationMapEntry entry{
             1u,

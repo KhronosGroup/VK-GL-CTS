@@ -216,6 +216,8 @@ private:
     typedef de::SharedPtr<CompressedTextureForBlit> CompressedTextureForBlitSp;
     CompressedTextureForBlitSp m_sourceCompressedTexture;
     CompressedTextureForBlitSp m_destinationCompressedTexture;
+
+    VkImageAspectFlags m_blitAspects;
 };
 
 // Helper to ease creating a VkImageSubresourceLayers structure.
@@ -329,6 +331,7 @@ VkImageBlit makeReverseBlit3D2D(
 
 BlittingImages::BlittingImages(Context &context, TestParams params)
     : CopiesAndBlittingTestInstanceWithSparseSemaphore(context, params)
+    , m_blitAspects(0u)
 {
     const InstanceInterface &vki        = context.getInstanceInterface();
     const DeviceInterface &vk           = context.getDeviceInterface();
@@ -406,6 +409,10 @@ BlittingImages::BlittingImages(Context &context, TestParams params)
         VK_CHECK(vk.bindImageMemory(vkDevice, *m_destination, m_destinationImageAlloc->getMemory(),
                                     m_destinationImageAlloc->getOffset()));
     }
+
+    // See which aspects we will blit.
+    for (const auto &r : m_params.regions)
+        m_blitAspects |= (r.imageBlit.srcSubresource.aspectMask | r.imageBlit.dstSubresource.aspectMask);
 }
 
 tcu::TestStatus BlittingImages::iterate(void)
@@ -610,14 +617,14 @@ bool BlittingImages::checkNonNearestFilteredResult(const tcu::ConstPixelBufferAc
         const tcu::Vec4 threshold =
             (srcMaxDiff + dstMaxDiff) * ((m_params.filter == VK_FILTER_CUBIC_EXT) ? 1.5f : 1.0f);
 
-        isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold,
+        isOk = tcu::floatThresholdCompare(log, "Compare", "Comparison Result", clampedExpected, result, threshold,
                                           tcu::COMPARE_LOG_ON_ERROR);
         log << tcu::TestLog::EndSection;
 
         if (!isOk)
         {
             log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
-            isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", unclampedExpected, result, threshold,
+            isOk = tcu::floatThresholdCompare(log, "Compare", "Comparison Result", unclampedExpected, result, threshold,
                                               tcu::COMPARE_LOG_ON_ERROR);
             log << tcu::TestLog::EndSection;
         }
@@ -643,14 +650,14 @@ bool BlittingImages::checkNonNearestFilteredResult(const tcu::ConstPixelBufferAc
             threshold[i] = static_cast<uint32_t>(de::min(threshold64, uint64_t(std::numeric_limits<uint32_t>::max())));
         }
 
-        isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedExpected, result, threshold,
+        isOk = tcu::intThresholdCompare(log, "Compare", "Comparison Result", clampedExpected, result, threshold,
                                         tcu::COMPARE_LOG_ON_ERROR);
         log << tcu::TestLog::EndSection;
 
         if (!isOk)
         {
             log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
-            isOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", unclampedExpected, result, threshold,
+            isOk = tcu::intThresholdCompare(log, "Compare", "Comparison Result", unclampedExpected, result, threshold,
                                             tcu::COMPARE_LOG_ON_ERROR);
             log << tcu::TestLog::EndSection;
         }
@@ -749,7 +756,7 @@ bool BlittingImages::checkCompressedNonNearestFilteredResult(const tcu::ConstPix
     bool isOk;
     {
         const tcu::ScopedLogSection section(log, "ClampedSourceImage", "Region with clamped edges on source image.");
-        isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedRef, res, threshold,
+        isOk = tcu::floatThresholdCompare(log, "Compare", "Comparison Result", clampedRef, res, threshold,
                                           tcu::COMPARE_LOG_ON_ERROR);
     }
 
@@ -760,7 +767,7 @@ bool BlittingImages::checkCompressedNonNearestFilteredResult(const tcu::ConstPix
 
         const tcu::ScopedLogSection section(log, "NonClampedSourceImage",
                                             "Region with non-clamped edges on source image.");
-        isOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", unclampedRef, res, threshold,
+        isOk = tcu::floatThresholdCompare(log, "Compare", "Comparison Result", unclampedRef, res, threshold,
                                           tcu::COMPARE_LOG_ON_ERROR);
     }
 
@@ -812,14 +819,9 @@ bool BlittingImages::checkNearestFilteredResult(const tcu::ConstPixelBufferAcces
 
     if (!ok)
     {
-        log << tcu::TestLog::ImageSet("Compare", "Result comparsion")
+        log << tcu::TestLog::ImageSet("Compare", "Comparison result")
             << tcu::TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
             << tcu::TestLog::Image("ErrorMask", "Error mask", errorMask) << tcu::TestLog::EndImageSet;
-    }
-    else
-    {
-        log << tcu::TestLog::ImageSet("Compare", "Result comparsion")
-            << tcu::TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << tcu::TestLog::EndImageSet;
     }
 
     return ok;
@@ -859,9 +861,6 @@ bool BlittingImages::checkCompressedNearestFilteredResult(const tcu::ConstPixelB
 
     if (resultFormat != tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8))
         tcu::computePixelScaleBias(result, pixelScale, pixelBias);
-
-    log << tcu::TestLog::ImageSet("Compare", "Result comparsion")
-        << tcu::TestLog::Image("Result", "Result", result, pixelScale, pixelBias);
 
     // for compressed formats source buffer access is not actual compressed format
     // but equivalent uncompressed format that is some cases needs additional
@@ -945,12 +944,13 @@ bool BlittingImages::checkCompressedNearestFilteredResult(const tcu::ConstPixelB
     const tcu::ConstPixelBufferAccess res = clampResult ? clampedResultLevel.getAccess() : result;
 
     if (floatNearestBlitCompare(src, res, srcMaxDiff, dstMaxDiff, errorMask, m_params))
-    {
-        log << tcu::TestLog::EndImageSet;
         return true;
-    }
 
+    log << tcu::TestLog::ImageSet("Compare", "Comparison Result")
+        << tcu::TestLog::Image("Result", "Result", result, pixelScale, pixelBias);
     log << tcu::TestLog::Image("ErrorMask", "Error mask", errorMask) << tcu::TestLog::EndImageSet;
+    log << tcu::TestLog::EndImageSet;
+
     return false;
 }
 
@@ -978,12 +978,14 @@ tcu::TestStatus BlittingImages::checkTestResult(tcu::ConstPixelBufferAccess resu
     const std::string failMessage("Result image is incorrect");
 
     SlicedImageLogGuard slicedImageLogGuard(m_context.getTestContext().getLog());
+    const auto tcuSrcFormat = m_sourceCompressedTexture ? tcu::TextureFormat() : mapVkFormat(m_params.src.image.format);
 
     if (m_params.filter != VK_FILTER_NEAREST)
     {
-        if (tcu::isCombinedDepthStencilType(result.getFormat().type))
+        if (tcu::isCombinedDepthStencilType(result.getFormat().type) ||
+            tcu::isCombinedDepthStencilType(tcuSrcFormat.type))
         {
-            if (tcu::hasDepthComponent(result.getFormat().order))
+            if (m_blitAspects & VK_IMAGE_ASPECT_DEPTH_BIT)
             {
                 const tcu::Sampler::DepthStencilMode mode     = tcu::Sampler::MODE_DEPTH;
                 const tcu::ConstPixelBufferAccess depthResult = tcu::getEffectiveDepthStencilAccess(result, mode);
@@ -991,14 +993,13 @@ tcu::TestStatus BlittingImages::checkTestResult(tcu::ConstPixelBufferAccess resu
                     tcu::getEffectiveDepthStencilAccess(m_expectedTextureLevel[0]->getAccess(), mode);
                 const tcu::ConstPixelBufferAccess unclampedExpected =
                     tcu::getEffectiveDepthStencilAccess(m_unclampedExpectedTextureLevel->getAccess(), mode);
-                const tcu::TextureFormat sourceFormat =
-                    tcu::getEffectiveDepthStencilTextureFormat(mapVkFormat(m_params.src.image.format), mode);
+                const tcu::TextureFormat sourceFormat = tcu::getEffectiveDepthStencilTextureFormat(tcuSrcFormat, mode);
 
                 if (!checkNonNearestFilteredResult(depthResult, clampedExpected, unclampedExpected, sourceFormat))
                     return tcu::TestStatus::fail(failMessage);
             }
 
-            if (tcu::hasStencilComponent(result.getFormat().order))
+            if (m_blitAspects & VK_IMAGE_ASPECT_STENCIL_BIT)
             {
                 const tcu::Sampler::DepthStencilMode mode       = tcu::Sampler::MODE_STENCIL;
                 const tcu::ConstPixelBufferAccess stencilResult = tcu::getEffectiveDepthStencilAccess(result, mode);
@@ -1006,8 +1007,7 @@ tcu::TestStatus BlittingImages::checkTestResult(tcu::ConstPixelBufferAccess resu
                     tcu::getEffectiveDepthStencilAccess(m_expectedTextureLevel[0]->getAccess(), mode);
                 const tcu::ConstPixelBufferAccess unclampedExpected =
                     tcu::getEffectiveDepthStencilAccess(m_unclampedExpectedTextureLevel->getAccess(), mode);
-                const tcu::TextureFormat sourceFormat =
-                    tcu::getEffectiveDepthStencilTextureFormat(mapVkFormat(m_params.src.image.format), mode);
+                const tcu::TextureFormat sourceFormat = tcu::getEffectiveDepthStencilTextureFormat(tcuSrcFormat, mode);
 
                 if (!checkNonNearestFilteredResult(stencilResult, clampedExpected, unclampedExpected, sourceFormat))
                     return tcu::TestStatus::fail(failMessage);
@@ -1023,17 +1023,17 @@ tcu::TestStatus BlittingImages::checkTestResult(tcu::ConstPixelBufferAccess resu
         }
         else
         {
-            const tcu::TextureFormat sourceFormat = mapVkFormat(m_params.src.image.format);
             if (!checkNonNearestFilteredResult(result, m_expectedTextureLevel[0]->getAccess(),
-                                               m_unclampedExpectedTextureLevel->getAccess(), sourceFormat))
+                                               m_unclampedExpectedTextureLevel->getAccess(), tcuSrcFormat))
                 return tcu::TestStatus::fail(failMessage);
         }
     }
     else // NEAREST filtering
     {
-        if (tcu::isCombinedDepthStencilType(result.getFormat().type))
+        if (tcu::isCombinedDepthStencilType(result.getFormat().type) ||
+            tcu::isCombinedDepthStencilType(tcuSrcFormat.type))
         {
-            if (tcu::hasDepthComponent(result.getFormat().order))
+            if (m_blitAspects & VK_IMAGE_ASPECT_DEPTH_BIT)
             {
                 const tcu::Sampler::DepthStencilMode mode     = tcu::Sampler::MODE_DEPTH;
                 const tcu::ConstPixelBufferAccess depthResult = tcu::getEffectiveDepthStencilAccess(result, mode);
@@ -1044,7 +1044,7 @@ tcu::TestStatus BlittingImages::checkTestResult(tcu::ConstPixelBufferAccess resu
                     return tcu::TestStatus::fail(failMessage);
             }
 
-            if (tcu::hasStencilComponent(result.getFormat().order))
+            if (m_blitAspects & VK_IMAGE_ASPECT_STENCIL_BIT)
             {
                 const tcu::Sampler::DepthStencilMode mode       = tcu::Sampler::MODE_STENCIL;
                 const tcu::ConstPixelBufferAccess stencilResult = tcu::getEffectiveDepthStencilAccess(result, mode);
@@ -1171,12 +1171,10 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
         break;
     }
 
-    if (tcu::isCombinedDepthStencilType(src.getFormat().type))
+    if (tcu::isCombinedDepthStencilType(src.getFormat().type) || tcu::isCombinedDepthStencilType(dst.getFormat().type))
     {
-        DE_ASSERT(src.getFormat() == dst.getFormat());
-
         // Scale depth.
-        if (tcu::hasDepthComponent(src.getFormat().order))
+        if (m_blitAspects & VK_IMAGE_ASPECT_DEPTH_BIT)
         {
             const tcu::ConstPixelBufferAccess srcSubRegion = getEffectiveDepthStencilAccess(
                 tcu::getSubregion(src, srcRegionOffset.x, srcRegionOffset.y, srcRegionOffset.z, srcRegionExtent.x,
@@ -1202,7 +1200,7 @@ void BlittingImages::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src, t
         }
 
         // Scale stencil.
-        if (tcu::hasStencilComponent(src.getFormat().order))
+        if (m_blitAspects & VK_IMAGE_ASPECT_STENCIL_BIT)
         {
             const tcu::ConstPixelBufferAccess srcSubRegion = getEffectiveDepthStencilAccess(
                 tcu::getSubregion(src, srcRegionOffset.x, srcRegionOffset.y, srcRegionOffset.z, srcRegionExtent.x,
@@ -1414,6 +1412,12 @@ public:
     {
         const InstanceInterface &vki      = context.getInstanceInterface();
         const VkPhysicalDevice physDevice = context.getPhysicalDevice();
+
+        if (isDepthStencilFormat(m_params.src.image.format) && isDepthStencilFormat(m_params.dst.image.format) &&
+            m_params.src.image.format != m_params.dst.image.format)
+        {
+            context.requireDeviceFunctionality("VK_KHR_maintenance12");
+        }
 
 #ifndef CTS_USES_VULKANSC
         if (m_params.src.image.format == VK_FORMAT_A8_UNORM_KHR ||
@@ -1943,14 +1947,14 @@ bool BlittingMipmaps::checkNonNearestFilteredResult(void)
             const tcu::Vec4 threshold =
                 (srcMaxDiff + dstMaxDiff) * ((m_params.filter == VK_FILTER_CUBIC_EXT) ? 1.5f : 1.0f);
 
-            singleLevelOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", clampedLevel, result,
+            singleLevelOk = tcu::floatThresholdCompare(log, "Compare", "Comparison Result", clampedLevel, result,
                                                        threshold, tcu::COMPARE_LOG_RESULT);
             log << tcu::TestLog::EndSection;
 
             if (!singleLevelOk)
             {
                 log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
-                singleLevelOk = tcu::floatThresholdCompare(log, "Compare", "Result comparsion", unclampedLevel, result,
+                singleLevelOk = tcu::floatThresholdCompare(log, "Compare", "Comparison Result", unclampedLevel, result,
                                                            threshold, tcu::COMPARE_LOG_RESULT);
                 log << tcu::TestLog::EndSection;
             }
@@ -1973,14 +1977,14 @@ bool BlittingMipmaps::checkNonNearestFilteredResult(void)
                 threshold[i] = static_cast<uint32_t>(threshold64);
             }
 
-            singleLevelOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", clampedLevel, result,
+            singleLevelOk = tcu::intThresholdCompare(log, "Compare", "Comparison Result", clampedLevel, result,
                                                      threshold, tcu::COMPARE_LOG_RESULT);
             log << tcu::TestLog::EndSection;
 
             if (!singleLevelOk)
             {
                 log << tcu::TestLog::Section("NonClampedSourceImage", "Region with non-clamped edges on source image.");
-                singleLevelOk = tcu::intThresholdCompare(log, "Compare", "Result comparsion", unclampedLevel, result,
+                singleLevelOk = tcu::intThresholdCompare(log, "Compare", "Comparison Result", unclampedLevel, result,
                                                          threshold, tcu::COMPARE_LOG_RESULT);
                 log << tcu::TestLog::EndSection;
             }
@@ -2063,14 +2067,14 @@ bool BlittingMipmaps::checkNearestFilteredResult(void)
 
         if (!singleLevelOk)
         {
-            log << tcu::TestLog::ImageSet("Compare", "Result comparsion, level " + de::toString(mipLevelNdx))
+            log << tcu::TestLog::ImageSet("Compare", "Comparison Result, level " + de::toString(mipLevelNdx))
                 << tcu::TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
                 << tcu::TestLog::Image("Reference", "Reference", source, pixelScale, pixelBias)
                 << tcu::TestLog::Image("ErrorMask", "Error mask", errorMask) << tcu::TestLog::EndImageSet;
         }
         else
         {
-            log << tcu::TestLog::ImageSet("Compare", "Result comparsion, level " + de::toString(mipLevelNdx))
+            log << tcu::TestLog::ImageSet("Compare", "Comparison Result, level " + de::toString(mipLevelNdx))
                 << tcu::TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << tcu::TestLog::EndImageSet;
         }
 
@@ -3747,6 +3751,56 @@ void addBlittingImageAllFormatsDepthStencilFormatsTests(tcu::TestCaseGroup *grou
     }
 }
 
+// We can blit from srcFormat to dstFormat if both formats have some aspect in common, and the sub-format for those
+// aspects they have in common is identical.
+VkImageAspectFlags findCompatibleDepthStencilBlitAspects(VkFormat srcFormat, VkFormat dstFormat)
+{
+    const auto tcuSrcFormat = mapVkFormat(srcFormat);
+    const auto tcuDstFormat = mapVkFormat(dstFormat);
+
+    const bool bothHaveDepth =
+        (tcu::hasDepthComponent(tcuSrcFormat.order) && tcu::hasDepthComponent(tcuDstFormat.order));
+    const bool bothHaveStencil =
+        (tcu::hasStencilComponent(tcuSrcFormat.order) && tcu::hasStencilComponent(tcuDstFormat.order));
+
+    // Disjoint formats, discarded.
+    if (!(bothHaveDepth || bothHaveStencil))
+        return 0u;
+
+    if (srcFormat != dstFormat)
+    {
+        // Check identical format for the aspects they have in common.
+        if (bothHaveDepth)
+        {
+            const auto srcDepthFormat = getDepthCopyFormat(srcFormat);
+            const auto dstDepthFormat = getDepthCopyFormat(dstFormat);
+
+            if (srcDepthFormat != dstDepthFormat)
+                return 0u;
+        }
+
+        if (bothHaveStencil)
+        {
+            const auto srcStencilFormat = getStencilCopyFormat(srcFormat);
+            const auto dstStencilFormat = getStencilCopyFormat(dstFormat);
+
+            if (srcStencilFormat != dstStencilFormat)
+                return 0u;
+        }
+    }
+
+    // They have some aspects in common and they have the same format in those aspects.
+    VkImageAspectFlags aspects = 0u;
+
+    if (bothHaveDepth)
+        aspects |= VK_IMAGE_ASPECT_DEPTH_BIT;
+
+    if (bothHaveStencil)
+        aspects |= VK_IMAGE_ASPECT_STENCIL_BIT;
+
+    return aspects;
+}
+
 void addBlittingImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, AllocationKind allocationKind,
                                                  uint32_t extensionFlags)
 {
@@ -3759,113 +3813,120 @@ void addBlittingImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, Allo
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d"));
 
-        for (const VkFormat format : formats::depthAndStencilFormats)
-        {
-            TestParams params;
-            params.src.image.imageType = VK_IMAGE_TYPE_2D;
-            params.src.image.extent    = defaultExtent;
-            params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-            params.src.image.format    = format;
-            params.dst.image.extent    = defaultExtent;
-            params.dst.image.imageType = VK_IMAGE_TYPE_2D;
-            params.dst.image.format    = params.src.image.format;
-            params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-            params.allocationKind      = allocationKind;
-            params.extensionFlags      = extensionFlags;
-
-            bool hasDepth   = tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
-            bool hasStencil = tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
-
-            CopyRegion region;
-            for (int i = 0, j = 1; (i + defaultQuarterSize / j < defaultSize) && (defaultQuarterSize > j);
-                 i += defaultQuarterSize / j++)
+        for (const VkFormat srcFormat : formats::depthAndStencilFormats)
+            for (const VkFormat dstFormat : formats::depthAndStencilFormats)
             {
-                const VkOffset3D srcOffset0 = {0, 0, 0};
-                const VkOffset3D srcOffset1 = {defaultSize, defaultSize, 1};
-                const VkOffset3D dstOffset0 = {i, 0, 0};
-                const VkOffset3D dstOffset1 = {i + defaultQuarterSize / j, defaultQuarterSize / j, 1};
+                const auto compatibleAspects = findCompatibleDepthStencilBlitAspects(srcFormat, dstFormat);
 
-                if (hasDepth)
-                {
-                    const VkImageBlit imageBlit = {
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1}, // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
-                }
-                if (hasStencil)
-                {
-                    const VkImageBlit imageBlit = {
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1},  // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
-                }
-            }
-            for (int i = 0; i < defaultSize; i += defaultQuarterSize)
-            {
-                const VkOffset3D srcOffset0 = {i, i, 0};
-                const VkOffset3D srcOffset1 = {i + defaultQuarterSize, i + defaultQuarterSize, 1};
-                const VkOffset3D dstOffset0 = {i, defaultSize / 2, 0};
-                const VkOffset3D dstOffset1 = {i + defaultQuarterSize, defaultSize / 2 + defaultQuarterSize, 1};
+                if (compatibleAspects == 0u)
+                    continue;
 
-                if (hasDepth)
+                const bool hasDepth   = (compatibleAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
+                const bool hasStencil = (compatibleAspects & VK_IMAGE_ASPECT_STENCIL_BIT);
+
+                TestParams params;
+                params.src.image.imageType = VK_IMAGE_TYPE_2D;
+                params.src.image.extent    = defaultExtent;
+                params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
+                params.src.image.format    = srcFormat;
+                params.dst.image.extent    = defaultExtent;
+                params.dst.image.imageType = VK_IMAGE_TYPE_2D;
+                params.dst.image.format    = dstFormat;
+                params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
+                params.allocationKind      = allocationKind;
+                params.extensionFlags      = extensionFlags;
+
+                CopyRegion region;
+                for (int i = 0, j = 1; (i + defaultQuarterSize / j < defaultSize) && (defaultQuarterSize > j);
+                     i += defaultQuarterSize / j++)
                 {
-                    const VkImageBlit imageBlit = {
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1}  // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
+                    const VkOffset3D srcOffset0 = {0, 0, 0};
+                    const VkOffset3D srcOffset1 = {defaultSize, defaultSize, 1};
+                    const VkOffset3D dstOffset0 = {i, 0, 0};
+                    const VkOffset3D dstOffset1 = {i + defaultQuarterSize / j, defaultQuarterSize / j, 1};
+
+                    if (hasDepth)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1}, // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
+                    if (hasStencil)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1},  // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
                 }
-                if (hasStencil)
+                for (int i = 0; i < defaultSize; i += defaultQuarterSize)
                 {
-                    const VkImageBlit imageBlit = {
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1}   // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
+                    const VkOffset3D srcOffset0 = {i, i, 0};
+                    const VkOffset3D srcOffset1 = {i + defaultQuarterSize, i + defaultQuarterSize, 1};
+                    const VkOffset3D dstOffset0 = {i, defaultSize / 2, 0};
+                    const VkOffset3D dstOffset1 = {i + defaultQuarterSize, defaultSize / 2 + defaultQuarterSize, 1};
+
+                    if (hasDepth)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1}  // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
+                    if (hasStencil)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1}   // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
+                    if (hasDepth && hasStencil)
+                    {
+                        const VkOffset3D dstDSOffset0 = {i, 3 * defaultQuarterSize, 0};
+                        const VkOffset3D dstDSOffset1 = {i + defaultQuarterSize, defaultSize, 1};
+                        const VkImageBlit imageBlit   = {
+                            defaultDSSourceLayer,        // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1},    // VkOffset3D srcOffsets[2];
+                            defaultDSSourceLayer,        // VkImageSubresourceLayers dstSubresource;
+                            {dstDSOffset0, dstDSOffset1} // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
                 }
+
+                const std::string testName =
+                    getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
+                TestParamsPtr paramsPtr(new TestParams(params));
+                addTestGroup(subGroup.get(), testName, addBlittingImageAllFormatsDepthStencilFormatsTests, paramsPtr);
+
                 if (hasDepth && hasStencil)
                 {
-                    const VkOffset3D dstDSOffset0 = {i, 3 * defaultQuarterSize, 0};
-                    const VkOffset3D dstDSOffset1 = {i + defaultQuarterSize, defaultSize, 1};
-                    const VkImageBlit imageBlit   = {
-                        defaultDSSourceLayer,        // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1},    // VkOffset3D srcOffsets[2];
-                        defaultDSSourceLayer,        // VkImageSubresourceLayers dstSubresource;
-                        {dstDSOffset0, dstDSOffset1} // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
+                    params.extensionFlags |= SEPARATE_DEPTH_STENCIL_LAYOUT;
+                    const std::string testName2 = getFormatCaseName(params.src.image.format) + "_" +
+                                                  getFormatCaseName(params.dst.image.format) + "_separate_layouts";
+                    TestParamsPtr paramsPtr2(new TestParams(params));
+                    addTestGroup(subGroup.get(), testName2, addBlittingImageAllFormatsDepthStencilFormatsTests,
+                                 paramsPtr2);
                 }
             }
-
-            const std::string testName =
-                getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-            TestParamsPtr paramsPtr(new TestParams(params));
-            addTestGroup(subGroup.get(), testName, addBlittingImageAllFormatsDepthStencilFormatsTests, paramsPtr);
-
-            if (hasDepth && hasStencil)
-            {
-                params.extensionFlags |= SEPARATE_DEPTH_STENCIL_LAYOUT;
-                const std::string testName2 = getFormatCaseName(params.src.image.format) + "_" +
-                                              getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-                TestParamsPtr paramsPtr2(new TestParams(params));
-                addTestGroup(subGroup.get(), testName2, addBlittingImageAllFormatsDepthStencilFormatsTests, paramsPtr2);
-            }
-        }
 
         group->addChild(subGroup.release());
     }
@@ -3874,112 +3935,119 @@ void addBlittingImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, Allo
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d"));
 
-        for (const VkFormat format : formats::depthAndStencilFormats)
-        {
-            TestParams params;
-            params.src.image.imageType = VK_IMAGE_TYPE_1D;
-            params.dst.image.imageType = VK_IMAGE_TYPE_1D;
-            params.src.image.extent    = default1dExtent;
-            params.dst.image.extent    = default1dExtent;
-            params.src.image.format    = format;
-            params.dst.image.format    = params.src.image.format;
-            params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-            params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-            params.allocationKind      = allocationKind;
-            params.extensionFlags      = extensionFlags;
-
-            bool hasDepth   = tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
-            bool hasStencil = tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
-
-            CopyRegion region;
-            for (int i = 0; i < defaultSize; i += defaultSize / 2)
+        for (const VkFormat srcFormat : formats::depthAndStencilFormats)
+            for (const VkFormat dstFormat : formats::depthAndStencilFormats)
             {
-                const VkOffset3D srcOffset0 = {0, 0, 0};
-                const VkOffset3D srcOffset1 = {defaultSize, 1, 1};
-                const VkOffset3D dstOffset0 = {i, 0, 0};
-                const VkOffset3D dstOffset1 = {i + defaultQuarterSize, 1, 1};
+                const auto compatibleAspects = findCompatibleDepthStencilBlitAspects(srcFormat, dstFormat);
 
-                if (hasDepth)
-                {
-                    const VkImageBlit imageBlit = {
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1}, // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
-                }
-                if (hasStencil)
-                {
-                    const VkImageBlit imageBlit = {
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1},  // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
-                }
-            }
+                if (compatibleAspects == 0u)
+                    continue;
 
-            {
-                const VkOffset3D srcOffset0 = {0, 0, 0};
-                const VkOffset3D srcOffset1 = {defaultQuarterSize, 1, 1};
-                const VkOffset3D dstOffset0 = {defaultQuarterSize, 0, 0};
-                const VkOffset3D dstOffset1 = {2 * defaultQuarterSize, 1, 1};
+                const bool hasDepth   = (compatibleAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
+                const bool hasStencil = (compatibleAspects & VK_IMAGE_ASPECT_STENCIL_BIT);
 
-                if (hasDepth)
+                TestParams params;
+                params.src.image.imageType = VK_IMAGE_TYPE_1D;
+                params.dst.image.imageType = VK_IMAGE_TYPE_1D;
+                params.src.image.extent    = default1dExtent;
+                params.dst.image.extent    = default1dExtent;
+                params.src.image.format    = srcFormat;
+                params.dst.image.format    = dstFormat;
+                params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
+                params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
+                params.allocationKind      = allocationKind;
+                params.extensionFlags      = extensionFlags;
+
+                CopyRegion region;
+                for (int i = 0; i < defaultSize; i += defaultSize / 2)
                 {
-                    const VkImageBlit imageBlit = {
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1}  // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
+                    const VkOffset3D srcOffset0 = {0, 0, 0};
+                    const VkOffset3D srcOffset1 = {defaultSize, 1, 1};
+                    const VkOffset3D dstOffset0 = {i, 0, 0};
+                    const VkOffset3D dstOffset1 = {i + defaultQuarterSize, 1, 1};
+
+                    if (hasDepth)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1}, // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
+                    if (hasStencil)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1},  // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
                 }
-                if (hasStencil)
+
                 {
-                    const VkImageBlit imageBlit = {
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1}   // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
+                    const VkOffset3D srcOffset0 = {0, 0, 0};
+                    const VkOffset3D srcOffset1 = {defaultQuarterSize, 1, 1};
+                    const VkOffset3D dstOffset0 = {defaultQuarterSize, 0, 0};
+                    const VkOffset3D dstOffset1 = {2 * defaultQuarterSize, 1, 1};
+
+                    if (hasDepth)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1}  // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
+                    if (hasStencil)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1}   // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
+                    if (hasDepth && hasStencil)
+                    {
+                        const VkOffset3D dstDSOffset0 = {3 * defaultQuarterSize, 0, 0};
+                        const VkOffset3D dstDSOffset1 = {3 * defaultQuarterSize + defaultQuarterSize / 2, 1, 1};
+                        const VkImageBlit imageBlit   = {
+                            defaultDSSourceLayer,        // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1},    // VkOffset3D srcOffsets[2];
+                            defaultDSSourceLayer,        // VkImageSubresourceLayers dstSubresource;
+                            {dstDSOffset0, dstDSOffset1} // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
                 }
+
+                const std::string testName =
+                    getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
+                TestParamsPtr paramsPtr(new TestParams(params));
+                addTestGroup(subGroup.get(), testName, addBlittingImageAllFormatsDepthStencilFormatsTests, paramsPtr);
+
                 if (hasDepth && hasStencil)
                 {
-                    const VkOffset3D dstDSOffset0 = {3 * defaultQuarterSize, 0, 0};
-                    const VkOffset3D dstDSOffset1 = {3 * defaultQuarterSize + defaultQuarterSize / 2, 1, 1};
-                    const VkImageBlit imageBlit   = {
-                        defaultDSSourceLayer,        // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1},    // VkOffset3D srcOffsets[2];
-                        defaultDSSourceLayer,        // VkImageSubresourceLayers dstSubresource;
-                        {dstDSOffset0, dstDSOffset1} // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
+                    params.extensionFlags |= SEPARATE_DEPTH_STENCIL_LAYOUT;
+                    const std::string testName2 = getFormatCaseName(params.src.image.format) + "_" +
+                                                  getFormatCaseName(params.dst.image.format) + "_separate_layouts";
+                    TestParamsPtr paramsPtr2(new TestParams(params));
+                    addTestGroup(subGroup.get(), testName2, addBlittingImageAllFormatsDepthStencilFormatsTests,
+                                 paramsPtr2);
                 }
             }
-
-            const std::string testName =
-                getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-            TestParamsPtr paramsPtr(new TestParams(params));
-            addTestGroup(subGroup.get(), testName, addBlittingImageAllFormatsDepthStencilFormatsTests, paramsPtr);
-
-            if (hasDepth && hasStencil)
-            {
-                params.extensionFlags |= SEPARATE_DEPTH_STENCIL_LAYOUT;
-                const std::string testName2 = getFormatCaseName(params.src.image.format) + "_" +
-                                              getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-                TestParamsPtr paramsPtr2(new TestParams(params));
-                addTestGroup(subGroup.get(), testName2, addBlittingImageAllFormatsDepthStencilFormatsTests, paramsPtr2);
-            }
-        }
 
         group->addChild(subGroup.release());
     }
@@ -3988,117 +4056,126 @@ void addBlittingImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, Allo
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d"));
 
-        for (const VkFormat format : formats::depthAndStencilFormats)
-        {
-            TestParams params;
-            params.src.image.imageType = VK_IMAGE_TYPE_3D;
-            params.dst.image.imageType = VK_IMAGE_TYPE_3D;
-            params.src.image.extent    = default3dExtent;
-            params.dst.image.extent    = default3dExtent;
-            params.src.image.format    = format;
-            params.dst.image.format    = params.src.image.format;
-            params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-            params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-            params.allocationKind      = allocationKind;
-            params.extensionFlags      = extensionFlags;
-
-            bool hasDepth   = tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
-            bool hasStencil = tcu::hasStencilComponent(mapVkFormat(params.src.image.format).order);
-
-            CopyRegion region;
-            for (int i = 0, j = 1; (i + defaultSixteenthSize / j < defaultQuarterSize) && (defaultSixteenthSize > j);
-                 i += defaultSixteenthSize / j++)
+        for (const VkFormat srcFormat : formats::depthAndStencilFormats)
+            for (const VkFormat dstFormat : formats::depthAndStencilFormats)
             {
-                const VkOffset3D srcOffset0 = {0, 0, 0};
-                const VkOffset3D srcOffset1 = {defaultQuarterSize, defaultQuarterSize, defaultQuarterSize};
-                const VkOffset3D dstOffset0 = {i, 0, i};
-                const VkOffset3D dstOffset1 = {i + defaultSixteenthSize / j, defaultSixteenthSize / j,
-                                               i + defaultSixteenthSize / j};
+                const auto compatibleAspects = findCompatibleDepthStencilBlitAspects(srcFormat, dstFormat);
 
-                if (hasDepth)
-                {
-                    const VkImageBlit imageBlit = {
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1}, // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
-                }
-                if (hasStencil)
-                {
-                    const VkImageBlit imageBlit = {
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1},  // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
-                }
-            }
-            for (int i = 0; i < defaultQuarterSize; i += defaultSixteenthSize)
-            {
-                const VkOffset3D srcOffset0 = {i, i, i};
-                const VkOffset3D srcOffset1 = {i + defaultSixteenthSize, i + defaultSixteenthSize,
-                                               i + defaultSixteenthSize};
-                const VkOffset3D dstOffset0 = {i, defaultQuarterSize / 2, i};
-                const VkOffset3D dstOffset1 = {i + defaultSixteenthSize, defaultQuarterSize / 2 + defaultSixteenthSize,
-                                               i + defaultSixteenthSize};
+                if (compatibleAspects == 0u)
+                    continue;
 
-                if (hasDepth)
+                const bool hasDepth   = (compatibleAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
+                const bool hasStencil = (compatibleAspects & VK_IMAGE_ASPECT_STENCIL_BIT);
+
+                TestParams params;
+                params.src.image.imageType = VK_IMAGE_TYPE_3D;
+                params.dst.image.imageType = VK_IMAGE_TYPE_3D;
+                params.src.image.extent    = default3dExtent;
+                params.dst.image.extent    = default3dExtent;
+                params.src.image.format    = srcFormat;
+                params.dst.image.format    = dstFormat;
+                params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
+                params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
+                params.allocationKind      = allocationKind;
+                params.extensionFlags      = extensionFlags;
+
+                CopyRegion region;
+                for (int i = 0, j = 1;
+                     (i + defaultSixteenthSize / j < defaultQuarterSize) && (defaultSixteenthSize > j);
+                     i += defaultSixteenthSize / j++)
                 {
-                    const VkImageBlit imageBlit = {
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
-                        defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1}  // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
+                    const VkOffset3D srcOffset0 = {0, 0, 0};
+                    const VkOffset3D srcOffset1 = {defaultQuarterSize, defaultQuarterSize, defaultQuarterSize};
+                    const VkOffset3D dstOffset0 = {i, 0, i};
+                    const VkOffset3D dstOffset1 = {i + defaultSixteenthSize / j, defaultSixteenthSize / j,
+                                                   i + defaultSixteenthSize / j};
+
+                    if (hasDepth)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1}, // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
+                    if (hasStencil)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1},  // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
                 }
-                if (hasStencil)
+                for (int i = 0; i < defaultQuarterSize; i += defaultSixteenthSize)
                 {
-                    const VkImageBlit imageBlit = {
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
-                        defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
-                        {dstOffset0, dstOffset1}   // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
+                    const VkOffset3D srcOffset0 = {i, i, i};
+                    const VkOffset3D srcOffset1 = {i + defaultSixteenthSize, i + defaultSixteenthSize,
+                                                   i + defaultSixteenthSize};
+                    const VkOffset3D dstOffset0 = {i, defaultQuarterSize / 2, i};
+                    const VkOffset3D dstOffset1 = {i + defaultSixteenthSize,
+                                                   defaultQuarterSize / 2 + defaultSixteenthSize,
+                                                   i + defaultSixteenthSize};
+
+                    if (hasDepth)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1}, // VkOffset3D srcOffsets[2];
+                            defaultDepthSourceLayer,  // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1}  // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
+                    if (hasStencil)
+                    {
+                        const VkImageBlit imageBlit = {
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1},  // VkOffset3D srcOffsets[2];
+                            defaultStencilSourceLayer, // VkImageSubresourceLayers dstSubresource;
+                            {dstOffset0, dstOffset1}   // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
+                    if (hasDepth && hasStencil)
+                    {
+                        const VkOffset3D dstDSOffset0 = {i, 3 * defaultSixteenthSize, i};
+                        const VkOffset3D dstDSOffset1 = {i + defaultSixteenthSize, defaultQuarterSize,
+                                                         i + defaultSixteenthSize};
+                        const VkImageBlit imageBlit   = {
+                            defaultDSSourceLayer,        // VkImageSubresourceLayers srcSubresource;
+                            {srcOffset0, srcOffset1},    // VkOffset3D srcOffsets[2];
+                            defaultDSSourceLayer,        // VkImageSubresourceLayers dstSubresource;
+                            {dstDSOffset0, dstDSOffset1} // VkOffset3D dstOffset[2];
+                        };
+                        region.imageBlit = imageBlit;
+                        params.regions.push_back(region);
+                    }
                 }
+
+                const std::string testName =
+                    getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
+                TestParamsPtr paramsPtr(new TestParams(params));
+                addTestGroup(subGroup.get(), testName, addBlittingImageAllFormatsDepthStencilFormatsTests, paramsPtr);
+
                 if (hasDepth && hasStencil)
                 {
-                    const VkOffset3D dstDSOffset0 = {i, 3 * defaultSixteenthSize, i};
-                    const VkOffset3D dstDSOffset1 = {i + defaultSixteenthSize, defaultQuarterSize,
-                                                     i + defaultSixteenthSize};
-                    const VkImageBlit imageBlit   = {
-                        defaultDSSourceLayer,        // VkImageSubresourceLayers srcSubresource;
-                        {srcOffset0, srcOffset1},    // VkOffset3D srcOffsets[2];
-                        defaultDSSourceLayer,        // VkImageSubresourceLayers dstSubresource;
-                        {dstDSOffset0, dstDSOffset1} // VkOffset3D dstOffset[2];
-                    };
-                    region.imageBlit = imageBlit;
-                    params.regions.push_back(region);
+                    params.extensionFlags |= SEPARATE_DEPTH_STENCIL_LAYOUT;
+                    const std::string testName2 = getFormatCaseName(params.src.image.format) + "_" +
+                                                  getFormatCaseName(params.dst.image.format) + "_separate_layouts";
+                    TestParamsPtr paramsPtr2(new TestParams(params));
+                    addTestGroup(subGroup.get(), testName2, addBlittingImageAllFormatsDepthStencilFormatsTests,
+                                 paramsPtr2);
                 }
             }
-
-            const std::string testName =
-                getFormatCaseName(params.src.image.format) + "_" + getFormatCaseName(params.dst.image.format);
-            TestParamsPtr paramsPtr(new TestParams(params));
-            addTestGroup(subGroup.get(), testName, addBlittingImageAllFormatsDepthStencilFormatsTests, paramsPtr);
-
-            if (hasDepth && hasStencil)
-            {
-                params.extensionFlags |= SEPARATE_DEPTH_STENCIL_LAYOUT;
-                const std::string testName2 = getFormatCaseName(params.src.image.format) + "_" +
-                                              getFormatCaseName(params.dst.image.format) + "_separate_layouts";
-                TestParamsPtr paramsPtr2(new TestParams(params));
-                addTestGroup(subGroup.get(), testName2, addBlittingImageAllFormatsDepthStencilFormatsTests, paramsPtr2);
-            }
-        }
 
         group->addChild(subGroup.release());
     }

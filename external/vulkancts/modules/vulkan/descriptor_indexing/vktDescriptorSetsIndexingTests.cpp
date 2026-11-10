@@ -31,7 +31,9 @@
 
 #include "vktDescriptorSetsIndexingTests.hpp"
 #include "vktDescriptorIndexingMiscTests.hpp"
+#include "vktDescriptorIndexingPnextTests.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -4759,186 +4761,200 @@ void descriptorIndexingDescriptorSetsCreateTests(tcu::TestCaseGroup *group)
         VkDescriptorType descriptorType;
     };
 
-    tcu::TestContext &context(group->getTestContext());
+    group->addChild(createTestGroup2(
+        group->getTestContext(), "after_bind_and_loop",
+        [](tcu::TestCaseGroup *afterBindLoopGroup)
+        {
+            tcu::TestContext &context(afterBindLoopGroup->getTestContext());
 
-    TestCaseInfo casesAfterBindAndLoop[] = {
-        {
-            "storage_buffer",
-            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-        },
-        {
-            "storage_texel_buffer",
-            VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
-        },
-        {
-            "uniform_texel_buffer",
-            VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
-        },
-        {
-            "storage_image",
-            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-        },
-        {
-            "sampler",
-            VK_DESCRIPTOR_TYPE_SAMPLER,
-        },
-        {
-            "sampled_image",
-            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-        },
-        {
-            "combined_image_sampler",
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        },
-        {
-            "uniform_buffer",
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        },
-        {
-            "storage_buffer_dynamic",
-            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
-        },
-        {
-            "uniform_buffer_dynamic",
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-        },
-        {
-            "input_attachment",
-            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-        },
-    };
-
-    for (int updateAfterBind = 0; updateAfterBind < 2; ++updateAfterBind)
-    {
-        for (int calculateInLoop = 0; calculateInLoop < 2; ++calculateInLoop)
-        {
-            for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
-            {
-                for (int lifetimeCheck = 0; lifetimeCheck < 2; ++lifetimeCheck)
+            TestCaseInfo casesAfterBindAndLoop[] = {
                 {
-                    for (uint32_t caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesAfterBindAndLoop); ++caseIdx)
+                    "storage_buffer",
+                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                },
+                {
+                    "storage_texel_buffer",
+                    VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+                },
+                {
+                    "uniform_texel_buffer",
+                    VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+                },
+                {
+                    "storage_image",
+                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                },
+                {
+                    "sampler",
+                    VK_DESCRIPTOR_TYPE_SAMPLER,
+                },
+                {
+                    "sampled_image",
+                    VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                },
+                {
+                    "combined_image_sampler",
+                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                },
+                {
+                    "uniform_buffer",
+                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                },
+                {
+                    "storage_buffer_dynamic",
+                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
+                },
+                {
+                    "uniform_buffer_dynamic",
+                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                },
+                {
+                    "input_attachment",
+                    VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+                },
+            };
+
+            for (int updateAfterBind = 0; updateAfterBind < 2; ++updateAfterBind)
+            {
+                for (int calculateInLoop = 0; calculateInLoop < 2; ++calculateInLoop)
+                {
+                    for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
                     {
-                        TestCaseInfo &info(casesAfterBindAndLoop[caseIdx]);
+                        for (int lifetimeCheck = 0; lifetimeCheck < 2; ++lifetimeCheck)
+                        {
+                            for (uint32_t caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesAfterBindAndLoop); ++caseIdx)
+                            {
+                                TestCaseInfo &info(casesAfterBindAndLoop[caseIdx]);
 
-                        if (updateAfterBind && !descriptorTypeSupportsUpdateAfterBind(info.descriptorType))
-                            continue;
+                                if (updateAfterBind && !descriptorTypeSupportsUpdateAfterBind(info.descriptorType))
+                                    continue;
 
-                        if (usesMipMaps && !descriptorTypeUsesMipmaps(info.descriptorType))
-                            continue;
+                                if (usesMipMaps && !descriptorTypeUsesMipmaps(info.descriptorType))
+                                    continue;
 
-                        std::string caseName(info.name);
-                        TestCaseParams params;
+                                std::string caseName(info.name);
+                                TestCaseParams params;
 
-                        caseName += (updateAfterBind ? "_after_bind" : "");
-                        caseName += (calculateInLoop ? "_in_loop" : "");
-                        caseName += (usesMipMaps ? "_with_lod" : "");
-                        caseName += (lifetimeCheck ? "_lifetime" : "");
+                                caseName += (updateAfterBind ? "_after_bind" : "");
+                                caseName += (calculateInLoop ? "_in_loop" : "");
+                                caseName += (usesMipMaps ? "_with_lod" : "");
+                                caseName += (lifetimeCheck ? "_lifetime" : "");
 
-                        params.descriptorType   = info.descriptorType;
-                        params.stageFlags       = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
-                                                      VK_SHADER_STAGE_COMPUTE_BIT :
-                                                      (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-                        params.frameResolution  = RESOLUTION;
-                        params.updateAfterBind  = updateAfterBind ? true : false;
-                        params.calculateInLoop  = calculateInLoop ? true : false;
-                        params.usesMipMaps      = usesMipMaps ? true : false;
-                        params.usesRuntimeArray = true;
-                        params.lifetimeCheck    = lifetimeCheck ? true : false;
-                        params.minNonUniform    = false;
+                                params.descriptorType   = info.descriptorType;
+                                params.stageFlags       = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
+                                                              VK_SHADER_STAGE_COMPUTE_BIT :
+                                                              (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+                                params.frameResolution  = RESOLUTION;
+                                params.updateAfterBind  = updateAfterBind ? true : false;
+                                params.calculateInLoop  = calculateInLoop ? true : false;
+                                params.usesMipMaps      = usesMipMaps ? true : false;
+                                params.usesRuntimeArray = true;
+                                params.lifetimeCheck    = lifetimeCheck ? true : false;
+                                params.minNonUniform    = false;
 
-                        group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), params));
+                                afterBindLoopGroup->addChild(
+                                    new DescriptorIndexingTestCase(context, caseName.c_str(), params));
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
+        }));
 
-    // SPIR-V Asm Tests
-    // Tests that have the minimum necessary NonUniform decorations.
-    // sampler and sampled_image GLSL already have minimum NonUniform decorations.
+    group->addChild(createTestGroup2(
+        group->getTestContext(), "min_non_uniform",
+        [](tcu::TestCaseGroup *minNonUniformGroup)
+        {
+            // SPIR-V Asm Tests
+            // Tests that have the minimum necessary NonUniform decorations.
+            // sampler and sampled_image GLSL already have minimum NonUniform decorations.
 
-    TestCaseInfo casesMinNonUniform[] = {
-        {
-            "storage_buffer",
-            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-        },
-        {
-            "storage_texel_buffer",
-            VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
-        },
-        {
-            "uniform_texel_buffer",
-            VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
-        },
-        {
-            "uniform_buffer",
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        },
-        {
-            "combined_image_sampler",
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        },
-        {
-            "storage_image",
-            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-        },
-    };
+            auto &context = minNonUniformGroup->getTestContext();
 
-    for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
-    {
-        for (uint32_t caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesMinNonUniform); ++caseIdx)
-        {
-            TestCaseInfo &info(casesMinNonUniform[caseIdx]);
+            TestCaseInfo casesMinNonUniform[] = {
+                {
+                    "storage_buffer",
+                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                },
+                {
+                    "storage_texel_buffer",
+                    VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+                },
+                {
+                    "uniform_texel_buffer",
+                    VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+                },
+                {
+                    "uniform_buffer",
+                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                },
+                {
+                    "combined_image_sampler",
+                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                },
+                {
+                    "storage_image",
+                    VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                },
+            };
 
-            if (usesMipMaps && !descriptorTypeUsesMipmaps(info.descriptorType))
-                continue;
+            for (int usesMipMaps = 0; usesMipMaps < 2; ++usesMipMaps)
+            {
+                for (uint32_t caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(casesMinNonUniform); ++caseIdx)
+                {
+                    TestCaseInfo &info(casesMinNonUniform[caseIdx]);
 
-            std::string caseName(info.name);
+                    if (usesMipMaps && !descriptorTypeUsesMipmaps(info.descriptorType))
+                        continue;
+
+                    std::string caseName(info.name);
+                    TestCaseParams params;
+
+                    caseName += (usesMipMaps ? "_with_lod" : "");
+                    caseName += "_minNonUniform";
+
+                    params.descriptorType   = info.descriptorType;
+                    params.stageFlags       = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
+                                                  VK_SHADER_STAGE_COMPUTE_BIT :
+                                                  (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+                    params.frameResolution  = RESOLUTION;
+                    params.updateAfterBind  = false;
+                    params.calculateInLoop  = false;
+                    params.usesMipMaps      = usesMipMaps ? true : false;
+                    params.usesRuntimeArray = true;
+                    params.minNonUniform    = true;
+
+                    minNonUniformGroup->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), params));
+                }
+            }
+
+            // test ShaderNonUniform without requiring runtimeDescriptorArray feature
             TestCaseParams params;
-
-            caseName += (usesMipMaps ? "_with_lod" : "");
-            caseName += "_minNonUniform";
-
-            params.descriptorType   = info.descriptorType;
-            params.stageFlags       = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
-                                          VK_SHADER_STAGE_COMPUTE_BIT :
-                                          (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
             params.frameResolution  = RESOLUTION;
             params.updateAfterBind  = false;
             params.calculateInLoop  = false;
-            params.usesMipMaps      = usesMipMaps ? true : false;
-            params.usesRuntimeArray = true;
-            params.minNonUniform    = true;
+            params.usesMipMaps      = false;
+            params.usesRuntimeArray = false;
+            params.minNonUniform    = false;
+            params.lifetimeCheck    = false;
+            for (const auto &info : casesMinNonUniform)
+            {
+                params.descriptorType = info.descriptorType;
+                params.stageFlags     = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
+                                            VK_SHADER_STAGE_COMPUTE_BIT :
+                                            (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
-            TestCase *tc = new DescriptorIndexingTestCase(context, caseName.c_str(), params);
-            group->addChild(tc);
-        }
-    }
+                std::string caseName(std::string(info.name) + "_no_runtime_array");
+                minNonUniformGroup->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), params));
+            }
 
-    // test ShaderNonUniform without requiring runtimeDescriptorArray feature
-    TestCaseParams params;
-    params.frameResolution  = RESOLUTION;
-    params.updateAfterBind  = false;
-    params.calculateInLoop  = false;
-    params.usesMipMaps      = false;
-    params.usesRuntimeArray = false;
-    params.minNonUniform    = false;
-    params.lifetimeCheck    = false;
-    for (const auto &info : casesMinNonUniform)
-    {
-        params.descriptorType = info.descriptorType;
-        params.stageFlags     = (info.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
-                                    VK_SHADER_STAGE_COMPUTE_BIT :
-                                    (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+            addFunctionCaseWithPrograms(minNonUniformGroup, "non_uniform_atomics", nonUniformAtomicsCheckSupport,
+                                        nonUniformAtomicsPrograms, nonUniformAtomicsRun);
+        }));
 
-        std::string caseName(std::string(info.name) + "_no_runtime_array");
-        group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), params));
-    }
+    group->addChild(createTestGroup(group->getTestContext(), "misc", createDescriptorIndexingMiscTests));
 
-    addFunctionCaseWithPrograms(group, "non_uniform_atomics", nonUniformAtomicsCheckSupport, nonUniformAtomicsPrograms,
-                                nonUniformAtomicsRun);
-
-    createDescriptorIndexingMiscTests(group);
+    group->addChild(createTestGroup(group->getTestContext(), "pnext", createDescriptorIndexingPnextTests));
 }
 
 } // namespace DescriptorIndexing

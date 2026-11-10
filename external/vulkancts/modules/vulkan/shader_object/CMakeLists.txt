@@ -1,7 +1,6 @@
 include_directories(
 	..
 	../util
-	${DEQP_INL_DIR}
 )
 
 set(DEQP_VK_SHADER_OBJECT_UTIL_SRCS

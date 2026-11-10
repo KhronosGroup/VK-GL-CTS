@@ -42,6 +42,8 @@ bool getBits(const glw::Functions &gl, bool isContextES, const glw::GLenum targe
 bool getReadbufferBits(const glw::Functions &gl, bool isContextES, glw::GLenum bits, glw::GLint *value);
 bool getDrawbufferBits(const glw::Functions &gl, bool isContextES, glw::GLenum bits, glw::GLint *value);
 
+bool floatBitsEqual(const float *a, const float *b, size_t count);
+
 } // namespace glcts
 
 #endif // _GLCMISC_HPP

@@ -534,6 +534,12 @@ void checkQuerySurfaceCapabilities2Support(Context &context, Type wsiType)
     context.requireInstanceFunctionality("VK_KHR_get_surface_capabilities2");
 }
 
+// Compares the members: memcmp would also compare the padding bytes after sType.
+bool equalSurfaceInfo(const VkPhysicalDeviceSurfaceInfo2KHR &a, const VkPhysicalDeviceSurfaceInfo2KHR &b)
+{
+    return a.sType == b.sType && a.pNext == b.pNext && a.surface == b.surface;
+}
+
 tcu::TestStatus querySurfaceCapabilities2Test(Context &context, Type wsiType)
 {
     tcu::TestLog &log = context.getTestContext().getLog();
@@ -567,8 +573,7 @@ tcu::TestStatus querySurfaceCapabilities2Test(Context &context, Type wsiType)
                 VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevices[deviceNdx],
                                                                                  &surfaceInfo, &extCapabilities));
 
-                results.check(memcmp(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == 0,
-                              "Driver wrote into input struct");
+                results.check(equalSurfaceInfo(surfaceInfo, infoCopy), "Driver wrote into input struct");
             }
 
             results.check(extCapabilities.sType == VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR &&
@@ -632,8 +637,7 @@ tcu::TestStatus querySurfaceCapabilities2ExtendedFlagsTest(Context &context, Typ
                 VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevices[deviceNdx],
                                                                                  &surfaceInfo, &extCapabilities));
 
-                results.check(memcmp(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == 0,
-                              "Driver wrote into input struct");
+                results.check(equalSurfaceInfo(surfaceInfo, infoCopy), "Driver wrote into input struct");
             }
 
             results.check(extCapabilities.sType == VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR, "sType modified");
@@ -710,8 +714,7 @@ tcu::TestStatus querySurfaceProtectedCapabilitiesTest(Context &context, Type wsi
                 VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevices[deviceNdx],
                                                                                  &surfaceInfo, &extCapabilities));
 
-                results.check(memcmp(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == 0,
-                              "Driver wrote into input struct");
+                results.check(equalSurfaceInfo(surfaceInfo, infoCopy), "Driver wrote into input struct");
             }
 
             results.check(extCapabilities.sType == VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR &&

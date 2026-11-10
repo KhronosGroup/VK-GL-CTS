@@ -132,8 +132,8 @@ void RenderCase::executeForConfig(EGLDisplay display, EGLConfig config)
 
     if (surfaceTypes & m_surfaceTypeMask & EGL_WINDOW_BIT)
     {
-        tcu::ScopedLogSection(log, string("Config") + de::toString(configId) + "-Window",
-                              string("Config ID ") + de::toString(configId) + ", window surface");
+        const tcu::ScopedLogSection section(log, string("Config") + de::toString(configId) + "-Window",
+                                            string("Config ID ") + de::toString(configId) + ", window surface");
 
         const eglu::NativeWindowFactory &windowFactory =
             eglu::selectNativeWindowFactory(displayFactory, m_testCtx.getCommandLine());
@@ -158,8 +158,8 @@ void RenderCase::executeForConfig(EGLDisplay display, EGLConfig config)
 
     if (surfaceTypes & m_surfaceTypeMask & EGL_PIXMAP_BIT)
     {
-        tcu::ScopedLogSection(log, string("Config") + de::toString(configId) + "-Pixmap",
-                              string("Config ID ") + de::toString(configId) + ", pixmap surface");
+        const tcu::ScopedLogSection section(log, string("Config") + de::toString(configId) + "-Pixmap",
+                                            string("Config ID ") + de::toString(configId) + ", pixmap surface");
 
         const eglu::NativePixmapFactory &pixmapFactory =
             eglu::selectNativePixmapFactory(displayFactory, m_testCtx.getCommandLine());
@@ -183,8 +183,8 @@ void RenderCase::executeForConfig(EGLDisplay display, EGLConfig config)
 
     if (surfaceTypes & m_surfaceTypeMask & EGL_PBUFFER_BIT)
     {
-        tcu::ScopedLogSection(log, string("Config") + de::toString(configId) + "-Pbuffer",
-                              string("Config ID ") + de::toString(configId) + ", pbuffer surface");
+        const tcu::ScopedLogSection section(log, string("Config") + de::toString(configId) + "-Pbuffer",
+                                            string("Config ID ") + de::toString(configId) + ", pbuffer surface");
         try
         {
             const EGLint surfaceAttribs[] = {EGL_WIDTH, width, EGL_HEIGHT, height, EGL_NONE};

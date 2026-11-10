@@ -1,0 +1,106 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main" %11 %23 %44
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %8 "idx"
+               OpName %11 "gl_GlobalInvocationID"
+               OpName %18 "cond"
+               OpName %21 "InBuffer"
+               OpMemberName %21 0 "inData"
+               OpName %23 ""
+               OpName %33 "result"
+               OpName %42 "OutBuffer"
+               OpMemberName %42 0 "outData"
+               OpName %44 ""
+               OpDecorate %11 BuiltIn GlobalInvocationId
+               OpDecorate %20 ArrayStride 16
+               OpDecorate %21 Block
+               OpMemberDecorate %21 0 Offset 0
+               OpDecorate %23 Binding 0
+               OpDecorate %23 DescriptorSet 0
+               OpDecorate %41 ArrayStride 16
+               OpDecorate %42 Block
+               OpMemberDecorate %42 0 Offset 0
+               OpDecorate %44 Binding 1
+               OpDecorate %44 DescriptorSet 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+          %7 = OpTypePointer Function %6
+          %9 = OpTypeVector %6 3
+         %10 = OpTypePointer Input %9
+         %11 = OpVariable %10 Input
+         %12 = OpConstant %6 0
+         %13 = OpTypePointer Input %6
+         %16 = OpTypeBool
+         %17 = OpTypePointer Function %16
+         %19 = OpTypeVector %6 4
+         %20 = OpTypeRuntimeArray %19
+         %21 = OpTypeStruct %20
+         %22 = OpTypePointer StorageBuffer %21
+         %23 = OpVariable %22 StorageBuffer
+         %24 = OpTypeInt 32 1
+         %25 = OpConstant %24 0
+         %27 = OpTypePointer StorageBuffer %6
+         %31 = OpTypeVector %16 4
+         %32 = OpTypePointer Function %31
+         %34 = OpConstantTrue %16
+         %35 = OpConstantComposite %31 %34 %34 %34 %34
+         %36 = OpConstantFalse %16
+         %37 = OpConstantComposite %31 %36 %36 %36 %36
+         %41 = OpTypeRuntimeArray %19
+         %42 = OpTypeStruct %41
+         %43 = OpTypePointer StorageBuffer %42
+         %44 = OpVariable %43 StorageBuffer
+         %47 = OpConstant %6 1
+         %48 = OpConstantComposite %19 %12 %12 %12 %12
+         %49 = OpConstantComposite %19 %47 %47 %47 %47
+         %51 = OpTypePointer StorageBuffer %19
+         %53 = OpConstantComposite %9 %47 %47 %47
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %18 = OpVariable %17 Function
+         %33 = OpVariable %32 Function
+         %14 = OpAccessChain %13 %11 %12
+         %15 = OpLoad %6 %14
+               OpStore %8 %15
+         %26 = OpLoad %6 %8
+         %28 = OpAccessChain %27 %23 %25 %26 %12
+         %29 = OpLoad %6 %28
+         %30 = OpINotEqual %16 %29 %12
+               OpStore %18 %30
+         %38 = OpLoad %16 %18
+         %39 = OpCompositeConstruct %31 %38 %38 %38 %38
+         %40 = OpSelect %31 %39 %37 %35
+               OpStore %33 %40
+         %45 = OpLoad %6 %8
+         %46 = OpLoad %31 %33
+         %50 = OpSelect %19 %46 %49 %48
+         %52 = OpAccessChain %51 %44 %25 %45
+               OpStore %52 %50
+               OpReturn
+               OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata uint 0 0 0 0 0  0 0 1 0  0 1 0 0  0 1 1 0  1 0 0 0  1 0 1 0  1 1 0 0  1 1 1 0
+ssbo 0:1 subdata uint 0 2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2  2 2 2 2
+
+compute entrypoint main
+compute 8 1 1
+
+probe ssbo uint 0:1 0 == 1 1 1 1
+probe ssbo uint 0:1 16 == 1 1 1 1
+probe ssbo uint 0:1 32 == 1 1 1 1
+probe ssbo uint 0:1 48 == 1 1 1 1
+probe ssbo uint 0:1 64 == 0 0 0 0
+probe ssbo uint 0:1 80 == 0 0 0 0
+probe ssbo uint 0:1 96 == 0 0 0 0
+probe ssbo uint 0:1 112 == 0 0 0 0

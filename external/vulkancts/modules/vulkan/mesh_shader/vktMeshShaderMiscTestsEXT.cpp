@@ -26,6 +26,7 @@
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkImageWithMemory.hpp"
@@ -1475,18 +1476,24 @@ void NoPrimitivesCase::initPrograms(vk::SourceCollections &programCollection) co
     programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
 }
 
-class NoPrimitivesExtraWritesCase : public NoPrimitivesCase
+class NoPrimitivesExtraWritesCase : public MeshShaderMiscCase
 {
 public:
     NoPrimitivesExtraWritesCase(tcu::TestContext &testCtx, const std::string &name, ParamsPtr params)
-        : NoPrimitivesCase(testCtx, name, std::move(params))
+        : MeshShaderMiscCase(testCtx, name, std::move(params))
     {
     }
 
     void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override;
 
     static constexpr uint32_t kLocalInvocations = 128u;
 };
+
+TestInstance *NoPrimitivesExtraWritesCase::createInstance(Context &context) const
+{
+    return new NoPrimitivesInstance(context, m_params.get());
+}
 
 void NoPrimitivesExtraWritesCase::initPrograms(vk::SourceCollections &programCollection) const
 {
@@ -3391,6 +3398,7 @@ tcu::TestStatus ClipInstance::iterate()
     {
         const tcu::ConstPixelBufferAccess verificationAccess1(tcuFormat, iExtent, verificationBuffer1Data);
 
+        DE_ASSERT(verificationBuffer1Alloc);
         invalidateAlloc(vkd, device, *verificationBuffer1Alloc);
 
         if (!verifyResult(verificationAccess1))
@@ -6284,6 +6292,254 @@ tcu::TestStatus EmitInControlFlowInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+struct EmitMeshTasksZeroParams
+{
+    bool allZero;
+    bool dynamic;
+};
+
+class EmitMeshTasksZeroInstance : public vkt::TestInstance
+{
+public:
+    EmitMeshTasksZeroInstance(Context &context, const EmitMeshTasksZeroParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+
+    tcu::TestStatus iterate() override;
+
+private:
+    const EmitMeshTasksZeroParams m_params;
+};
+
+tcu::TestStatus EmitMeshTasksZeroInstance::iterate(void)
+{
+    const auto ctx = m_context.getContextCommonData();
+    const tcu::IVec3 fbExtent(4, 4, 1);
+    const auto extentVk  = makeExtent3D(fbExtent);
+    const auto imgFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imgUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, imgFormat, imgUsage, VK_IMAGE_TYPE_2D);
+
+    const auto countsSize       = static_cast<VkDeviceSize>(sizeof(uint32_t) * 3);
+    const auto countsBufferInfo = makeBufferCreateInfo(countsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory countsBuffer(ctx.vkd, ctx.device, ctx.allocator, countsBufferInfo, MemoryRequirement::HostVisible);
+    auto &countsAlloc    = countsBuffer.getAllocation();
+    uint32_t *countsData = static_cast<uint32_t *>(countsAlloc.getHostPtr());
+    countsData[0]        = (m_params.allZero ? 0u : 2u);
+    countsData[1]        = (m_params.allZero ? 0u : 2u);
+    countsData[2]        = 0u;
+    flushAlloc(ctx.vkd, ctx.device, countsAlloc);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_TASK_BIT_EXT);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto countsDescInfo = makeDescriptorBufferInfo(countsBuffer.get(), 0ull, countsSize);
+    updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                              VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &countsDescInfo);
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto &binaries  = m_context.getBinaryCollection();
+    const auto taskShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("task"));
+    const auto meshShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("mesh"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+    const auto renderPass     = makeRenderPass(ctx.vkd, ctx.device, imgFormat);
+    const auto framebuffer =
+        makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), extentVk.width, extentVk.height);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *taskShader, *meshShader,
+                                               *fragShader, *renderPass, viewports, scissors);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(imgFormat);
+    tcu::TextureLevel refLevel(tcuFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
+    tcu::clear(refLevel.getAccess(), clearColor);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    tcu::ConstPixelBufferAccess result(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    const tcu::Vec4 threshold(0.0f);
+    auto &log = m_context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result", "", refLevel.getAccess(), result, threshold,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class EmitMeshTasksZeroCase : public vkt::TestCase
+{
+public:
+    EmitMeshTasksZeroCase(tcu::TestContext &testCtx, const std::string &name, const EmitMeshTasksZeroParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new EmitMeshTasksZeroInstance(context, m_params);
+    }
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+protected:
+    const EmitMeshTasksZeroParams m_params;
+};
+
+void EmitMeshTasksZeroCase::checkSupport(Context &context) const
+{
+    checkTaskMeshShaderSupportEXT(context, true, true);
+}
+
+void EmitMeshTasksZeroCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const auto buildOptions    = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
+    const auto spvBuildOptions = getMinMeshEXTSpvBuildOptions(programCollection.usedVulkanVersion);
+
+    std::string task;
+    if (m_params.dynamic)
+    {
+        task = R"(               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TaskEXT %main "main" %counts %payload
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 460
+               OpSourceExtension "GL_EXT_mesh_shader"
+               OpName %main "main"
+               OpName %Counts "Counts"
+               OpMemberName %Counts 0 "x"
+               OpMemberName %Counts 1 "y"
+               OpMemberName %Counts 2 "z"
+               OpName %counts "counts"
+               OpName %payload "payload"
+               OpDecorate %Counts Block
+               OpMemberDecorate %Counts 0 NonWritable
+               OpMemberDecorate %Counts 0 Offset 0
+               OpMemberDecorate %Counts 1 NonWritable
+               OpMemberDecorate %Counts 1 Offset 4
+               OpMemberDecorate %Counts 2 NonWritable
+               OpMemberDecorate %Counts 2 Offset 8
+               OpDecorate %counts NonWritable
+               OpDecorate %counts Binding 0
+               OpDecorate %counts DescriptorSet 0
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %Counts = OpTypeStruct %uint %uint %uint
+%_ptr_StorageBuffer_Counts = OpTypePointer StorageBuffer %Counts
+     %counts = OpVariable %_ptr_StorageBuffer_Counts StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+      %int_1 = OpConstant %int 1
+      %int_2 = OpConstant %int 2
+     %v3uint = OpTypeVector %uint 3
+     %uint_1 = OpConstant %uint 1
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1
+%_ptr_TaskPayloadWorkgroupEXT_uint = OpTypePointer TaskPayloadWorkgroupEXT %uint
+    %payload = OpVariable %_ptr_TaskPayloadWorkgroupEXT_uint TaskPayloadWorkgroupEXT
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpAccessChain %_ptr_StorageBuffer_uint %counts %int_0
+         %14 = OpLoad %uint %13
+         %16 = OpAccessChain %_ptr_StorageBuffer_uint %counts %int_1
+         %17 = OpLoad %uint %16
+         %19 = OpAccessChain %_ptr_StorageBuffer_uint %counts %int_2
+         %20 = OpLoad %uint %19
+               OpEmitMeshTasksEXT %14 %17 %20 %payload
+               OpFunctionEnd)";
+    }
+    else
+    {
+        const std::string xy = (m_params.allZero ? "%uint_0" : "%uint_2");
+        task                 = R"(               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TaskEXT %main "main" %payload
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 460
+               OpSourceExtension "GL_EXT_mesh_shader"
+               OpName %main "main"
+               OpName %payload "payload"
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %v3uint = OpTypeVector %uint 3
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1
+%_ptr_TaskPayloadWorkgroupEXT_uint = OpTypePointer TaskPayloadWorkgroupEXT %uint
+    %payload = OpVariable %_ptr_TaskPayloadWorkgroupEXT_uint TaskPayloadWorkgroupEXT
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpEmitMeshTasksEXT )" +
+               xy + " " + xy + R"( %uint_0 %payload
+               OpFunctionEnd)";
+    }
+    programCollection.spirvAsmSources.add("task") << task << spvBuildOptions;
+
+    const std::string mesh = R"(#version 460
+#extension GL_EXT_mesh_shader : enable
+
+layout(local_size_x=1) in;
+layout(triangles) out;
+layout(max_vertices=3, max_primitives=1) out;
+
+void main () {
+    SetMeshOutputsEXT(3u, 1u);
+    gl_MeshVerticesEXT[0].gl_Position = vec4(-1.0f, -1.0f, 0.0f, 1.0f);
+    gl_MeshVerticesEXT[1].gl_Position = vec4( 3.0f, -1.0f, 0.0f, 1.0f);
+    gl_MeshVerticesEXT[2].gl_Position = vec4(-1.0f,  3.0f, 0.0f, 1.0f);
+    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0u, 1u, 2u);
+}
+)";
+    programCollection.glslSources.add("mesh") << glu::MeshSource(mesh) << buildOptions;
+
+    const std::string frag = R"(#version 460
+layout (location=0) out vec4 outColor;
+void main(void) {
+    outColor = vec4(0.0, 0.0, 1.0, 1.0);
+}
+)";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag);
+}
+
 void workGroupOrderingCheckSupport(Context &context)
 {
     checkTaskMeshShaderSupportEXT(context, true, true);
@@ -7105,534 +7361,799 @@ void PerPrimBlockOutputInstance::generateReferenceLevel()
     generateSolidRefLevel(tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), m_referenceLevel);
 }
 
+namespace DrawIdMix
+{
+
+struct Params
+{
+    bool indirectMeshDraw;
+};
+using ParamsPtr = std::shared_ptr<const Params>;
+
+void checkSupport(Context &context, ParamsPtr)
+{
+    checkTaskMeshShaderSupportEXT(context, false, true);
+}
+
+void initPrograms(vk::SourceCollections &dst, ParamsPtr)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "// Make 2 draws of 3 vertices each to generate the full-screen quad.\n"
+         << "const vec4 coords[6] = vec4[](\n"
+         << "    vec4(-1.0, -1.0, 0.0, 1.0),\n"
+         << "    vec4(-1.0,  1.0, 0.0, 1.0),\n"
+         << "    vec4( 1.0, -1.0, 0.0, 1.0),\n"
+         << "    vec4( 1.0, -1.0, 0.0, 1.0),\n"
+         << "    vec4(-1.0,  1.0, 0.0, 1.0),\n"
+         << "    vec4( 1.0,  1.0, 0.0, 1.0));\n"
+         << "void main(void)\n"
+         << "{\n"
+         << "    uint offset = uint(3 * gl_DrawID);\n"
+         << "    uint vertid = uint(gl_VertexIndex) + offset;\n"
+         << "    gl_Position = coords[vertid];\n"
+         << "    gl_PointSize = 1.0;\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    const auto meshBuildOptions = getMinMeshEXTBuildOptions(dst.usedVulkanVersion);
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "layout (local_size_x=1) in;\n"
+         << "layout (triangles) out;\n"
+         << "layout (max_vertices=3, max_primitives=1) out;\n"
+         << "layout (set=0, binding=0, std430) readonly buffer CoordsBlock {\n"
+         << "    vec4 value[];\n"
+         << "} coords;\n"
+         << "void main(void)\n"
+         << "{\n"
+         << "    SetMeshOutputsEXT(3, 1);\n"
+         << "    gl_MeshVerticesEXT[0].gl_Position = coords.value[0];\n"
+         << "    gl_MeshVerticesEXT[1].gl_Position = coords.value[1];\n"
+         << "    gl_MeshVerticesEXT[2].gl_Position = coords.value[2];\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+         << "}\n";
+    dst.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << meshBuildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "layout (push_constant, std430) uniform PCBlock { vec4 color; } pc;\n"
+         << "void main(void) {\n"
+         << "    outColor = pc.color;\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus runTest(Context &context, ParamsPtr params)
+{
+    const auto ctx = context.getContextCommonData();
+
+    // Buffer with a full-screen triangle for the mesh shader.
+    const std::vector<tcu::Vec4> fullScreenTriangle{
+        // clang-format off
+        tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+        tcu::Vec4(-1.0f,  3.0f, 0.0f, 1.0f),
+        tcu::Vec4( 3.0f, -1.0f, 0.0f, 1.0f),
+        // clang-format on
+    };
+
+    const auto triangleBufferSize  = static_cast<VkDeviceSize>(de::dataSize(fullScreenTriangle));
+    const auto triangleBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    const auto triangleBufferInfo  = makeBufferCreateInfo(triangleBufferSize, triangleBufferUsage);
+    BufferWithMemory triangleBuffer(ctx.vkd, ctx.device, ctx.allocator, triangleBufferInfo, HostIntent::W);
+    {
+        auto &alloc = triangleBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(fullScreenTriangle), de::dataSize(fullScreenTriangle));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Make a descriptor pool and set with the buffer.
+    const auto descType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, 1u);
+    const auto descPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, VK_SHADER_STAGE_MESH_BIT_EXT);
+    const auto setLayout     = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+
+    const auto binding = DescriptorSetUpdateBuilder::Location::binding;
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto descInfo = makeDescriptorBufferInfo(*triangleBuffer, 0ull, VK_WHOLE_SIZE);
+    updateBuilder.writeSingle(*descriptorSet, binding(0u), descType, &descInfo);
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    // Push constants for the frag shader.
+    const auto pcStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto pcSize   = DE_SIZEOF32(tcu::Vec4);
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+
+    const auto vertPipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+    const auto meshPipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto vertShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto meshShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("mesh"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto renderPass  = makeRenderPass(ctx.vkd, ctx.device, colorFormat);
+
+    // Color buffer.
+    const tcu::IVec3 extent(2, 2, 1);
+    const auto extentVk = makeExtent3D(extent);
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    const auto colorBufferUsage = static_cast<VkImageUsageFlags>(
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorBufferUsage,
+                                VK_IMAGE_TYPE_2D);
+    const auto framebuffer =
+        makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), extentVk.width, extentVk.height);
+
+    const auto meshPipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *meshPipelineLayout, VK_NULL_HANDLE,
+                                                   *meshShader, *fragShader, *renderPass, viewports, scissors);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructureConst();
+
+    const auto vertPipeline =
+        makeGraphicsPipeline(ctx.vkd, ctx.device, *vertPipelineLayout, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             VK_NULL_HANDLE, *fragShader, *renderPass, viewports, scissors,
+                             VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u, &vertexInputStateCreateInfo);
+
+    // Indirect buffer for the vertex draw, with 2 draws and 3 vertices each.
+    const auto vertDrawCount  = 2u;
+    const auto vertDrawStride = DE_SIZEOF32(VkDrawIndirectCommand);
+    const std::vector<VkDrawIndirectCommand> vertDrawCmds(vertDrawCount, makeDrawIndirectCommand(3u, 1u, 0u, 0u));
+    const auto vertDrawCmdsBufferSize  = static_cast<VkDeviceSize>(de::dataSize(vertDrawCmds));
+    const auto vertDrawCmdsBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+    const auto vertDrawCmdsBufferInfo  = makeBufferCreateInfo(vertDrawCmdsBufferSize, vertDrawCmdsBufferUsage);
+    BufferWithMemory vertDrawCmdsBuffer(ctx.vkd, ctx.device, ctx.allocator, vertDrawCmdsBufferInfo, HostIntent::W);
+    {
+        auto &alloc = vertDrawCmdsBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertDrawCmds), de::dataSize(vertDrawCmds));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Indirect buffer for the mesh draw, with 1 draw containing a single dispatch.
+    const auto meshDrawCount  = 1u;
+    const auto meshDrawStride = DE_SIZEOF32(VkDrawMeshTasksIndirectCommandEXT);
+    const std::vector<VkDrawMeshTasksIndirectCommandEXT> meshDrawCmds(meshDrawCount,
+                                                                      makeDrawMeshTasksIndirectCommandEXT(1u, 1u, 1u));
+    const auto meshDrawCmdsBufferSize  = static_cast<VkDeviceSize>(de::dataSize(meshDrawCmds));
+    const auto meshDrawCmdsBufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+    const auto meshDrawCmdsBufferInfo  = makeBufferCreateInfo(meshDrawCmdsBufferSize, meshDrawCmdsBufferUsage);
+    BufferWithMemory meshDrawCmdsBuffer(ctx.vkd, ctx.device, ctx.allocator, meshDrawCmdsBufferInfo, HostIntent::W);
+    {
+        auto &alloc = meshDrawCmdsBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(meshDrawCmds), de::dataSize(meshDrawCmds));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto clearColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    const auto vertColor  = tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    const auto meshColor  = tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f);
+
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.front(), clearColor);
+    {
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *vertPipeline);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *vertPipelineLayout, pcStages, 0u, pcSize, &vertColor);
+        ctx.vkd.cmdDrawIndirect(cmdBuffer, *vertDrawCmdsBuffer, 0ull, vertDrawCount, vertDrawStride);
+    }
+    {
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *meshPipeline);
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *meshPipelineLayout, 0u, 1u, &descriptorSet.get(), 0u,
+                                      nullptr);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *meshPipelineLayout, pcStages, 0u, pcSize, &meshColor);
+        if (params->indirectMeshDraw)
+            ctx.vkd.cmdDrawMeshTasksIndirectEXT(cmdBuffer, *meshDrawCmdsBuffer, 0ull, meshDrawCount, meshDrawStride);
+        else
+        {
+            DE_ASSERT(meshDrawCmds.size() == 1);
+            const auto &drawCmd = meshDrawCmds.front();
+            ctx.vkd.cmdDrawMeshTasksEXT(cmdBuffer, drawCmd.groupCountX, drawCmd.groupCountY, drawCmd.groupCountZ);
+        }
+    }
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::TextureLevel refLevel(tcuFormat, extent);
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, meshColor);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    auto &log = context.getTestContext().getLog();
+    const tcu::Vec4 threshold(0.0f); // Expect exact results.
+    if (!tcu::floatThresholdCompare(log, "Color", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace DrawIdMix
+
 } // anonymous namespace
 
-tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
+tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testContext)
 {
-    GroupPtr miscTests(new tcu::TestCaseGroup(testCtx, "misc"));
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::just(tcu::UVec3(2u, 1u, 1u)),
-            /*meshCount*/ tcu::UVec3(2u, 1u, 1u),
-            /*width*/ 8u,
-            /*height*/ 8u));
-
-        // Pass a complex structure from the task to the mesh shader
-        miscTests->addChild(new ComplexTaskDataCase(testCtx, "complex_task_data", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
-            /*height*/ 7u)); // Idem.
-
-        // Draw a single point
-        miscTests->addChild(new SinglePointCase(testCtx, "single_point", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
-            /*height*/ 7u)); // Idem.
-
-        // VK_KHR_maintenance5: Test default point size is 1.0f
-        // Draw a single point without writing to PointSize
-        miscTests->addChild(new SinglePointCase(testCtx, "single_point_default_size", std::move(paramsPtr), false));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 8u,
-            /*height*/ 5u)); // Use an odd value so there's a center line.
-
-        // Draw a single line
-        miscTests->addChild(new SingleLineCase(testCtx, "single_line", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
-            /*height*/ 7u)); // Idem.
-
-        // Draw a single triangle
-        miscTests->addChild(new SingleTriangleCase(testCtx, "single_triangle", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 16u,
-            /*height*/ 16u));
-
-        // Draw the maximum number of points
-        miscTests->addChild(new MaxPointsCase(testCtx, "max_points", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 1u,
-            /*height*/ 1020u));
-
-        // Draw the maximum number of lines
-        miscTests->addChild(new MaxLinesCase(testCtx, "max_lines", std::move(paramsPtr)));
-    }
-
-    {
-        const tcu::UVec3 localSizes[] = {
-            tcu::UVec3(2u, 4u, 8u),
-            tcu::UVec3(4u, 2u, 4u),
-            tcu::UVec3(2u, 2u, 4u),
-        };
-
-        // Draw the maximum number of triangles using a work group size of...
-        for (const auto &localSize : localSizes)
+    return createTestGroup2(
+        testContext, "misc",
+        [](tcu::TestCaseGroup *miscTests)
         {
-            const auto workGroupSize = (localSize.x() * localSize.y() * localSize.z());
-            const auto wgsStr        = std::to_string(workGroupSize);
-            const auto testName      = "max_triangles_workgroupsize_" + wgsStr;
-
-            ParamsPtr paramsPtr(new MaxTrianglesCase::Params(
-                /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-                /*width*/ 512u,
-                /*height*/ 512u,
-                /*localSize*/ localSize));
-
-            miscTests->addChild(new MaxTrianglesCase(testCtx, testName, std::move(paramsPtr)));
-        }
-    }
-
-    using LargeWorkGroupParamsPtr = std::unique_ptr<LargeWorkGroupParams>;
-    const int dimensionCases[]    = {0, 1, 2};
-
-    for (const auto &dim : dimensionCases)
-    {
-        const auto dimChar = dimSuffix(dim);
-
-        {
-            tcu::UVec3 taskCount(8u, 8u, 8u);
-            taskCount[dim] = 65535u;
-
-            LargeWorkGroupParamsPtr lwgParamsPtr(new LargeWorkGroupParams(
-                /*taskCount*/ tcu::just(taskCount),
-                /*meshCount*/ tcu::UVec3(0u, 0u, 0u),
-                /*width*/ 2040u,
-                /*height*/ 2056u,
-                /*localInvocations*/ tcu::UVec3(1u, 1u, 1u)));
-
-            ParamsPtr paramsPtr(lwgParamsPtr.release());
-
-            const auto name = std::string("many_task_work_groups_") + dimChar;
-
-            miscTests->addChild(new LargeWorkGroupCase(testCtx, name, std::move(paramsPtr)));
-        }
-
-        {
-            tcu::UVec3 meshCount(8u, 8u, 8u);
-            meshCount[dim] = 65535u;
-
-            LargeWorkGroupParamsPtr lwgParamsPtr(new LargeWorkGroupParams(
-                /*taskCount*/ tcu::Nothing,
-                /*meshCount*/ meshCount,
-                /*width*/ 2040u,
-                /*height*/ 2056u,
-                /*localInvocations*/ tcu::UVec3(1u, 1u, 1u)));
-
-            ParamsPtr paramsPtr(lwgParamsPtr.release());
-
-            const auto name = std::string("many_mesh_work_groups_") + dimChar;
-
-            miscTests->addChild(new LargeWorkGroupCase(testCtx, name, std::move(paramsPtr)));
-        }
-
-        {
-            tcu::UVec3 meshCount(1u, 1u, 1u);
-            tcu::UVec3 taskCount(1u, 1u, 1u);
-            tcu::UVec3 localInvs(1u, 1u, 1u);
-
-            meshCount[dim] = 256u;
-            taskCount[dim] = 128u;
-            localInvs[dim] = 128u;
-
-            LargeWorkGroupParamsPtr lwgParamsPtr(new LargeWorkGroupParams(
-                /*taskCount*/ tcu::just(taskCount),
-                /*meshCount*/ meshCount,
-                /*width*/ 2048u,
-                /*height*/ 2048u,
-                /*localInvocations*/ localInvs));
-
-            ParamsPtr paramsPtr(lwgParamsPtr.release());
-
-            const auto name = std::string("many_task_mesh_work_groups_") + dimChar;
-
-            miscTests->addChild(new LargeWorkGroupCase(testCtx, name, std::move(paramsPtr)));
-        }
-    }
-
-    {
-        const PrimitiveType types[] = {
-            PrimitiveType::POINTS,
-            PrimitiveType::LINES,
-            PrimitiveType::TRIANGLES,
-        };
-
-        for (int i = 0; i < 2; ++i)
-        {
-            const bool extraWrites = (i > 0);
-
-            // XXX Is this test legal? [https://gitlab.khronos.org/GLSL/GLSL/-/merge_requests/77#note_348252]
-            if (extraWrites)
-                continue;
-
-            // Workaround. See VK-GL-CTS issue: https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/5589
-            // and GCC issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=118924
-            for (const auto &primType : types)
+            auto &testCtx = miscTests->getTestContext();
             {
-                std::unique_ptr<NoPrimitivesParams> params(new NoPrimitivesParams(
-                    /*taskCount*/ (extraWrites ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::just(tcu::UVec3(2u, 1u, 1u)),
+                    /*meshCount*/ tcu::UVec3(2u, 1u, 1u),
+                    /*width*/ 8u,
+                    /*height*/ 8u));
+
+                // Pass a complex structure from the task to the mesh shader
+                miscTests->addChild(new ComplexTaskDataCase(testCtx, "complex_task_data", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
+                    /*height*/ 7u)); // Idem.
+
+                // Draw a single point
+                miscTests->addChild(new SinglePointCase(testCtx, "single_point", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
+                    /*height*/ 7u)); // Idem.
+
+                // VK_KHR_maintenance5: Test default point size is 1.0f
+                // Draw a single point without writing to PointSize
+                miscTests->addChild(
+                    new SinglePointCase(testCtx, "single_point_default_size", std::move(paramsPtr), false));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 8u,
+                    /*height*/ 5u)); // Use an odd value so there's a center line.
+
+                // Draw a single line
+                miscTests->addChild(new SingleLineCase(testCtx, "single_line", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 5u,    // Use an odd value so there's a pixel in the exact center.
+                    /*height*/ 7u)); // Idem.
+
+                // Draw a single triangle
+                miscTests->addChild(new SingleTriangleCase(testCtx, "single_triangle", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
                     /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
                     /*width*/ 16u,
-                    /*height*/ 16u,
-                    /*primitiveType*/ primType));
+                    /*height*/ 16u));
 
-                ParamsPtr paramsPtr(params.release());
-                const auto primName    = primitiveTypeName(primType);
-                const std::string name = "no_" + primName + (extraWrites ? "_extra_writes" : "");
-
-                miscTests->addChild(extraWrites ?
-                                        (new NoPrimitivesExtraWritesCase(testCtx, name, std::move(paramsPtr))) :
-                                        (new NoPrimitivesCase(testCtx, name, std::move(paramsPtr))));
+                // Draw the maximum number of points
+                miscTests->addChild(new MaxPointsCase(testCtx, "max_points", std::move(paramsPtr)));
             }
-        }
-    }
 
-    {
-        for (int i = 0; i < 2; ++i)
-        {
-            const bool useTaskShader = (i == 0);
-
-            ParamsPtr paramsPtr(new MiscTestParams(
-                /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
-                /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-                /*width*/ 1u,
-                /*height*/ 1u));
-
-            const std::string shader = (useTaskShader ? "task" : "mesh");
-            const std::string name   = "barrier_in_" + shader;
-
-            miscTests->addChild(new SimpleBarrierCase(testCtx, name, std::move(paramsPtr)));
-        }
-    }
-
-    {
-        const struct
-        {
-            MemoryBarrierType memBarrierType;
-            std::string caseName;
-        } barrierTypes[] = {
-            {MemoryBarrierType::SHARED, "memory_barrier_shared"},
-            {MemoryBarrierType::GROUP, "group_memory_barrier"},
-        };
-
-        const struct
-        {
-            PayloadType payloadType;
-            std::string caseName;
-        } payloadTypes[] = {{PayloadType::STRUCT, "struct"},
-                            {PayloadType::FLOAT, "float"},
-                            {PayloadType::VECTOR, "vector"},
-                            {PayloadType::ARRAY, "array"},
-                            {PayloadType::UINT64, "uint64"}};
-
-        for (const auto &barrierCase : barrierTypes)
-        {
-            for (int i = 0; i < 2; ++i)
             {
-                const bool useTaskShader = (i == 0);
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 1u,
+                    /*height*/ 1020u));
 
-                for (const auto &payloadCase : payloadTypes)
+                // Draw the maximum number of lines
+                miscTests->addChild(new MaxLinesCase(testCtx, "max_lines", std::move(paramsPtr)));
+            }
+
+            {
+                const tcu::UVec3 localSizes[] = {
+                    tcu::UVec3(2u, 4u, 8u),
+                    tcu::UVec3(4u, 2u, 4u),
+                    tcu::UVec3(2u, 2u, 4u),
+                };
+
+                // Draw the maximum number of triangles using a work group size of...
+                for (const auto &localSize : localSizes)
                 {
-                    std::unique_ptr<MemoryBarrierParams> paramsPtr(new MemoryBarrierParams(
+                    const auto workGroupSize = (localSize.x() * localSize.y() * localSize.z());
+                    const auto wgsStr        = std::to_string(workGroupSize);
+                    const auto testName      = "max_triangles_workgroupsize_" + wgsStr;
+
+                    ParamsPtr paramsPtr(new MaxTrianglesCase::Params(
+                        /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                        /*width*/ 512u,
+                        /*height*/ 512u,
+                        /*localSize*/ localSize));
+
+                    miscTests->addChild(new MaxTrianglesCase(testCtx, testName, std::move(paramsPtr)));
+                }
+            }
+
+            using LargeWorkGroupParamsPtr = std::unique_ptr<LargeWorkGroupParams>;
+            const int dimensionCases[]    = {0, 1, 2};
+
+            for (const auto &dim : dimensionCases)
+            {
+                const auto dimChar = dimSuffix(dim);
+
+                {
+                    tcu::UVec3 taskCount(8u, 8u, 8u);
+                    taskCount[dim] = 65535u;
+
+                    LargeWorkGroupParamsPtr lwgParamsPtr(new LargeWorkGroupParams(
+                        /*taskCount*/ tcu::just(taskCount),
+                        /*meshCount*/ tcu::UVec3(0u, 0u, 0u),
+                        /*width*/ 2040u,
+                        /*height*/ 2056u,
+                        /*localInvocations*/ tcu::UVec3(1u, 1u, 1u)));
+
+                    ParamsPtr paramsPtr(lwgParamsPtr.release());
+
+                    const auto name = std::string("many_task_work_groups_") + dimChar;
+
+                    miscTests->addChild(new LargeWorkGroupCase(testCtx, name, std::move(paramsPtr)));
+                }
+
+                {
+                    tcu::UVec3 meshCount(8u, 8u, 8u);
+                    meshCount[dim] = 65535u;
+
+                    LargeWorkGroupParamsPtr lwgParamsPtr(new LargeWorkGroupParams(
+                        /*taskCount*/ tcu::Nothing,
+                        /*meshCount*/ meshCount,
+                        /*width*/ 2040u,
+                        /*height*/ 2056u,
+                        /*localInvocations*/ tcu::UVec3(1u, 1u, 1u)));
+
+                    ParamsPtr paramsPtr(lwgParamsPtr.release());
+
+                    const auto name = std::string("many_mesh_work_groups_") + dimChar;
+
+                    miscTests->addChild(new LargeWorkGroupCase(testCtx, name, std::move(paramsPtr)));
+                }
+
+                {
+                    tcu::UVec3 meshCount(1u, 1u, 1u);
+                    tcu::UVec3 taskCount(1u, 1u, 1u);
+                    tcu::UVec3 localInvs(1u, 1u, 1u);
+
+                    meshCount[dim] = 256u;
+                    taskCount[dim] = 128u;
+                    localInvs[dim] = 128u;
+
+                    LargeWorkGroupParamsPtr lwgParamsPtr(new LargeWorkGroupParams(
+                        /*taskCount*/ tcu::just(taskCount),
+                        /*meshCount*/ meshCount,
+                        /*width*/ 2048u,
+                        /*height*/ 2048u,
+                        /*localInvocations*/ localInvs));
+
+                    ParamsPtr paramsPtr(lwgParamsPtr.release());
+
+                    const auto name = std::string("many_task_mesh_work_groups_") + dimChar;
+
+                    miscTests->addChild(new LargeWorkGroupCase(testCtx, name, std::move(paramsPtr)));
+                }
+            }
+
+            {
+                const PrimitiveType types[] = {
+                    PrimitiveType::POINTS,
+                    PrimitiveType::LINES,
+                    PrimitiveType::TRIANGLES,
+                };
+
+                for (int i = 0; i < 2; ++i)
+                {
+                    const bool extraWrites = (i > 0);
+
+                    // XXX Is this test legal? [https://gitlab.khronos.org/GLSL/GLSL/-/merge_requests/77#note_348252]
+                    if (extraWrites)
+                        continue;
+
+                    // Workaround. See VK-GL-CTS issue: https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/5589
+                    // and GCC issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=118924
+                    for (const auto &primType : types)
+                    {
+                        std::unique_ptr<NoPrimitivesParams> params(new NoPrimitivesParams(
+                            /*taskCount*/ (extraWrites ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
+                            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                            /*width*/ 16u,
+                            /*height*/ 16u,
+                            /*primitiveType*/ primType));
+
+                        ParamsPtr paramsPtr(params.release());
+                        const auto primName    = primitiveTypeName(primType);
+                        const std::string name = "no_" + primName + (extraWrites ? "_extra_writes" : "");
+
+                        if (extraWrites)
+                            miscTests->addChild(new NoPrimitivesExtraWritesCase(testCtx, name, std::move(paramsPtr)));
+                        else
+                            miscTests->addChild(new NoPrimitivesCase(testCtx, name, std::move(paramsPtr)));
+                    }
+                }
+            }
+
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    const bool useTaskShader = (i == 0);
+
+                    ParamsPtr paramsPtr(new MiscTestParams(
                         /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
                         /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
                         /*width*/ 1u,
-                        /*height*/ 1u,
-                        /*memBarrierType*/ barrierCase.memBarrierType,
-                        /*usePrimitiveTypePayload*/ payloadCase.payloadType));
+                        /*height*/ 1u));
 
                     const std::string shader = (useTaskShader ? "task" : "mesh");
-                    const std::string name   = barrierCase.caseName + "_in_" + shader + "_" + payloadCase.caseName;
+                    const std::string name   = "barrier_in_" + shader;
 
-                    miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
+                    miscTests->addChild(new SimpleBarrierCase(testCtx, name, std::move(paramsPtr)));
                 }
             }
-        }
-    }
 
-    {
-        for (int i = 0; i < 2; ++i)
-        {
-            const bool useTaskShader = (i > 0);
-            const auto name          = std::string("custom_attributes") + (useTaskShader ? "_and_task_shader" : "");
+            {
+                const struct
+                {
+                    MemoryBarrierType memBarrierType;
+                    std::string caseName;
+                } barrierTypes[] = {
+                    {MemoryBarrierType::SHARED, "memory_barrier_shared"},
+                    {MemoryBarrierType::GROUP, "group_memory_barrier"},
+                };
 
-            ParamsPtr paramsPtr(new MiscTestParams(
-                /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
-                /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-                /*width*/ 32u,
-                /*height*/ 32u));
+                const struct
+                {
+                    PayloadType payloadType;
+                    std::string caseName;
+                } payloadTypes[] = {{PayloadType::STRUCT, "struct"},
+                                    {PayloadType::FLOAT, "float"},
+                                    {PayloadType::VECTOR, "vector"},
+                                    {PayloadType::ARRAY, "array"},
+                                    {PayloadType::UINT64, "uint64"}};
 
-            miscTests->addChild(new CustomAttributesCase(testCtx, name, std::move(paramsPtr)));
-        }
-    }
-
-    {
-        for (int i = 0; i < 2; ++i)
-            for (int j = 0; j < 2; ++j)
-                for (int k = 0; k < 2; ++k)
-                    for (int l = 0; l < 2; ++l)
+                for (const auto &barrierCase : barrierTypes)
+                {
+                    for (int i = 0; i < 2; ++i)
                     {
-                        const bool useTaskShader          = (i > 0);
-                        const bool useClipPlanes          = (j > 0);
-                        const bool useProvokingVertexLast = (k > 0);
-                        const bool useMultiview           = (l > 0);
-                        const auto name                   = std::string(useClipPlanes ? "clip_plane" : "clip_geom") +
-                                          (useTaskShader ? "_and_task_shader" : "") +
-                                          (useProvokingVertexLast ? "_provoking_last" : "") +
-                                          (useMultiview ? "_multiview" : "");
+                        const bool useTaskShader = (i == 0);
 
-                        ParamsPtr paramsPtr(new MiscTestParams(
-                            /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
-                            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-                            /*width*/ 32u,
-                            /*height*/ 32u));
-
-                        miscTests->addChild(new ClipCase(testCtx, name, std::move(paramsPtr), useClipPlanes,
-                                                         useProvokingVertexLast, useMultiview));
-                    }
-    }
-
-    {
-        for (int i = 0; i < 2; ++i)
-        {
-            const bool useTaskShader = (i > 0);
-            const auto name          = std::string("push_constant") + (useTaskShader ? "_and_task_shader" : "");
-
-            ParamsPtr paramsPtr(new MiscTestParams(
-                /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
-                /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-                /*width*/ 16u,
-                /*height*/ 16u));
-
-            miscTests->addChild(new PushConstantCase(testCtx, name, std::move(paramsPtr)));
-        }
-    }
-
-    {
-        ParamsPtr paramsPtr(new MaximizeThreadsParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 128u,
-            /*height*/ 1u,
-            /*localSize*/ 32u,
-            /*numVertices*/ 128u,
-            /*numPrimitives*/ 256u));
-
-        miscTests->addChild(new MaximizePrimitivesCase(testCtx, "maximize_primitives", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MaximizeThreadsParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 64u,
-            /*height*/ 1u,
-            /*localSize*/ 32u,
-            /*numVertices*/ 256u,
-            /*numPrimitives*/ 128u));
-
-        miscTests->addChild(new MaximizeVerticesCase(testCtx, "maximize_vertices", std::move(paramsPtr)));
-    }
-
-    {
-        const uint32_t kInvocationCases[] = {32u, 64u, 128u, 256u};
-
-        for (const auto &invocationCase : kInvocationCases)
-        {
-            const auto invsStr   = std::to_string(invocationCase);
-            const auto numPixels = invocationCase / 2u;
-
-            ParamsPtr paramsPtr(new MaximizeThreadsParams(
-                /*taskCount*/ tcu::Nothing,
-                /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-                /*width*/ numPixels,
-                /*height*/ 1u,
-                /*localSize*/ invocationCase,
-                /*numVertices*/ numPixels,
-                /*numPrimitives*/ numPixels));
-
-            miscTests->addChild(
-                new MaximizeInvocationsCase(testCtx, "maximize_invocations_" + invsStr, std::move(paramsPtr)));
-        }
-    }
-
-    {
-        for (int i = 0; i < 2; ++i)
-        {
-            const bool useDynamicTopology = (i > 0);
-
-            ParamsPtr paramsPtr(new MixedPipelinesParams(
-                /*taskCount*/ tcu::Nothing,
-                /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-                /*width*/ 8u,
-                /*height*/ 8u,
-                /*dynamicTopology*/ useDynamicTopology));
-
-            const std::string nameSuffix = (useDynamicTopology ? "_dynamic_topology" : "");
-            const std::string descSuffix = (useDynamicTopology ? " and use dynamic topology" : "");
-
-            miscTests->addChild(new MixedPipelinesCase(testCtx, "mixed_pipelines" + nameSuffix, std::move(paramsPtr)));
-        }
-    }
-
-    for (int i = 0; i < 2; ++i)
-    {
-        const bool useTask = (i > 0);
-        const tcu::Maybe<tcu::UVec3> taskCount =
-            (useTask ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::nothing<tcu::UVec3>());
-        const std::string testName = std::string("first_invocation_") + (useTask ? "task" : "mesh");
-
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ taskCount,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 128u,
-            /*height*/ 1u));
-
-        miscTests->addChild(new FirstInvocationCase(testCtx, testName, std::move(paramsPtr)));
-    }
-
-    for (int i = 0; i < 2; ++i)
-    {
-        const bool useTask = (i > 0);
-        const tcu::Maybe<tcu::UVec3> taskCount =
-            (useTask ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::nothing<tcu::UVec3>());
-        const std::string testName = std::string("local_size_id_") + (useTask ? "task" : "mesh");
-
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ taskCount,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 32u,
-            /*height*/ 1u));
-
-        miscTests->addChild(new LocalSizeIdCase(testCtx, testName, std::move(paramsPtr)));
-    }
-
-    if (false) // Disabled. This may be illegal.
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 8u,
-            /*height*/ 8u));
-
-        miscTests->addChild(new MultipleTaskPayloadsCase(testCtx, "multiple_task_payloads", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 8u,
-            /*height*/ 8u));
-
-        miscTests->addChild(new PayloadReadCase(testCtx, "payload_read", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 8u,
-            /*height*/ 8u));
-
-        miscTests->addChild(new RebindSetsCase(testCtx, "rebind_sets", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 8u,
-            /*height*/ 8u));
-
-        miscTests->addChild(new MultipleOutputsVertsCase(testCtx, "multiple_outputs_vertices", std::move(paramsPtr)));
-    }
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 8u,
-            /*height*/ 8u));
-
-        miscTests->addChild(new PayloadNotAccessedCase(testCtx, "payload_not_accessed", std::move(paramsPtr)));
-    }
-
-    for (const bool badEmitLast : {false, true})
-    {
-        const auto testName = std::string("emit_in_control_flow") + (badEmitLast ? "_bad_emit_last" : "");
-        const EmitInControlFlowParams params{badEmitLast};
-        miscTests->addChild(new EmitInControlFlowCase(testCtx, testName, params));
-    }
-
-    addFunctionCaseWithPrograms(miscTests.get(), "work_group_ordering", workGroupOrderingCheckSupport,
-                                workGroupOrderingInitPrograms, workGroupOrderingRun);
-
-    {
-        ParamsPtr paramsPtr(new MiscTestParams(
-            /*taskCount*/ tcu::Nothing,
-            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-            /*width*/ 32u,
-            /*height*/ 32u));
-
-        miscTests->addChild(new PerPrimBlockOutputCase(testCtx, "per_prim_block_output", std::move(paramsPtr)));
-    }
-
-    {
-        const VertexState::Params defaultParams;
-        for (const bool bindVBO : {false, true})
-            for (const bool bindIBO : {false, true})
-                for (const bool dynamicVertexInput : {false, true})
-                    for (const bool dynamicPrimRestart : {false, true})
-                        for (const bool dynamicTopology : {false, true})
+                        for (const auto &payloadCase : payloadTypes)
                         {
-                            VertexState::ParamsPtr params(new VertexState::Params{bindIBO, bindIBO, dynamicVertexInput,
-                                                                                  dynamicPrimRestart, dynamicTopology});
-                            if (*params == defaultParams)
-                                continue;
+                            std::unique_ptr<MemoryBarrierParams> paramsPtr(new MemoryBarrierParams(
+                                /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
+                                /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                                /*width*/ 1u,
+                                /*height*/ 1u,
+                                /*memBarrierType*/ barrierCase.memBarrierType,
+                                /*usePrimitiveTypePayload*/ payloadCase.payloadType));
 
-                            const auto testName = std::string("vertex_state") + (bindVBO ? "_bind_vbo" : "") +
-                                                  (bindIBO ? "_bind_ibo" : "") +
-                                                  (dynamicVertexInput ? "_dynamic_vtx_input" : "") +
-                                                  (dynamicPrimRestart ? "_dynamic_prim_restart" : "") +
-                                                  (dynamicTopology ? "_dynamic_topo" : "");
+                            const std::string shader = (useTaskShader ? "task" : "mesh");
+                            const std::string name =
+                                barrierCase.caseName + "_in_" + shader + "_" + payloadCase.caseName;
 
-                            addFunctionCaseWithPrograms(miscTests.get(), testName, VertexState::checkSupport,
-                                                        VertexState::initPrograms, VertexState::iterate, params);
+                            miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
                         }
-    }
+                    }
+                }
+            }
 
-    return miscTests.release();
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    const bool useTaskShader = (i > 0);
+                    const auto name = std::string("custom_attributes") + (useTaskShader ? "_and_task_shader" : "");
+
+                    ParamsPtr paramsPtr(new MiscTestParams(
+                        /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
+                        /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                        /*width*/ 32u,
+                        /*height*/ 32u));
+
+                    miscTests->addChild(new CustomAttributesCase(testCtx, name, std::move(paramsPtr)));
+                }
+            }
+
+            {
+                for (int i = 0; i < 2; ++i)
+                    for (int j = 0; j < 2; ++j)
+                        for (int k = 0; k < 2; ++k)
+                            for (int l = 0; l < 2; ++l)
+                            {
+                                const bool useTaskShader          = (i > 0);
+                                const bool useClipPlanes          = (j > 0);
+                                const bool useProvokingVertexLast = (k > 0);
+                                const bool useMultiview           = (l > 0);
+                                const auto name = std::string(useClipPlanes ? "clip_plane" : "clip_geom") +
+                                                  (useTaskShader ? "_and_task_shader" : "") +
+                                                  (useProvokingVertexLast ? "_provoking_last" : "") +
+                                                  (useMultiview ? "_multiview" : "");
+
+                                ParamsPtr paramsPtr(new MiscTestParams(
+                                    /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
+                                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                                    /*width*/ 32u,
+                                    /*height*/ 32u));
+
+                                miscTests->addChild(new ClipCase(testCtx, name, std::move(paramsPtr), useClipPlanes,
+                                                                 useProvokingVertexLast, useMultiview));
+                            }
+            }
+
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    const bool useTaskShader = (i > 0);
+                    const auto name          = std::string("push_constant") + (useTaskShader ? "_and_task_shader" : "");
+
+                    ParamsPtr paramsPtr(new MiscTestParams(
+                        /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
+                        /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                        /*width*/ 16u,
+                        /*height*/ 16u));
+
+                    miscTests->addChild(new PushConstantCase(testCtx, name, std::move(paramsPtr)));
+                }
+            }
+
+            {
+                ParamsPtr paramsPtr(new MaximizeThreadsParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 128u,
+                    /*height*/ 1u,
+                    /*localSize*/ 32u,
+                    /*numVertices*/ 128u,
+                    /*numPrimitives*/ 256u));
+
+                miscTests->addChild(new MaximizePrimitivesCase(testCtx, "maximize_primitives", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MaximizeThreadsParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 64u,
+                    /*height*/ 1u,
+                    /*localSize*/ 32u,
+                    /*numVertices*/ 256u,
+                    /*numPrimitives*/ 128u));
+
+                miscTests->addChild(new MaximizeVerticesCase(testCtx, "maximize_vertices", std::move(paramsPtr)));
+            }
+
+            {
+                const uint32_t kInvocationCases[] = {32u, 64u, 128u, 256u};
+
+                for (const auto &invocationCase : kInvocationCases)
+                {
+                    const auto invsStr   = std::to_string(invocationCase);
+                    const auto numPixels = invocationCase / 2u;
+
+                    ParamsPtr paramsPtr(new MaximizeThreadsParams(
+                        /*taskCount*/ tcu::Nothing,
+                        /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                        /*width*/ numPixels,
+                        /*height*/ 1u,
+                        /*localSize*/ invocationCase,
+                        /*numVertices*/ numPixels,
+                        /*numPrimitives*/ numPixels));
+
+                    miscTests->addChild(
+                        new MaximizeInvocationsCase(testCtx, "maximize_invocations_" + invsStr, std::move(paramsPtr)));
+                }
+            }
+
+            {
+                for (int i = 0; i < 2; ++i)
+                {
+                    const bool useDynamicTopology = (i > 0);
+
+                    ParamsPtr paramsPtr(new MixedPipelinesParams(
+                        /*taskCount*/ tcu::Nothing,
+                        /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                        /*width*/ 8u,
+                        /*height*/ 8u,
+                        /*dynamicTopology*/ useDynamicTopology));
+
+                    const std::string nameSuffix = (useDynamicTopology ? "_dynamic_topology" : "");
+                    const std::string descSuffix = (useDynamicTopology ? " and use dynamic topology" : "");
+
+                    miscTests->addChild(
+                        new MixedPipelinesCase(testCtx, "mixed_pipelines" + nameSuffix, std::move(paramsPtr)));
+                }
+            }
+
+            for (int i = 0; i < 2; ++i)
+            {
+                const bool useTask = (i > 0);
+                const tcu::Maybe<tcu::UVec3> taskCount =
+                    (useTask ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::nothing<tcu::UVec3>());
+                const std::string testName = std::string("first_invocation_") + (useTask ? "task" : "mesh");
+
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ taskCount,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 128u,
+                    /*height*/ 1u));
+
+                miscTests->addChild(new FirstInvocationCase(testCtx, testName, std::move(paramsPtr)));
+            }
+
+            for (int i = 0; i < 2; ++i)
+            {
+                const bool useTask = (i > 0);
+                const tcu::Maybe<tcu::UVec3> taskCount =
+                    (useTask ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::nothing<tcu::UVec3>());
+                const std::string testName = std::string("local_size_id_") + (useTask ? "task" : "mesh");
+
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ taskCount,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 32u,
+                    /*height*/ 1u));
+
+                miscTests->addChild(new LocalSizeIdCase(testCtx, testName, std::move(paramsPtr)));
+            }
+
+            if (false) // Disabled. This may be illegal.
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 8u,
+                    /*height*/ 8u));
+
+                miscTests->addChild(
+                    new MultipleTaskPayloadsCase(testCtx, "multiple_task_payloads", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 8u,
+                    /*height*/ 8u));
+
+                miscTests->addChild(new PayloadReadCase(testCtx, "payload_read", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 8u,
+                    /*height*/ 8u));
+
+                miscTests->addChild(new RebindSetsCase(testCtx, "rebind_sets", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 8u,
+                    /*height*/ 8u));
+
+                miscTests->addChild(
+                    new MultipleOutputsVertsCase(testCtx, "multiple_outputs_vertices", std::move(paramsPtr)));
+            }
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 8u,
+                    /*height*/ 8u));
+
+                miscTests->addChild(new PayloadNotAccessedCase(testCtx, "payload_not_accessed", std::move(paramsPtr)));
+            }
+
+            for (const bool badEmitLast : {false, true})
+            {
+                const auto testName = std::string("emit_in_control_flow") + (badEmitLast ? "_bad_emit_last" : "");
+                const EmitInControlFlowParams params{badEmitLast};
+                miscTests->addChild(new EmitInControlFlowCase(testCtx, testName, params));
+            }
+
+            {
+                const struct
+                {
+                    bool allZero;
+                    const char *name;
+                } zeroCases[] = {
+                    {false, "z"},
+                    {true, "xyz"},
+                };
+
+                for (const auto &zeroCase : zeroCases)
+                {
+                    for (const bool dynamic : {false, true})
+                    {
+                        const auto testName =
+                            std::string("zero_") + zeroCase.name + (dynamic ? "_dynamic" : "_constant");
+                        const EmitMeshTasksZeroParams params{zeroCase.allZero, dynamic};
+                        miscTests->addChild(new EmitMeshTasksZeroCase(testCtx, testName, params));
+                    }
+                }
+            }
+
+            addFunctionCaseWithPrograms(miscTests, "work_group_ordering", workGroupOrderingCheckSupport,
+                                        workGroupOrderingInitPrograms, workGroupOrderingRun);
+
+            {
+                ParamsPtr paramsPtr(new MiscTestParams(
+                    /*taskCount*/ tcu::Nothing,
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 32u,
+                    /*height*/ 32u));
+
+                miscTests->addChild(new PerPrimBlockOutputCase(testCtx, "per_prim_block_output", std::move(paramsPtr)));
+            }
+
+            {
+                const VertexState::Params defaultParams;
+                for (const bool bindVBO : {false, true})
+                    for (const bool bindIBO : {false, true})
+                        for (const bool dynamicVertexInput : {false, true})
+                            for (const bool dynamicPrimRestart : {false, true})
+                                for (const bool dynamicTopology : {false, true})
+                                {
+                                    VertexState::ParamsPtr params(new VertexState::Params{
+                                        bindIBO, bindIBO, dynamicVertexInput, dynamicPrimRestart, dynamicTopology});
+                                    if (*params == defaultParams)
+                                        continue;
+
+                                    const auto testName = std::string("vertex_state") + (bindVBO ? "_bind_vbo" : "") +
+                                                          (bindIBO ? "_bind_ibo" : "") +
+                                                          (dynamicVertexInput ? "_dynamic_vtx_input" : "") +
+                                                          (dynamicPrimRestart ? "_dynamic_prim_restart" : "") +
+                                                          (dynamicTopology ? "_dynamic_topo" : "");
+
+                                    addFunctionCaseWithPrograms(miscTests, testName, VertexState::checkSupport,
+                                                                VertexState::initPrograms, VertexState::iterate,
+                                                                params);
+                                }
+            }
+
+            for (const bool indirectDraw : {false, true})
+            {
+                DrawIdMix::ParamsPtr params(new DrawIdMix::Params{indirectDraw});
+                const auto testName = std::string("draw_id_mix") + (indirectDraw ? "_indirect" : "");
+                addFunctionCaseWithPrograms(miscTests, testName, DrawIdMix::checkSupport, DrawIdMix::initPrograms,
+                                            DrawIdMix::runTest, params);
+            }
+        });
 }
 
 } // namespace MeshShader

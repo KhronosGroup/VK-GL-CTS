@@ -93,21 +93,23 @@ class InstanceFactory1WithSupport : public TestCase
 {
 public:
     InstanceFactory1WithSupport(tcu::TestContext &testCtx, const std::string &name, const Arg0 &arg0,
-                                const Support &support)
+                                const Support &support, bool useFraction0 = false)
         : TestCase(testCtx, name)
         , m_progs()
         , m_arg0(arg0)
         , m_support(support)
     {
+        setUseFraction0(useFraction0);
     }
 
     InstanceFactory1WithSupport(tcu::TestContext &testCtx, const std::string &name, const Programs &progs,
-                                const Arg0 &arg0, const Support &support)
+                                const Arg0 &arg0, const Support &support, bool useFraction0 = false)
         : TestCase(testCtx, name)
         , m_progs(progs)
         , m_arg0(arg0)
         , m_support(support)
     {
+        setUseFraction0(useFraction0);
     }
 
     void initPrograms(vk::SourceCollections &dst) const
@@ -344,6 +346,15 @@ inline TestCase *createFunctionCase(tcu::TestContext &testCtx, const std::string
     return new InstanceFactoryClass(testCtx, name, testFunction, checkSupport);
 }
 
+template <typename InstanceFactoryClass =
+              InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0>>
+inline TestCase *createFunctionCaseFraction0(tcu::TestContext &testCtx, const std::string &name,
+                                             FunctionSupport0::Function checkSupport,
+                                             FunctionInstance0::Function testFunction)
+{
+    return new InstanceFactoryClass(testCtx, name, testFunction, checkSupport, true);
+}
+
 inline TestCase *createFunctionCaseWithPrograms(tcu::TestContext &testCtx, const std::string &name,
                                                 FunctionPrograms0::Function initPrograms,
                                                 FunctionInstance0::Function testFunction)
@@ -417,6 +428,15 @@ inline void addFunctionCase(tcu::TestCaseGroup *group, const std::string &name, 
                             FunctionInstance0::Function testFunc)
 {
     group->addChild(createFunctionCase<InstanceFactoryClass>(group->getTestContext(), name, checkSupport, testFunc));
+}
+
+template <typename InstanceFactoryClass =
+              InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0>>
+inline void addFunctionCaseFraction0(tcu::TestCaseGroup *group, const std::string &name,
+                                     FunctionSupport0::Function checkSupport, FunctionInstance0::Function testFunc)
+{
+    group->addChild(
+        createFunctionCaseFraction0<InstanceFactoryClass>(group->getTestContext(), name, checkSupport, testFunc));
 }
 
 inline void addFunctionCaseWithPrograms(tcu::TestCaseGroup *group, const std::string &name,

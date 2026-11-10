@@ -24,6 +24,9 @@
 #include "glcMisc.hpp"
 #include "gluDefs.hpp"
 #include "glw.h"
+#include "tcuFloat.hpp"
+
+#include <algorithm>
 
 using namespace glw;
 
@@ -529,6 +532,14 @@ bool getReadbufferBits(const glw::Functions &gl, bool isContextES, GLenum bits, 
 bool getDrawbufferBits(const glw::Functions &gl, bool isContextES, GLenum bits, GLint *value)
 {
     return getBits(gl, isContextES, GL_DRAW_FRAMEBUFFER, bits, value);
+}
+
+/* Bit-exact comparison of float arrays: clang-tidy flags memcmp on floats, and == (or std::equal */
+/* without a predicate) would accept -0.0 where 0.0 is expected. */
+bool floatBitsEqual(const float *a, const float *b, size_t count)
+{
+    return std::equal(a, a + count, b,
+                      [](float x, float y) { return tcu::Float32(x).bits() == tcu::Float32(y).bits(); });
 }
 
 } // namespace glcts

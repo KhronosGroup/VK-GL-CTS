@@ -202,6 +202,7 @@ VK_KHR_maintenance8
 VK_KHR_maintenance9
 VK_KHR_maintenance10
 VK_KHR_maintenance11
+VK_KHR_maintenance12
 VK_KHR_mir_surface
 VK_KHR_object_refresh
 VK_KHR_opacity_micromap
@@ -323,6 +324,7 @@ VK_MESA_image_alignment_control
 # extensions intentionally not tested by CTS, with the reason; framework is not generated for them
 EXTENSIONS_NOT_TESTED_BY_CTS = {
     'VK_EXT_validation_cache': 'implemented by the validation layers, see VK-GL-CTS issue 1694',
+    'VK_EXT_metal_objects': 'designed for MoltenVK, KosmicKrisp cannot implement it, see VK-GL-CTS issue 6970',
 }
 
 # instance extensions not listed above; every non-core instance extension must be
@@ -3109,18 +3111,23 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
         searchForDeviceExt = False
         extVector = 'vIEP'
         othVector = 'vDEP'
+        preprocessDependencies = lambda dep: dep
         if extType == 'device':
             searchForDeviceExt = True
             extVector, othVector = othVector, extVector        # swap
+            # remove instance extensions from device extension dependencies
+            preprocessDependencies = lambda dep: self.removeInstanceDependencies(parseDependsEpression(dep))
         # iterate over all extension that are of specified type and that have requirements
         self.sortedExtensions = sorted(self.vk.extensions.values(), key=lambda item: item.name)
+        self.instanceExtensions = set(e.name for e in self.vk.extensions.values() if e.instance)
         for ext in self.sortedExtensions:
-            if searchForDeviceExt:
-                if not ext.device:
-                    continue
-            elif not ext.instance:
+            if searchForDeviceExt != bool(ext.device):
                 continue
             if ext.depends is None:
+                continue
+            depends = preprocessDependencies(ext.depends)
+            # if dependency was simplified to True, then we don't need to generate a check function
+            if depends is True:
                 continue
             # memorize extension name and dependencies for future vector generation
             extensionList.append(ext.name)
@@ -3142,7 +3149,7 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
             yield f'\n\tif (!isSupported({extVector}, "{ext.name}"))'
             yield '\t\treturn true;\n'
             # replace dependent extensions/versions with proper conditions
-            finalCondition = transformDependsToCondition(ext.depends, self.vk, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")', ext.name)
+            finalCondition = transformDependsToCondition(depends, self.vk, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")', ext.name)
             yield f'\t// depends attribute in xml: {ext.depends}'
             yield f'\treturn {finalCondition};'
             yield '}\n'
@@ -3152,7 +3159,7 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
         for ext in extensionList:
             extTabCount = (maxExtLength - len(ext)) / 4
             eTabs = '\t'*int(round(extTabCount+1.49))
-            yield f'\tstd::make_pair("{ext}",{eTabs}&check_{ext}),'
+            yield f'\t{{"{ext}",{eTabs}&check_{ext}}},'
         yield '};\n'
 
     def genApiVersions(self):
@@ -3162,8 +3169,8 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
             apiVariant = '0' if self.targetApiName == 'vulkan' else '1'
             major, minor = v.name[-3:].split('_')
             version = (int(apiVariant) << 29) | (int(major) << 22) | (int(minor) << 12)
-            yield '\tstd::make_tuple({}, {}, {}, {}),'.format(version, apiVariant, major, minor)
-        yield '\tstd::make_tuple(4194304, 0, 1, 0)'
+            yield '\t{{{}, {}, {}, {}}},'.format(version, apiVariant, major, minor)
+        yield '\t{4194304, 0, 1, 0}'
         yield '};'
 
     def parseExtensionDependencies(self, extDeps, ext):
@@ -3227,8 +3234,38 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
                                         elif newMajor == major and newMinor > minor:
                                             minor = newMinor
                                 break
-            yield '\tstd::make_tuple({}, {}, "{}"),'.format(major, minor, ext.name)
+            yield '\t{{{}, {}, "{}"}},'.format(major, minor, ext.name)
         yield '};'
+
+    def removeInstanceDependencies(self, node):
+        # simplify dependency tree treating each instance extension as true;
+        # returns True when whole (sub)expression is satisfied or a string with remaining condition
+        if isinstance(node, ast.BoolOp):
+            isOrOperation = isinstance(node.op, ast.Or)
+            processedExpressionParts = []
+            for v in node.values:
+                subExpressionOrTrue = self.removeInstanceDependencies(v)
+                if subExpressionOrTrue is True:
+                    # 'or' containing true is always true
+                    if isOrOperation:
+                        return True
+                    # 'and' can skip true operand
+                    continue
+                processedExpressionParts.append(subExpressionOrTrue)
+            numParts = len(processedExpressionParts)
+            if numParts > 1:
+                # wrap nested expressions in parentheses to preserve precedence
+                processedExpressionParts = [f'({p})' if ('+' in p or ',' in p) else p for p in processedExpressionParts]
+                # join remaining parts with proper operator
+                return (',' if isOrOperation else '+').join(processedExpressionParts)
+            # if only one part is left, return it as is or return True if no parts are left
+            return processedExpressionParts[0] if numParts == 1 else True
+        if isinstance(node, ast.Name):
+            # return True if dependency is an instance extension, otherwise return the dependency name
+            return True if node.id in self.instanceExtensions else node.id
+        if isinstance(node, ast.Constant):
+            return True if node.value is True else str(node.value)
+        raise NotImplementedError(f"Unsupported AST node: {node!r}")
 
     def generate(self):
         self.write(INL_HEADER)
@@ -3242,6 +3279,52 @@ class ApiExtensionDependencyInfoGenerator(CTSGenerator):
             self.write(l)
         for l in self.genRequiredCoreVersions():
             self.write(l)
+
+class DeviceExtensionEnumerationGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
+
+    def recursivelyExtractDependenciesFromNode(self, node):
+        if isinstance(node, ast.BoolOp):
+            for v in node.values:
+                yield from self.recursivelyExtractDependenciesFromNode(v)
+        elif isinstance(node, ast.Name):
+            yield node.id
+        elif isinstance(node, ast.Constant):
+            pass
+        else:
+            raise NotImplementedError(f"Unsupported AST node: {node!r}")
+
+    def genRequiredDependencies(self, dependencyType):
+        # iterate over all device extension to find ones with dependencies on instance extensions
+        self.sortedExtensions = sorted(self.vk.extensions.values(), key=lambda item: item.name)
+        extensionSelector = (lambda e: e.instance) if dependencyType == 'instance' else (lambda e: e.device)
+        selectedExtensionSet = set(e.name for e in self.vk.extensions.values() if extensionSelector(e))
+        for ext in self.sortedExtensions:
+            if not ext.device or ext.depends is None:
+                continue
+            # iterate over all dependencies and check if they are instance extensions
+            dependencies = ""
+            for dep in self.recursivelyExtractDependenciesFromNode(parseDependsEpression(ext.depends)):
+                if dep in selectedExtensionSet:
+                    dependencies += f'"{dep}", '
+            if len(dependencies):
+                yield f'\t{{"{ext.name}",\t{{{dependencies}}}}},'
+
+    def generate(self):
+        instDepStream = []
+        for l in self.genRequiredDependencies('instance'):
+            instDepStream.append(l)
+        instDepStream.append('};')
+        devDepStream = []
+        for l in self.genRequiredDependencies('device'):
+            devDepStream.append(l)
+        devDepStream.append('};')
+        self.write(INL_HEADER)
+        self.write('static const std::map<std::string, std::vector<const char*>> deviceInstanceDependencies{')
+        self.write(combineLines(indentLines(instDepStream)))
+        self.write('static const std::map<std::string, std::vector<const char*>> deviceDeviceDependencies{')
+        self.write(combineLines(indentLines(devDepStream)))
 
 class EntryPointValidationGenerator(CTSGenerator):
     def __init__(self, ctsLists, _):
@@ -3387,15 +3470,28 @@ class ProfileTestsGenerator(CTSGenerator):
             return "LIM_MAX_FLOAT" if propComponent == 0 else "LIM_MIN_FLOAT"
         return "LIM_MIN_UINT32"
 
-    # helper function that adds property or feature structures to lists of struct initializers
-    def constructStruct(self, structName, structInitNamesList, structInitList):
-        # skip structures that already are in the chain
-        if structName in structInitNamesList:
+    # helper function that fills lists for features/properties
+    def fillStructLists(self, capabilityType, capabilityDefinition, capabilityDataList, structInitNamesList, structInitList):
+        # return if this capabilityType is not present
+        # (capabilityType should be "features" or "properties")
+        if capabilityType not in capabilityDefinition:
             return
-        structInitNamesList.append(structName)
-        # construct structure instance and connect it to chain
-        parentStruct = "" if (len(structInitNamesList) == 3) else "&vk" + structInitNamesList[-2]
-        structInitList.append(f"\tVkPhysicalDevice{structName} vk{structName} = initVulkanStructure({parentStruct});")
+        structList = capabilityDefinition[capabilityType]
+        # return if there is nothing to add
+        if len(structList) == 0 or not list(structList.values())[0]:
+            return
+        capabilityDataList.append(structList)
+        for struct in structList:
+            # remove prefix from structName
+            structName = struct[len("VkPhysicalDevice"):]
+            # skip structures that already are in the chain
+            if structName in structInitNamesList:
+                continue
+            # add struct name to list of names
+            structInitNamesList.append(structName)
+            # construct structure instance and connect it to chain
+            parentStruct = "" if (len(structInitNamesList) == 3) else "&vk" + structInitNamesList[-2]
+            structInitList.append(f"\tVkPhysicalDevice{structName} vk{structName} = initVulkanStructure({parentStruct});")
 
     # helper function handling strings representing property limit checks
     def addPropertyEntries(self, structName, propName, propLimit, propertyTableItems):
@@ -3438,36 +3534,32 @@ class ProfileTestsGenerator(CTSGenerator):
 
     def buildCapabilityCheckTables(self, capabilities, featureTableItems, propertyTableItems, extensionsList, formatsList):
         vkpdLen = len("VkPhysicalDevice")
+        featureSeparator = ""
+        propertySeparator = ""
         for capability in capabilities:
             if len(capability["feature_items"]) > 0 and list(capability["feature_items"])[0]:
-                featureTableItems.append(f"\t\t// {capability['name']}");
+                featureTableItems.append(f"{featureSeparator}\t\t// {capability['name']}");
                 for featureStructList in capability["feature_items"]:
                     for featureStruct, featureDict in featureStructList.items():
                         structName = featureStruct[vkpdLen:]
                         for feature, val in featureDict.items():
                             if val:
                                 featureTableItems.append(f"vk{structName}, {feature}")
-                        featureTableItems.append("\n")
+                featureSeparator = "\n"
             if len(capability["property_items"]) > 0 and list(capability["property_items"])[0]:
-                propertyTableItems.append(f"\t\t// {capability['name']}");
+                propertyTableItems.append(f"{propertySeparator}\t\t// {capability['name']}");
                 for propertyStructList in capability["property_items"]:
                     for propertyStruct, propertyDict in propertyStructList.items():
                         structName = propertyStruct[vkpdLen:]
                         for propName, propLimit in propertyDict.items():
                             self.addPropertyEntries("vk" + structName, propName, propLimit, propertyTableItems)
-                        propertyTableItems.append("\n")
+                propertySeparator = "\n"
             if capability["extensions"]:
                 extensionsList.extend(capability["extensions"])
             if capability["formats"]:
                 formatsList.update(capability["formats"])
 
         extensionsList[:] = list(dict.fromkeys(extensionsList))
-
-        # remove empty lines at the end
-        if len(featureTableItems) > 0:
-            featureTableItems.pop()
-        if len(propertyTableItems) > 0:
-            propertyTableItems.pop()
 
     def generate (self):
         vkpdLen = len("VkPhysicalDevice")
@@ -3482,6 +3574,7 @@ class ProfileTestsGenerator(CTSGenerator):
             for profileName, profileData in reversed(profilesDict["profiles"].items()):
                 requiredCapabilities = []
                 alternativeGroups = []
+                optionalCapabilities = []
                 featureStructInitList = []
                 featureStructInitNamesList = ["Features", "Features2"]
                 propertyStructInitList = []
@@ -3489,8 +3582,7 @@ class ProfileTestsGenerator(CTSGenerator):
                 highestMajor = 1
                 highestMinor = 0
 
-                allCapabilities = profileData["capabilities"]
-                for capability in allCapabilities:
+                for capability in profileData["capabilities"]:
                     capabilityList = capability if isinstance(capability, list) else [capability]
                     parsedCapabilities = []
 
@@ -3509,20 +3601,10 @@ class ProfileTestsGenerator(CTSGenerator):
                             "extensions": capabilityDefinition.get("extensions", []),
                             "formats": capabilityDefinition.get("formats", []),
                         }
-                        if "features" in capabilityDefinition:
-                            featureStructList = capabilityDefinition["features"]
-                            if len(featureStructList) > 0 and list(featureStructList.values())[0]:
-                                capabilityData["feature_items"].append(featureStructList)
-                                for featureStruct in featureStructList:
-                                    structName = featureStruct[vkpdLen:]
-                                    self.constructStruct(structName, featureStructInitNamesList, featureStructInitList)
-                        if "properties" in capabilityDefinition:
-                            propertyStructList = capabilityDefinition["properties"]
-                            if len(propertyStructList) > 0 and list(propertyStructList.values())[0]:
-                                capabilityData["property_items"].append(propertyStructList)
-                                for propertyStruct in propertyStructList:
-                                    structName = propertyStruct[vkpdLen:]
-                                    self.constructStruct(structName, propertyStructInitNamesList, propertyStructInitList)
+                        self.fillStructLists("features", capabilityDefinition, capabilityData["feature_items"],\
+                                             featureStructInitNamesList, featureStructInitList)
+                        self.fillStructLists("properties", capabilityDefinition, capabilityData["property_items"],\
+                                             propertyStructInitNamesList, propertyStructInitList)
                         parsedCapabilities.append(capabilityData)
 
                     if isinstance(capability, list):
@@ -3537,6 +3619,27 @@ class ProfileTestsGenerator(CTSGenerator):
                 propertyTableItems = []
                 formatsList = {}
                 self.buildCapabilityCheckTables(requiredCapabilities, featureTableItems, propertyTableItems, extensionList, formatsList)
+
+                # handle optional capabilities - they might require additional Feature or Property structures to be added to the chain
+                if "optionals" in profileData:
+                    for capability in profileData["optionals"]:
+                        capabilityList = capability if isinstance(capability, list) else [capability]
+                        for capabilityName in capabilityList:
+                            capabilityDefinition = capabilitiesDefinitionsDict[capabilityName]
+
+                            capabilityData = {
+                                "name": capabilityName,
+                                "feature_items": [],
+                                "property_items": [],
+                            }
+                            self.fillStructLists("features", capabilityDefinition, capabilityData["feature_items"],\
+                                                 featureStructInitNamesList, featureStructInitList)
+                            self.fillStructLists("properties", capabilityDefinition, capabilityData["property_items"],\
+                                                 propertyStructInitNamesList, propertyStructInitList)
+                            # if profile will ever contain optional formats or extensions, we will need to handle them in capabilityData
+                            if "extensions" in capabilityDefinition or "formats" in capabilityDefinition:
+                                raise AssertionError(f"{capabilityName} contains extensions/formats which are not handled")
+                            optionalCapabilities.append(capabilityData)
 
                 # remove "VP_KHR_" from roadmap profile name
                 if "VP_KHR_" in profileName:
@@ -3691,10 +3794,56 @@ class ProfileTestsGenerator(CTSGenerator):
                     "\t    oneOrMoreChecksFailed = true;\n"
                     "\t}\n")
 
-                stream.append("\n"
-                "\tif (oneOrMoreChecksFailed)\n"
-                "\t    TCU_THROW(NotSupportedError, \"Profile not supported\");\n"
-                "\treturn tcu::TestStatus::pass(\"Profile supported\");\n}\n")
+                optionalPropertyTableItems = []
+                optionalCapabilityConditions = []
+                for capabilityData in optionalCapabilities:
+                    # there is no generic way to handle optional capabilities, so we will just handle them individualy;
+                    # if more optional capabilities are added this code will triger assertion untill they are handled
+                    stream.append(f"\t// {capabilityData['name']}")
+                    for featureStructList in capabilityData["feature_items"]:
+                        for featureStruct, featureDict in featureStructList.items():
+                            structName = featureStruct[vkpdLen:]
+                            for feature, value in featureDict.items():
+                                condition = ""
+                                if feature == "largePoints" or feature == "wideLines":
+                                    # skip those features, they are handled in property checks
+                                    continue
+                                elif feature == "pipelineProtectedAccess":
+                                    condition = f"vkVulkan11Features.protectedMemory && "\
+                                                 "!vkVulkan14Features.pipelineProtectedAccess"
+                                else:
+                                    raise AssertionError(f"Unhandled optional feature: {feature}")
+                                optionalCapabilityConditions.append(condition)
+                    for propertyStructList in capabilityData["property_items"]:
+                        for propertyStruct, propertyDict in propertyStructList.items():
+                            for propName, value in propertyDict.items():
+                                if propName != "limits":
+                                    raise AssertionError(f"Unhandled optional property: {propName}")
+                                for limitName, limitValue in value.items():
+                                    if limitName == "pointSizeGranularity":
+                                        requiredFeature = "largePoints"
+                                    elif limitName == "lineWidthGranularity":
+                                        requiredFeature = "wideLines"
+                                    else:
+                                        raise AssertionError(f"Unhandled optional limit: {limitName}")
+                                    structName = "vk" + propertyStruct[vkpdLen:] + ".limits"
+                                    self.addPropertyEntries(structName, limitName, limitValue, optionalPropertyTableItems)
+                                    index = len(optionalPropertyTableItems) - 1
+                                    condition = f"vkFeatures.{requiredFeature} && !validateLimit(optionalPropertyTable.at({index}), log)"
+                                    optionalCapabilityConditions.append(condition)
+
+                if len(optionalCapabilityConditions):
+                    # if needed define vector of properties to check
+                    if len(optionalPropertyTableItems):
+                        stream.append("\tconst std::vector<FeatureLimitTableItem> optionalPropertyTable {")
+                        stream.extend(["\t\t{ PN(checkAlways), " + p + " }," if ("," in p) else p for p in optionalPropertyTableItems])
+                        stream.append("\t};\n")
+                    # check all optional capabilities
+                    stream.append("\n".join([f"\toneOrMoreChecksFailed |= {c};" for c in optionalCapabilityConditions]) + "\n")
+
+                stream.append("\tif (oneOrMoreChecksFailed)\n"
+                              "\t    TCU_THROW(NotSupportedError, \"Profile not supported\");\n"
+                              "\treturn tcu::TestStatus::pass(\"Profile supported\");\n}\n")
 
                 profilesList.append(f"\t{{ \"{profileName}\", checkApiVersionSupport<{highestMajor}, {highestMinor}>, validate_{profileName} }},")
 
@@ -4006,9 +4155,25 @@ def parseCmdLineArgs():
                         help="Enable verbose logging")
     return parser.parse_args()
 
+# Files that are no longer generated. Merging a branch that predates their removal can bring them
+# back, so refuse to run until they are deleted.
+OBSOLETE_GENERATED_FILES = [ "vkVulkan_c.inl" ]
+
+def checkObsoleteGeneratedFiles():
+    found = [os.path.normpath(os.path.join(outDir, name))
+             for outDir in DEFAULT_OUTPUT_DIR.values()
+             for name in OBSOLETE_GENERATED_FILES
+             if os.path.exists(os.path.join(outDir, name))]
+    if found:
+        for path in found:
+            print(f"ERROR: obsolete generated file present: {path}", file=sys.stderr)
+        print("These files are no longer generated, probably re-added by a merge of an older branch. Delete them with git rm.", file=sys.stderr)
+        sys.exit(1)
+
 if __name__ == "__main__":
     args = parseCmdLineArgs()
     initializeLogger(args.verbose)
+    checkObsoleteGeneratedFiles()
     isSC = (args.api=='vulkansc')
 
     # if argument was specified it is interpreted as a path to which .inl files will be written
@@ -4093,13 +4258,11 @@ if __name__ == "__main__":
         GenData('vkKnownDriverIds.inl',                       DriverIdsGenerator),
         GenData('vkObjTypeImpl.inl',                          ObjTypeImplGenerator),
         GenData('vkApiExtensionDependencyInfo.inl',           ApiExtensionDependencyInfoGenerator),
+        GenData('vkDeviceExtensionEnumeration.inl',           DeviceExtensionEnumerationGenerator),
         GenData('vkEntryPointValidation.inl',                 EntryPointValidationGenerator),
         GenData('vkGetDeviceProcAddr.inl',                    GetDeviceProcAddrGenerator),
         GenData('vkFormatLists.inl',                          FormatListsGenerator),
         GenData('vkKnownConformanceVersions.inl',             ConformanceVersionsGenerator),
-
-        # NOTE: when new generators are added, they should also be added to the
-        # vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list
     ]
 
     # append api-specific generators

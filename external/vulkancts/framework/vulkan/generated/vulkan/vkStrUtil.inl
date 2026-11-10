@@ -1268,6 +1268,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLinearColorAtta
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance10FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance10PropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance11FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance12FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance12PropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance3Properties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4Properties& value);

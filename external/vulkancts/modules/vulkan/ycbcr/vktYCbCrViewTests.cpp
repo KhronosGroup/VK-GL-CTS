@@ -43,13 +43,10 @@
 #include "deSharedPtr.hpp"
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
-#include "deSTLUtil.hpp"
 
 #include <memory>
 
-namespace vkt
-{
-namespace ycbcr
+namespace vkt::ycbcr
 {
 namespace
 {
@@ -483,6 +480,25 @@ void checkImageFeatureSupport(Context &context, VkFormat format, VkFormatFeature
         TCU_THROW(NotSupportedError, "Format doesn't support required features");
 }
 
+VkResult getImageFormatProperties(Context &context, VkFormat format, VkImageCreateFlags createFlags,
+                                  VkImageFormatProperties2 &imageFormatProperties)
+{
+    const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,        // sType
+        nullptr,                                                      // pNext
+        format,                                                       // format
+        VK_IMAGE_TYPE_2D,                                             // type
+        VK_IMAGE_TILING_OPTIMAL,                                      // tiling
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, // usage
+        createFlags                                                   // flags
+    };
+
+    auto &vk            = context.getInstanceInterface();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    return vk.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageFormatProperties);
+}
+
 void checkSupport(Context &context, TestParameters params)
 {
     checkImageSupport(context, params.format, params.createFlags);
@@ -498,6 +514,13 @@ void checkSupport(Context &context, TestParameters params)
 
     if (params.descriptorType == ExecutorDescriptorMode::DESCRIPTOR_HEAP)
         context.requireDeviceFunctionality("VK_EXT_descriptor_heap");
+
+    VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = initVulkanStructure();
+    VkImageFormatProperties2 imageFormatProperties = initVulkanStructure(&samplerYcbcrConversionImage);
+
+    VkResult result = getImageFormatProperties(context, params.format, params.createFlags, imageFormatProperties);
+    if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+        TCU_THROW(NotSupportedError, "Format not supported.");
 }
 
 struct PixelSetter
@@ -597,9 +620,8 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
     de::Random randomGen(deInt32Hash((uint32_t)params.format) ^ deInt32Hash((uint32_t)params.planeNdx) ^
                          deInt32Hash((uint32_t)params.shaderType));
 
-    const InstanceInterface &vk = context.getInstanceInterface();
-    const DeviceInterface &vkd  = context.getDeviceInterface();
-    const VkDevice device       = context.getDevice();
+    const DeviceInterface &vkd = context.getDeviceInterface();
+    const VkDevice device      = context.getDevice();
     const VkQueue queue =
         params.shaderType == glu::SHADERTYPE_FRAGMENT ? context.getUniversalQueue() : context.getComputeQueue();
     const uint32_t queueNdx = params.shaderType == glu::SHADERTYPE_FRAGMENT ? context.getUniversalQueueFamilyIndex() :
@@ -715,33 +737,11 @@ tcu::TestStatus testPlaneView(Context &context, TestParameters params)
         VK_FALSE,                                // unnormalizedCoords
     };
 
-    uint32_t combinedSamplerDescriptorCount = 1;
-    {
-        const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,        // sType;
-            nullptr,                                                      // pNext;
-            format,                                                       // format;
-            VK_IMAGE_TYPE_2D,                                             // type;
-            VK_IMAGE_TILING_OPTIMAL,                                      // tiling;
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, // usage;
-            createFlags                                                   // flags;
-        };
+    VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = initVulkanStructure();
+    VkImageFormatProperties2 imageFormatProperties = initVulkanStructure(&samplerYcbcrConversionImage);
 
-        VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
-        samplerYcbcrConversionImage.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = nullptr;
-
-        VkImageFormatProperties2 imageFormatProperties = {};
-        imageFormatProperties.sType                    = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
-        imageFormatProperties.pNext                    = &samplerYcbcrConversionImage;
-
-        VkResult result = vk.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo,
-                                                                     &imageFormatProperties);
-        if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
-            TCU_THROW(NotSupportedError, "Format not supported.");
-        VK_CHECK(result);
-        combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
-    }
+    getImageFormatProperties(context, params.format, params.createFlags, imageFormatProperties);
+    const uint32_t combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
 
     const Unique<VkSampler> wholeSampler(createSampler(vkd, device, &wholeSamplerInfo));
     const Unique<VkSampler> planeSampler(createSampler(vkd, device, &planeSamplerInfo));
@@ -1077,6 +1077,4 @@ tcu::TestCaseGroup *createViewTests(tcu::TestContext &testCtx)
     return createTestGroup(testCtx, "plane_view", populateViewGroup);
 }
 
-} // namespace ycbcr
-
-} // namespace vkt
+} // namespace vkt::ycbcr

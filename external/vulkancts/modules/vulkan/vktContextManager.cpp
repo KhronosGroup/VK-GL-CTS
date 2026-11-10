@@ -389,8 +389,7 @@ void DevCaps::resetQueuesForMultiQueueRunner(QueueCapabilities caps)
 
         try
         {
-            findQueueFamilyIndexWithCaps(vki, physDev, VK_QUEUE_TRANSFER_BIT,
-                                         VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+            findQueueFamilyIndexWithCaps(vki, physDev, VK_QUEUE_TRANSFER_BIT, getTransferOnlyExcludedCaps());
             hasDedicatedTransfer = true;
         }
         catch (const tcu::NotSupportedError &)
@@ -405,7 +404,7 @@ void DevCaps::resetQueuesForMultiQueueRunner(QueueCapabilities caps)
         if (hasDedicatedCompute)
             infos.push_back({VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, 1u, 1.0f});
         if (hasDedicatedTransfer)
-            infos.push_back({VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 1u, 1.0f});
+            infos.push_back({VK_QUEUE_TRANSFER_BIT, getTransferOnlyExcludedCaps(), 1u, 1.0f});
         resetQueues(infos);
     }
     else if (caps == GRAPHICS_QUEUE)
@@ -704,14 +703,14 @@ ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::C
 {
 }
 
-void ContextManager::keepMaxCustomDeviceCount()
+void ContextManager::keepMaxCustomDeviceCount(int additionalDevicesToBeCreated)
 {
-    DE_ASSERT(m_maxCustomDevices > 0);
+    DE_ASSERT(m_maxCustomDevices >= additionalDevicesToBeCreated);
     auto isDef        = [](const Item &item) { return item.first->isDefaultContext(); };
     auto def          = std::find_if(m_contexts.begin(), m_contexts.end(), isDef);
     const bool hasDef = m_contexts.end() != def;
 
-    while (m_contexts.size() >= uint32_t(m_maxCustomDevices + (hasDef ? 1 : 0)))
+    while (m_contexts.size() >= uint32_t(m_maxCustomDevices + (hasDef ? 1 : 0)) + additionalDevicesToBeCreated)
     {
         auto beg = m_contexts.begin();
         def      = std::find_if(beg, m_contexts.end(), isDef);
@@ -720,14 +719,13 @@ void ContextManager::keepMaxCustomDeviceCount()
     }
 }
 
-InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine)
-    : InstCaps(vkPlatform, commandLine, InstCaps::DefInstId, nullptr, nullptr, false)
+InstCaps::InstCaps(const PlatformInterface &vkPlatform) : InstCaps(vkPlatform, InstCaps::DefInstId, nullptr, nullptr)
 {
 }
 
 bool InstCaps::addExtension(const std::string &extension)
 {
-    if (isInstanceExtensionSupported(usedApiVersion, coreExtensions, extension))
+    if (isInstanceExtensionSupported(usedInstanceVersion, coreExtensions, extension))
     {
         m_extensions.push_back(extension);
         return true;
@@ -740,18 +738,6 @@ std::vector<std::string> InstCaps::getExtensions() const
     std::vector<std::string> exts(coreExtensions);
     exts.insert(exts.end(), m_extensions.begin(), m_extensions.end());
     return exts;
-}
-
-bool InstCaps::dontCreateDefaultDevice(bool flag)
-{
-    const bool oldFlag        = m_dontCreateDefaultDevice;
-    m_dontCreateDefaultDevice = flag;
-    return oldFlag;
-}
-
-bool InstCaps::dontCreateDefaultDevice() const
-{
-    return m_dontCreateDefaultDevice;
 }
 
 bool InstCaps::shouldRemoveInstanceOnTestExit() const
@@ -787,7 +773,15 @@ de::SharedPtr<ContextManager> ContextManager::findCustomManager(vkt::TestCase *t
                                                                 const InstCaps *hintCaps)
 {
     const std::string instCapsId = testCase->getInstanceCapabilitiesId();
+#ifdef CTS_USES_VULKANSC
+    // As some Vulkan SC implementations have a limitation of one logical device per instance
+    // we have to create a custom instance even if only the device capabilities are non-default
+    // ones as that will later result in custom device creation
+    const std::string devCapsId = testCase->getRequiredCapabilitiesId();
+    if (instCapsId != InstCaps::DefInstId || devCapsId != DevCaps::DefDevId)
+#else
     if (instCapsId != InstCaps::DefInstId)
+#endif // CTS_USES_VULKANSC
     {
         for (auto mgr : m_customManagers)
         {
@@ -800,13 +794,30 @@ de::SharedPtr<ContextManager> ContextManager::findCustomManager(vkt::TestCase *t
         de::SharedPtr<ResourceInterface> resourceInterface = defaultContextManager->getResourceInterface();
         const int maxCustomDevices                         = defaultContextManager->getMaxCustomDevices();
 
-        InstCaps icaps(platformInterface, commandLine, instCapsId, testCase, hintCaps);
-        testCase->initInstanceCapabilities(icaps);
-        de::SharedPtr<ContextManager> customContextManager =
-            ContextManager::create(platformInterface, commandLine, resourceInterface, maxCustomDevices, icaps);
+        de::SharedPtr<ContextManager> customContextManager;
 
+        // Validate against maxCustomDevices before creating the new context manager otherwise we would violate the upper bound
         if (m_customManagers.size() > static_cast<decltype(m_customManagers.size())>(maxCustomDevices))
             m_customManagers.pop_front();
+
+#ifdef CTS_USES_VULKANSC
+        // If we have to create a separate context due to having to create a custom device then create
+        // the instance with the default capabilities
+        if (instCapsId == InstCaps::DefInstId)
+        {
+            const InstCaps defaultInstCaps(platformInterface, InstCaps::DefInstId, nullptr, nullptr);
+            customContextManager = ContextManager::create(platformInterface, commandLine, resourceInterface,
+                                                          maxCustomDevices, defaultInstCaps);
+        }
+        else
+#endif // CTS_USES_VULKANSC
+        {
+            InstCaps icaps(platformInterface, instCapsId, testCase, hintCaps);
+            testCase->initInstanceCapabilities(icaps);
+            customContextManager =
+                ContextManager::create(platformInterface, commandLine, resourceInterface, maxCustomDevices, icaps);
+        }
+
         m_customManagers.push_back(customContextManager);
 
         return customContextManager;
@@ -856,9 +867,6 @@ de::SharedPtr<Context> ContextManager::findContext(
 
     tcu::TestContext &testContext = testCase->getTestContext();
 
-    // Create or get context with default device for compatibility with existing code.
-    outTestContext = createDefaultDevice(defaultManager, programs, testContext, &alreadyExists);
-
     auto initDeviceCapabilities = [&](DevCaps &caps) -> void
     {
         try
@@ -905,24 +913,12 @@ de::SharedPtr<Context> ContextManager::findContext(
             }
         }
 
-        if (dontCreateDefaultDevice() && (searchedId == DevCaps::DefDevId))
+        if (searchedId == DevCaps::DefDevId)
         {
-            std::ostringstream os;
-            os << '\"' << this->id
-               << " declared not to create a default device "
-                  "but did not overwrite the TestCase::getRequiredCapabilitiesId() method.";
-            TCU_THROW(EnforceDefaultContext, os.str());
-        }
-
-        if (false == dontCreateDefaultDevice() || (searchedId == DevCaps::DefDevId))
-        {
-            outTestContext = createDefaultDevice(self, programs, testContext, &alreadyExists);
-            if (searchedId == DevCaps::DefDevId)
-            {
-                fallbackContext = outTestContext;
-                onBeforeRunTestCase(outTestContext, true);
-                return outTestContext;
-            }
+            outTestContext  = createDefaultDevice(self, programs, testContext, &alreadyExists);
+            fallbackContext = outTestContext;
+            onBeforeRunTestCase(outTestContext, true);
+            return outTestContext;
         }
 
         de::SharedPtr<DevCaps::RuntimeData> runtimeData(new DevCaps::RuntimeData);
@@ -934,6 +930,15 @@ de::SharedPtr<Context> ContextManager::findContext(
 
         // If we need to create new device with specified capabilities then
         // also we need to make sure that we dont exceed m_maxCustomDevices limit.
+        // This has to be done before actually creating the device otherwise we would
+        // violate the upper limit, so we call keepMaxCustomDeviceCount indicating that we
+        // plan to create one more additional device
+        // Technically, this could still cause going beyond the limit as the default device
+        // case is not counted here, but the Vulkan CTS design seem to not care or count
+        // them and for the Vulkan SC CTS we anyway force shouldRemoveInstanceOnTestExit as
+        // we never want to have excess instance objects kept around or more than one logical
+        // device per instance
+        keepMaxCustomDeviceCount(1);
         if (vk::Move<vk::VkDevice> dev = createDevice(*caps, *runtimeData); (vk::VkDevice(VK_NULL_HANDLE) != *dev))
         {
             runtimeData->verify();
@@ -942,7 +947,6 @@ de::SharedPtr<Context> ContextManager::findContext(
                                                    runtimeData, &caps->getPhysicalDeviceExtensions()));
             fallbackContext = ctx;
             outTestContext  = ctx;
-            keepMaxCustomDeviceCount();
             m_contexts.emplace_back(std::make_pair(ctx, caps));
             onBeforeRunTestCase(ctx, caps->getCallCheckSupport());
 
@@ -956,7 +960,8 @@ de::SharedPtr<Context> ContextManager::findContext(
         throw;
     }
 
-    return fallbackContext;
+    return fallbackContext ? fallbackContext :
+                             createDefaultDevice(defaultManager, programs, testContext, &alreadyExists);
 }
 
 DevCaps::RuntimeData_::RuntimeData_(const DevCaps &caps)
@@ -1033,8 +1038,6 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
     const InstanceInterface &vki                           = getInstanceInterface();
     const VkPhysicalDevice physicalDevice                  = getPhysicalDevice();
     const VkInstance instance                              = getInstanceHandle();
-    const uint32_t universalQueueIndex =
-        findQueueFamilyIndexWithCaps(vki, physicalDevice, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
     // queues block
     std::vector<float> queuePriorities;
@@ -1082,8 +1085,6 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
     std::vector<VkPipelinePoolSize> poolSizes;
     if (cmdLine.isSubProcess())
     {
-        resourceInterface->importPipelineCacheData(vkp, instance, vki, physicalDevice, universalQueueIndex);
-
         if (hasReservationCreateInfo == false)
         {
             dorCI = resourceInterface->getStatMax();

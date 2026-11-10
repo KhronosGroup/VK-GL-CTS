@@ -154,6 +154,11 @@ tcu::TestStatus BasicComputePipelineTestInstance::iterate(void)
         // test that vkCreatePipelineBinariesKHR returns VK_INCOMPLETE when pipelineBinaryCount
         // is less than the total count of binaries that might be created
         VkResult result = vk.createPipelineBinariesKHR(device, &pipelineBinaryCreateInfo, nullptr, &binaryHandlesInfo);
+
+        // the handles written on VK_INCOMPLETE are pipeline binaries that must be destroyed
+        for (uint32_t i = 0; i < binaryHandlesInfo.pipelineBinaryCount; ++i)
+            vk.destroyPipelineBinaryKHR(device, binariesRaw[i], nullptr);
+
         if (result == VK_INCOMPLETE)
             return tcu::TestStatus::pass("Pass");
     }

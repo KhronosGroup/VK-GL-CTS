@@ -47,7 +47,6 @@ struct VkscServer
     vk::VkInstance instance;
     const vk::InstanceInterface &vki;
     vk::VkPhysicalDevice physicalDevice;
-    uint32_t queueIndex;
     const vk::VkPhysicalDeviceFeatures2 &enabledFeatures;
 };
 
@@ -116,7 +115,7 @@ void CreateVulkanSCCache(const VulkanPipelineCacheInput &input, int caseFraction
             vkscServer.reset(createServerVKSC(logFile));
 
         binary = buildPipelineCache(input, vkscServer->vkp, vkscServer->instance, vkscServer->vki,
-                                    vkscServer->physicalDevice, vkscServer->queueIndex);
+                                    vkscServer->physicalDevice);
     }
 }
 
@@ -172,9 +171,9 @@ VkscServer *createServerVKSC(const std::string &logFile)
     vkt::Context *context            = new vkt::Context(*tcx, library->getPlatformInterface(), *collection,
                                                         de::SharedPtr<vk::ResourceInterface>{resource});
 
-    VkscServer *result = new VkscServer{library->getPlatformInterface(),         context->getInstance(),
-                                        context->getInstanceInterface(),         context->getPhysicalDevice(),
-                                        context->getUniversalQueueFamilyIndex(), context->getDeviceFeatures2()};
+    VkscServer *result =
+        new VkscServer{library->getPlatformInterface(), context->getInstance(), context->getInstanceInterface(),
+                       context->getPhysicalDevice(), context->getDeviceFeatures2()};
 
     return result;
 }

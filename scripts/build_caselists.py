@@ -85,6 +85,7 @@ def getCaseListPath (buildCfg, module, caseListType):
     return os.path.join(getModulesPath(buildCfg), module.dirName, getCaseListFileName(module, caseListType))
 
 def genCaseList (buildCfg, generator, module, caseListType):
+    generator = getBuildGenerator(buildCfg, generator)
     workDir = os.path.join(getModulesPath(buildCfg), module.dirName)
 
     pushWorkingDir(workDir)

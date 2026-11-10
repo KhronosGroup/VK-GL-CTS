@@ -2040,9 +2040,9 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup(tcu::TestCaseGroup *
             //    %a_loc_arr is a pointer to an array that we want to index with 1.
             // But instead of just using OpAccessChain with first index 1, use OpAccessChain with index 0 to
             // get a pointer to the first element, then send that into OpPtrAccessChain with index 1.
-            "%a_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_a_matptr %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
-            "%a_loc_first_elem = OpAccessChain %v4f32_ptr %a_loc_arr %c_i32_0 "
-            "%a_loc = OpPtrAccessChain %sb_f32ptr %a_loc_first_elem %c_i32_1 %c_i32_3"};
+            ("%a_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_a_matptr %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
+             "%a_loc_first_elem = OpAccessChain %v4f32_ptr %a_loc_arr %c_i32_0 "
+             "%a_loc = OpPtrAccessChain %sb_f32ptr %a_loc_first_elem %c_i32_1 %c_i32_3")};
 
         const string inputBPtrAccessChain[] = {
             "", "%b_loc = OpPtrAccessChain %mat2x2_ptr       %in_b_matptr %c_i32_0",
@@ -2056,9 +2056,9 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup(tcu::TestCaseGroup *
             //    %b_loc_arr is a pointer to an array that we want to index with 1.
             // But instead of just using OpAccessChain with first index 1, use OpAccessChain with index 0 to
             // get a pointer to the first element, then send that into OpPtrAccessChain with index 1.
-            "%b_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_b_matptr %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
-            "%b_loc_first_elem = OpAccessChain %v4f32_ptr %b_loc_arr %c_i32_0 "
-            "%b_loc = OpPtrAccessChain %sb_f32ptr %b_loc_first_elem %c_i32_1 %c_i32_3"};
+            ("%b_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_b_matptr %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
+             "%b_loc_first_elem = OpAccessChain %v4f32_ptr %b_loc_arr %c_i32_0 "
+             "%b_loc = OpPtrAccessChain %sb_f32ptr %b_loc_first_elem %c_i32_1 %c_i32_3")};
 
         const string remainingIndexesAtLevel[] = {"%c_i32_0 %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_1",
                                                   "%c_i32_1 %c_i32_0 %c_i32_1 %c_i32_0 %c_i32_2",
@@ -2454,9 +2454,9 @@ void addSingleInputBufferReadOnlyVariablePointersGraphicsGroup(tcu::TestCaseGrou
             //    %a_loc_arr is a pointer to an array that we want to index with 1.
             // But instead of just using OpAccessChain with first index 1, use OpAccessChain with index 0 to
             // get a pointer to the first element, then send that into OpPtrAccessChain with index 1.
-            "%a_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_a %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
-            "%a_loc_first_elem = OpAccessChain %v4f32_ptr %a_loc_arr %c_i32_0 "
-            "%a_loc = OpPtrAccessChain %sb_f32ptr %a_loc_first_elem %c_i32_1 %c_i32_3"};
+            ("%a_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_a %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
+             "%a_loc_first_elem = OpAccessChain %v4f32_ptr %a_loc_arr %c_i32_0 "
+             "%a_loc = OpPtrAccessChain %sb_f32ptr %a_loc_first_elem %c_i32_1 %c_i32_3")};
 
         const string inputBPtrAccessChain[] = {
             "", "%b_loc = OpPtrAccessChain %mat2x2_ptr       %in_b %c_i32_0 %c_i32_0",
@@ -2470,9 +2470,9 @@ void addSingleInputBufferReadOnlyVariablePointersGraphicsGroup(tcu::TestCaseGrou
             //    %b_loc_arr is a pointer to an array that we want to index with 1.
             // But instead of just using OpAccessChain with first index 1, use OpAccessChain with index 0 to
             // get a pointer to the first element, then send that into OpPtrAccessChain with index 1.
-            "%b_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_b %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
-            "%b_loc_first_elem = OpAccessChain %v4f32_ptr %b_loc_arr %c_i32_0 "
-            "%b_loc = OpPtrAccessChain %sb_f32ptr %b_loc_first_elem %c_i32_1 %c_i32_3"};
+            ("%b_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_b %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
+             "%b_loc_first_elem = OpAccessChain %v4f32_ptr %b_loc_arr %c_i32_0 "
+             "%b_loc = OpPtrAccessChain %sb_f32ptr %b_loc_first_elem %c_i32_1 %c_i32_3")};
 
         const string remainingIndexesAtLevel[] = {"%c_i32_0 %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_1",
                                                   "%c_i32_1 %c_i32_0 %c_i32_1 %c_i32_0 %c_i32_2",

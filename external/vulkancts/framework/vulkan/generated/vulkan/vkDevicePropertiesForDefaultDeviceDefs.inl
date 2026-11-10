@@ -50,6 +50,7 @@ const VkPhysicalDeviceLayeredApiPropertiesListKHR&				getLayeredApiPropertiesLis
 const VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&		getLegacyVertexAttributesPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT>();		}
 const VkPhysicalDeviceLineRasterizationProperties&				getLineRasterizationProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceLineRasterizationProperties>();				}
 const VkPhysicalDeviceMaintenance10PropertiesKHR&				getMaintenance10Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance10PropertiesKHR>();					}
+const VkPhysicalDeviceMaintenance12PropertiesKHR&				getMaintenance12Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance12PropertiesKHR>();					}
 const VkPhysicalDeviceMaintenance3Properties&					getMaintenance3Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance3Properties>();						}
 const VkPhysicalDeviceMaintenance4Properties&					getMaintenance4Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance4Properties>();						}
 const VkPhysicalDeviceMaintenance5Properties&					getMaintenance5Properties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance5Properties>();						}

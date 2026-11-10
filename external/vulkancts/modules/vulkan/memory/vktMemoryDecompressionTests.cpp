@@ -185,7 +185,8 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
     const BufferWithMemory srcBuffer(vkd, device, allocator, srcBufferInfo,
                                      MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
-    bufferUsageFlags2.usage = VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR | VK_BUFFER_USAGE_2_MEMORY_DECOMPRESSION_BIT_EXT |
+    bufferUsageFlags2.usage = VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR |
+                              VK_BUFFER_USAGE_2_MEMORY_DECOMPRESSION_BIT_EXT |
                               VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT;
     VkBufferCreateInfo decompressBufferInfo = vk::initVulkanStructure();
     decompressBufferInfo.pNext              = &bufferUsageFlags2;
@@ -272,6 +273,20 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
 
     beginCommandBuffer(vkd, *cmdBuffer);
 
+    // Initialize the destination so unexecuted regions (e.g. count_20_12)
+    // reliably differ from the reference data. Otherwise, recycled memory
+    // containing prior decompression results can cause false failures.
+    vkd.cmdFillBuffer(*cmdBuffer, decompressBuffer.get(), 0u, VK_WHOLE_SIZE, 0xFFFFFFFFu);
+    {
+        VkMemoryBarrier2 fillBarrier = {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,   nullptr,
+            VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT};
+        VkDependencyInfoKHR fillDep = {
+            VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR, nullptr, 0u, 1u, &fillBarrier, 0u, nullptr, 0u, nullptr};
+        vkd.cmdPipelineBarrier2(*cmdBuffer, &fillDep);
+    }
+
     // Decompress
     if (m_testMode == TEST_MODE_DIRECT)
     {
@@ -293,8 +308,8 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
                                         NULL,
                                         VK_PIPELINE_STAGE_2_MEMORY_DECOMPRESSION_BIT_EXT,
                                         VK_ACCESS_2_MEMORY_DECOMPRESSION_WRITE_BIT_EXT,
-                                        VK_PIPELINE_STAGE_2_MEMORY_DECOMPRESSION_BIT_EXT,
-                                        VK_ACCESS_2_MEMORY_DECOMPRESSION_READ_BIT_EXT};
+                                        VK_PIPELINE_STAGE_2_COPY_BIT,
+                                        VK_ACCESS_2_TRANSFER_READ_BIT};
         VkDependencyInfoKHR dep_info = {
             VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR, // VkStructureType sType;
             nullptr,                               // const void* pNext;

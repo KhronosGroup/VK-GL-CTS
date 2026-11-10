@@ -7687,9 +7687,6 @@ tcu::TestCaseGroup *createOpUndefGroup(tcu::TestContext &testCtx)
         "%uvec2     = OpTypeVector %u32 2\n"
         "%fvec4     = OpTypeVector %f32 4\n"
         "%fmat33    = OpTypeMatrix %fvec3 3\n"
-        "%image     = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
-        "%sampler   = OpTypeSampler\n"
-        "%simage    = OpTypeSampledImage %image\n"
         "%const100  = OpConstant %u32 100\n"
         "%uarr100   = OpTypeArray %i32 %const100\n"
         "%struct    = OpTypeStruct %f32 %i32 %u32\n"
@@ -7722,9 +7719,6 @@ tcu::TestCaseGroup *createOpUndefGroup(tcu::TestContext &testCtx)
     cases.push_back(CaseParameter("vec4float32", "%fvec4"));
     cases.push_back(CaseParameter("vec2uint32", "%uvec2"));
     cases.push_back(CaseParameter("matrix", "%fmat33"));
-    cases.push_back(CaseParameter("image", "%image"));
-    cases.push_back(CaseParameter("sampler", "%sampler"));
-    cases.push_back(CaseParameter("sampledimage", "%simage"));
     cases.push_back(CaseParameter("array", "%uarr100"));
     cases.push_back(CaseParameter("runtimearray", "%f32arr"));
     cases.push_back(CaseParameter("struct", "%struct"));
@@ -9633,12 +9627,6 @@ tcu::TestCaseGroup *createOpUndefTests(tcu::TestContext &testCtx)
     };
     const NameCodePair tests[] = {{"bool", "", "%bool"},
                                   {"vec2uint32", "", "%v2u32"},
-                                  {"image", "%type = OpTypeImage %f32 2D 0 0 0 1 Unknown", "%type"},
-                                  {"sampler", "%type = OpTypeSampler", "%type"},
-                                  {"sampledimage",
-                                   "%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
-                                   "%type = OpTypeSampledImage %img",
-                                   "%type"},
                                   {"pointer", "", "%fp_i32"},
                                   {"runtimearray", "%type = OpTypeRuntimeArray %f32", "%type"},
                                   {"array",
@@ -12174,6 +12162,241 @@ tcu::TestCaseGroup *createConvertGraphicsTests(tcu::TestContext &testCtx, const 
         createTestsForAllStages(test->m_name, defaultColors, defaultColors, fragments, noSpecConstants, noPushConstants,
                                 resources, noInterfaces, extensions, vulkanFeatures, group.get());
     }
+    return group.release();
+}
+
+// Adds the capabilities, extensions and Vulkan features needed to use the
+// given integer bit width, on top of the always-available 32-bit type.
+void addBitcastWidthRequirements(uint32_t width, string &caps, string &exts, VulkanFeatures &vulkanFeatures,
+                                 vector<string> &extensions)
+{
+    switch (width)
+    {
+    case 8:
+        // Bitcasting to/from 8-bit types requires the explicit Int8
+        // capability, in addition to the storage capability needed to hold
+        // an 8-bit value in a buffer.
+        caps += "OpCapability StorageBuffer8BitAccess\n"
+                "OpCapability Int8\n";
+        exts += "OpExtension \"SPV_KHR_8bit_storage\"\n";
+        extensions.push_back("VK_KHR_8bit_storage");
+        extensions.push_back("VK_KHR_shader_float16_int8");
+        vulkanFeatures.extFloat16Int8.shaderInt8              = true;
+        vulkanFeatures.ext8BitStorage.storageBuffer8BitAccess = true;
+        break;
+
+    case 16:
+        // As above, but for 16-bit types.
+        caps += "OpCapability StorageUniformBufferBlock16\n"
+                "OpCapability Int16\n";
+        exts += "OpExtension \"SPV_KHR_16bit_storage\"\n";
+        extensions.push_back("VK_KHR_16bit_storage");
+        vulkanFeatures.coreFeatures.shaderInt16                 = true;
+        vulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
+        break;
+
+    case 64:
+        caps += "OpCapability Int64\n";
+        vulkanFeatures.coreFeatures.shaderInt64 = true;
+        break;
+
+    case 32:
+    default:
+        break; // Covered by the base Shader capability; no extra requirements.
+    }
+}
+
+template <typename T>
+BufferSp makeBitcastTypedBuffer(const vector<uint64_t> &rawValues)
+{
+    vector<T> values(rawValues.size());
+    for (size_t i = 0; i < rawValues.size(); ++i)
+        deMemcpy(&values[i], &rawValues[i], sizeof(T));
+    return BufferSp(new Buffer<T>(values));
+}
+
+// Builds a buffer of signed or unsigned integers of the given bit width,
+// reproducing the low width bits of each of the raw 64-bit values exactly
+// (a plain bit copy, so it is well defined regardless of signedness).
+BufferSp makeBitcastBuffer(bool isSigned, uint32_t width, const vector<uint64_t> &rawValues)
+{
+    if (isSigned)
+    {
+        switch (width)
+        {
+        case 8:
+            return makeBitcastTypedBuffer<int8_t>(rawValues);
+        case 16:
+            return makeBitcastTypedBuffer<int16_t>(rawValues);
+        case 32:
+            return makeBitcastTypedBuffer<int32_t>(rawValues);
+        case 64:
+            return makeBitcastTypedBuffer<int64_t>(rawValues);
+        }
+    }
+    else
+    {
+        switch (width)
+        {
+        case 8:
+            return makeBitcastTypedBuffer<uint8_t>(rawValues);
+        case 16:
+            return makeBitcastTypedBuffer<uint16_t>(rawValues);
+        case 32:
+            return makeBitcastTypedBuffer<uint32_t>(rawValues);
+        case 64:
+            return makeBitcastTypedBuffer<uint64_t>(rawValues);
+        }
+    }
+
+    TCU_THROW(InternalError, "Unsupported bit width for bitcast test");
+}
+
+// Test for OpBitcast between a scalar integer and a vector made up of
+// narrower components of the same total width (e.g. uint32 <-> u16vec2),
+// for both directions, signednesses, and all widths for which the result is
+// a valid SPIR-V vector (2 or 4 components; a 64-bit scalar split into
+// 8-bit lanes would need 8 components, which OpTypeVector does not support,
+// so that combination is skipped).
+tcu::TestCaseGroup *createBitcastComputeTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "bitcast"));
+
+    struct BitcastCase
+    {
+        uint32_t scalarWidth;
+        uint32_t componentWidth;
+    };
+
+    const BitcastCase cases[] = {
+        {64, 32}, {64, 16}, {32, 16}, {32, 8}, {16, 8},
+    };
+
+    for (int signedNdx = 0; signedNdx < 2; ++signedNdx)
+    {
+        const bool isSigned = (signedNdx == 1);
+        const string sign(isSigned ? "i" : "u");
+
+        for (const BitcastCase &c : cases)
+        {
+            assert(c.scalarWidth % c.componentWidth == 0);
+            uint32_t numComponents = c.scalarWidth / c.componentWidth;
+
+            const string scalarAsmType(sign + de::toString(c.scalarWidth));
+            const string compAsmType(sign + de::toString(c.componentWidth));
+            const string vecAsmType("v" + de::toString(numComponents) + compAsmType);
+
+            const string scalarTypeName((isSigned ? "int" : "uint") + de::toString(c.scalarWidth));
+            const string vecTypeName(sign + de::toString(c.componentWidth) + "vec" + de::toString(numComponents));
+
+            string caps;
+            string exts;
+            VulkanFeatures vulkanFeatures;
+            vector<string> extensions;
+
+            addBitcastWidthRequirements(c.scalarWidth, caps, exts, vulkanFeatures, extensions);
+            addBitcastWidthRequirements(c.componentWidth, caps, exts, vulkanFeatures, extensions);
+
+            string decl;
+            if (c.scalarWidth != 32)
+                decl +=
+                    "%" + scalarAsmType + " = OpTypeInt " + de::toString(c.scalarWidth) + (isSigned ? " 1\n" : " 0\n");
+            if (c.componentWidth != 32)
+                decl +=
+                    "%" + compAsmType + " = OpTypeInt " + de::toString(c.componentWidth) + (isSigned ? " 1\n" : " 0\n");
+            decl += "%" + vecAsmType + " = OpTypeVector %" + compAsmType + " " + de::toString(numComponents) + "\n";
+
+            // Bit pattern used to fill the scalar input/output; its low
+            // scalarWidth bits are what get split into (or merged from)
+            // numComponents lanes of componentWidth bits each, with the
+            // first (least significant) lane first.
+            const uint64_t fullPattern = 0x123456789abcdef0ull;
+            const uint64_t scalarMask  = (c.scalarWidth == 64) ? ~0ull : ((1ull << c.scalarWidth) - 1);
+            const uint64_t scalarBits  = fullPattern & scalarMask;
+            const uint64_t compMask    = (1ull << c.componentWidth) - 1;
+
+            vector<uint64_t> componentBits(numComponents);
+            for (uint32_t i = 0; i < numComponents; ++i)
+                componentBits[i] = (scalarBits >> (i * c.componentWidth)) & compMask;
+
+            const BufferSp scalarBuffer = makeBitcastBuffer(isSigned, c.scalarWidth, vector<uint64_t>(1, scalarBits));
+            const BufferSp vectorBuffer = makeBitcastBuffer(isSigned, c.componentWidth, componentBits);
+
+            for (int dirNdx = 0; dirNdx < 2; ++dirNdx)
+            {
+                const bool scalarToVector = (dirNdx == 0);
+                const string &fromAsmType = scalarToVector ? scalarAsmType : vecAsmType;
+                const string &toAsmType   = scalarToVector ? vecAsmType : scalarAsmType;
+                const string testName =
+                    scalarToVector ? (scalarTypeName + "_to_" + vecTypeName) : (vecTypeName + "_to_" + scalarTypeName);
+
+                const string shaderSource = "OpCapability Shader\n" + caps + exts +
+                                            "OpMemoryModel Logical GLSL450\n"
+                                            "OpEntryPoint GLCompute %main \"main\"\n"
+                                            "OpExecutionMode %main LocalSize 1 1 1\n"
+                                            "OpSource GLSL 430\n"
+                                            "OpName %main           \"main\"\n"
+                                            // Decorators
+                                            "OpDecorate %indata DescriptorSet 0\n"
+                                            "OpDecorate %indata Binding 0\n"
+                                            "OpDecorate %outdata DescriptorSet 0\n"
+                                            "OpDecorate %outdata Binding 1\n"
+                                            "OpDecorate %in_buf BufferBlock\n"
+                                            "OpDecorate %out_buf BufferBlock\n"
+                                            "OpMemberDecorate %in_buf 0 Offset 0\n"
+                                            "OpMemberDecorate %out_buf 0 Offset 0\n"
+                                            // Base types
+                                            "%void       = OpTypeVoid\n"
+                                            "%voidf      = OpTypeFunction %void\n"
+                                            "%u32        = OpTypeInt 32 0\n"
+                                            "%i32        = OpTypeInt 32 1\n" +
+                                            decl +
+                                            // Derived types
+                                            "%in_ptr     = OpTypePointer Uniform %" + fromAsmType +
+                                            "\n"
+                                            "%out_ptr    = OpTypePointer Uniform %" +
+                                            toAsmType +
+                                            "\n"
+                                            "%in_buf     = OpTypeStruct %" +
+                                            fromAsmType +
+                                            "\n"
+                                            "%out_buf    = OpTypeStruct %" +
+                                            toAsmType +
+                                            "\n"
+                                            "%in_bufptr  = OpTypePointer Uniform %in_buf\n"
+                                            "%out_bufptr = OpTypePointer Uniform %out_buf\n"
+                                            "%indata     = OpVariable %in_bufptr Uniform\n"
+                                            "%outdata    = OpVariable %out_bufptr Uniform\n"
+                                            // Constants
+                                            "%zero       = OpConstant %i32 0\n"
+                                            // Main function
+                                            "%main       = OpFunction %void None %voidf\n"
+                                            "%label      = OpLabel\n"
+                                            "%inloc      = OpAccessChain %in_ptr %indata %zero\n"
+                                            "%outloc     = OpAccessChain %out_ptr %outdata %zero\n"
+                                            "%inval      = OpLoad %" +
+                                            fromAsmType +
+                                            " %inloc\n"
+                                            "%conv       = OpBitcast %" +
+                                            toAsmType +
+                                            " %inval\n"
+                                            "              OpStore %outloc %conv\n"
+                                            "              OpReturn\n"
+                                            "              OpFunctionEnd\n";
+
+                ComputeShaderSpec spec;
+                spec.assembly      = shaderSource;
+                spec.numWorkGroups = IVec3(1, 1, 1);
+                spec.inputs.push_back(scalarToVector ? scalarBuffer : vectorBuffer);
+                spec.outputs.push_back(scalarToVector ? vectorBuffer : scalarBuffer);
+                spec.extensions              = extensions;
+                spec.requestedVulkanFeatures = vulkanFeatures;
+
+                group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+            }
+        }
+    }
+
     return group.release();
 }
 
@@ -18450,7 +18673,7 @@ bool compareFP16ArithmeticFunc(const std::vector<Resource> &inputs, const vector
                         tcu::Float64 edgeMin(iterationEdgeMin[componentNdx]);
                         tcu::Float64 edgeMax(iterationEdgeMax[componentNdx]);
 
-                        if (reportError && expected.isNaN())
+                        if (expected.isNaN())
                             reportError = false;
 
                         if (reportError && !expected.isNaN() && !outputted.isNaN())
@@ -21599,6 +21822,26 @@ tcu::TestCaseGroup *createOpMulExtendedGroup(tcu::TestContext &testCtx)
     return testGroup.release();
 }
 
+tcu::TestCaseGroup *createIntegerDivisionGroup(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "integer_division"));
+
+#ifndef CTS_USES_VULKANSC
+    static const char dataDir[] = "spirv_assembly/instruction/compute/integer_division";
+
+    static const char *const cases[] = {"udiv_32bit", "umod_32bit", "sdiv_32bit", "srem_32bit", "smod_32bit"};
+
+    for (const auto &name : cases)
+    {
+        cts_amber::AmberTestCase *testCase =
+            cts_amber::createAmberTestCase(testCtx, name, "", dataDir, string(name) + ".amber");
+        testGroup->addChild(testCase);
+    }
+#endif // CTS_USES_VULKANSC
+
+    return testGroup.release();
+}
+
 tcu::TestCaseGroup *createQueryGroup(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_query"));
@@ -21690,6 +21933,7 @@ static void createComputeChildren(tcu::TestCaseGroup *computeTests)
     computeTests->addChild(createConvertComputeTests(testCtx, "OpConvertFToS", "convertftos"));
     computeTests->addChild(createConvertComputeTests(testCtx, "OpConvertUToF", "convertutof"));
     computeTests->addChild(createConvertComputeTests(testCtx, "OpConvertFToU", "convertftou"));
+    computeTests->addChild(createBitcastComputeTests(testCtx));
     computeTests->addChild(createOpCompositeInsertGroup(testCtx));
     computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
     computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
@@ -21749,6 +21993,7 @@ static void createComputeChildren(tcu::TestCaseGroup *computeTests)
 #endif // CTS_USES_VULKANSC
     computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
     computeTests->addChild(createOpMulExtendedGroup(testCtx));
+    computeTests->addChild(createIntegerDivisionGroup(testCtx));
     computeTests->addChild(createRawAccessChainGroup(testCtx));
 #ifndef CTS_USES_VULKANSC
     {

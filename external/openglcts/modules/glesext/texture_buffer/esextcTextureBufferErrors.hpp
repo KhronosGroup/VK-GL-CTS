@@ -86,6 +86,7 @@ private:
 
     /* Private variables */
     glw::GLuint m_bo_id;             /* Buffer  Object */
+    glw::GLuint m_bo_unexist_id;     /* Non-existent Buffer Object ID */
     glw::GLuint m_tex_id;            /* Texture Buffer Object Texture ID */
     TargetsVector m_texture_targets; /* Texture Targets */
 

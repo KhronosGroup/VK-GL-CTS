@@ -63,6 +63,7 @@ ClearTexAndSubImageTest::ClearTexAndSubImageTest(deqp::Context &context, const c
     const glw::GLint max_level = glw::GLint(log2(double(gl_max_texture_size)) / log2(2.0));
     if (m_texLevel > max_level)
         m_texLevel = max_level;
+    DE_ASSERT(m_texLevel >= 0);
 
     glw::GLint max_width  = gl_max_texture_size >> m_texLevel;
     glw::GLint max_height = gl_max_texture_size >> m_texLevel;

@@ -277,9 +277,9 @@ float getNormChannelThreshold(const tcu::TextureFormat &format, int numBits, int
     switch (tcu::getTextureChannelClass(format.type))
     {
     case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-        return static_cast<float>(scale) / static_cast<float>((1 << numBits) - 1);
+        return static_cast<float>(scale) / static_cast<float>(deUintMaxValue32(numBits));
     case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
-        return static_cast<float>(scale) / static_cast<float>((1 << (numBits - 1)) - 1);
+        return static_cast<float>(scale) / static_cast<float>(deIntMaxValue32(numBits));
     default:
         break;
     }

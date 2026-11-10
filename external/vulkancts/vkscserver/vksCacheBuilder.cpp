@@ -252,7 +252,7 @@ vector<u8> buildOfflinePipelineCache(const VulkanPipelineCacheInput &input, cons
 
 vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::PlatformInterface &vkp,
                               vk::VkInstance instance, const vk::InstanceInterface &vki,
-                              vk::VkPhysicalDevice physicalDevice, uint32_t queueIndex)
+                              vk::VkPhysicalDevice physicalDevice)
 {
     using namespace vk;
     using namespace json;
@@ -409,12 +409,13 @@ vector<u8> buildPipelineCache(const VulkanPipelineCacheInput &input, const vk::P
             }
 
             // create new device with proper features and extensions
+            // NOTE: the queue family index should not matter here
             const float queuePriority                           = 1.0f;
             const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr,
                 (VkDeviceQueueCreateFlags)0u,
-                queueIndex,     //queueFamilyIndex;
+                0,              //queueFamilyIndex;
                 1,              //queueCount;
                 &queuePriority, //pQueuePriorities;
             };

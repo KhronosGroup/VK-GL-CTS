@@ -40,6 +40,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <cmath>
 
 namespace vkt
 {
@@ -102,9 +103,7 @@ using MinResolvDiff = std::pair<double, double>; // Min and Max values.
 
 double calcPowerOf2(int exponent)
 {
-    if (exponent >= 0)
-        return static_cast<double>(1u << exponent);
-    return (1.0 / static_cast<double>(1u << (-exponent)));
+    return std::ldexp(1.0, exponent);
 }
 
 tcu::TextureChannelClass getChannelClass(const tcu::TextureFormat &format)

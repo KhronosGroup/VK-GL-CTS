@@ -41,6 +41,8 @@
 
 #include <vector>
 #include <sstream>
+#include <atomic>
+#include <thread>
 
 namespace vkt
 {
@@ -1793,6 +1795,174 @@ tcu::TestCaseGroup *createPipelineInvalidPointersUnusedStructsTests(tcu::TestCon
 }
 #endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
+// -------------------------------------------------------------------------
+// Multithreaded Pipeline Compiler Race test
+// -------------------------------------------------------------------------
+
+class PipelineCompilerRaceTestInstance : public vkt::TestInstance
+{
+public:
+    PipelineCompilerRaceTestInstance(Context &context) : vkt::TestInstance(context)
+    {
+    }
+
+    tcu::TestStatus iterate(void) override
+    {
+        const DeviceInterface &vkd             = m_context.getDeviceInterface();
+        const VkDevice device                  = m_context.getDevice();
+        const VkAllocationCallbacks *allocator = nullptr;
+
+        Move<VkShaderModule> bigModule =
+            createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp_big"), 0u);
+        Move<VkShaderModule> smallModule =
+            createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp_small"), 0u);
+
+        // Descriptor set layout
+        Move<VkDescriptorSetLayout> descriptorSetLayout =
+            DescriptorSetLayoutBuilder()
+                .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+                .build(vkd, device);
+
+        Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vkd, device, *descriptorSetLayout);
+
+        const uint32_t numThreads = 64;
+        std::vector<std::thread> threads;
+        std::vector<VkResult> results(numThreads, VK_SUCCESS);
+        std::atomic<uint32_t> counter(0);
+        std::atomic<bool> startSignal(false);
+
+        for (uint32_t threadNdx = 0; threadNdx < numThreads; ++threadNdx)
+        {
+            try
+            {
+                threads.emplace_back(
+                    [&, threadNdx]()
+                    {
+                        uint32_t specData = counter.fetch_add(1);
+
+                        const VkSpecializationMapEntry specEntry = {0, 0, sizeof(uint32_t)};
+                        const VkSpecializationInfo specInfo      = {1, &specEntry, sizeof(uint32_t), &specData};
+
+                        const VkPipelineShaderStageCreateInfo shaderStage = {
+                            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                            nullptr,
+                            0,
+                            VK_SHADER_STAGE_COMPUTE_BIT,
+                            (threadNdx % 2 == 0) ? *bigModule : *smallModule,
+                            "main",
+                            &specInfo};
+
+                        const VkComputePipelineCreateInfo pipelineInfo = {
+                            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+                            nullptr,
+                            0,
+                            shaderStage,
+                            *pipelineLayout,
+                            VK_NULL_HANDLE,
+                            0};
+
+                        while (!startSignal.load(std::memory_order_acquire))
+                        {
+                            std::this_thread::yield();
+                        }
+
+                        VkPipeline pipeline = VK_NULL_HANDLE;
+                        results[threadNdx] =
+                            vkd.createComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, allocator, &pipeline);
+
+                        if (pipeline != VK_NULL_HANDLE)
+                        {
+                            vkd.destroyPipeline(device, pipeline, allocator);
+                        }
+                    });
+            }
+            catch (...)
+            {
+                // If the OS refuses to spawn more threads (e.g. on watches) or out of memory, stop spawning
+                break;
+            }
+        }
+
+        startSignal.store(true, std::memory_order_release);
+
+        for (auto &thread : threads)
+        {
+            if (thread.joinable())
+            {
+                thread.join();
+            }
+        }
+
+        for (uint32_t threadNdx = 0; threadNdx < threads.size(); ++threadNdx)
+        {
+            if (results[threadNdx] != VK_SUCCESS)
+            {
+                std::ostringstream msg;
+                msg << "Pipeline creation failed on thread " << threadNdx << " with error code "
+                    << vk::getResultStr(results[threadNdx]);
+                return tcu::TestStatus::fail(msg.str());
+            }
+        }
+
+        return tcu::TestStatus::pass("Pass");
+    }
+};
+
+class PipelineCompilerRaceTest : public vkt::TestCase
+{
+public:
+    PipelineCompilerRaceTest(tcu::TestContext &testCtx, const std::string &name) : vkt::TestCase(testCtx, name)
+    {
+    }
+
+    void initPrograms(SourceCollections &programCollection) const override
+    {
+        std::ostringstream bigComp;
+        bigComp << "#version 310 es\n"
+                << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+                << "layout(std430, binding = 0) buffer Output {\n"
+                << "    uint data[];\n"
+                << "} outBuf;\n"
+                << "layout(constant_id = 0) const uint constId = 0u;\n"
+                << "void main() {\n"
+                << "    uint idx = constId;\n";
+        for (int loopNdx = 0; loopNdx < 500; ++loopNdx)
+        {
+            bigComp << "    outBuf.data[" << loopNdx << "] = outBuf.data[" << loopNdx << "] + idx;\n";
+        }
+        bigComp << "}\n";
+
+        programCollection.glslSources.add("comp_big") << glu::ComputeSource(bigComp.str());
+
+        std::ostringstream smallComp;
+        smallComp << "#version 310 es\n"
+                  << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+                  << "layout(std430, binding = 0) buffer Output {\n"
+                  << "    uint data[];\n"
+                  << "} outBuf;\n"
+                  << "layout(constant_id = 0) const uint constId = 0u;\n"
+                  << "void main() {\n"
+                  << "    outBuf.data[0] = constId;\n"
+                  << "}\n";
+
+        programCollection.glslSources.add("comp_small") << glu::ComputeSource(smallComp.str());
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new PipelineCompilerRaceTestInstance(context);
+    }
+};
+
+tcu::TestCaseGroup *createPipelineCompilerRaceTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "compiler_race"));
+    group->addChild(new PipelineCompilerRaceTest(testCtx, "multithreaded_compilation"));
+    return group.release();
+}
+#endif // CTS_USES_VULKANSC
+
 } // namespace
 
 tcu::TestCaseGroup *createPipelineTests(tcu::TestContext &testCtx)
@@ -1802,6 +1972,7 @@ tcu::TestCaseGroup *createPipelineTests(tcu::TestContext &testCtx)
     pipelineTests->addChild(createrenderpassTests(testCtx));
     pipelineTests->addChild(createPipelineLayoutTests(testCtx));
 #ifndef CTS_USES_VULKANSC
+    pipelineTests->addChild(createPipelineCompilerRaceTests(testCtx));
     pipelineTests->addChild(createPipelineInvalidPointersUnusedStructsTests(testCtx));
 #endif // CTS_USES_VULKANSC
 

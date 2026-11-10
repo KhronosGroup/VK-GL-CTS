@@ -33593,6 +33593,7 @@ dEQP-VK.ray_query.advanced.null_as.vert.aabbs
 dEQP-VK.ray_query.advanced.null_as.vert.triangles
 dEQP-VK.ray_query.advanced.using_wrapper_function.comp.aabbs
 dEQP-VK.ray_query.advanced.using_wrapper_function.comp.triangles
+dEQP-VK.ray_query.amber.workgroup_barrier
 dEQP-VK.ray_query.barycentric_coordinates.compute
 dEQP-VK.ray_query.builtin.flow.ahit.aabbs
 dEQP-VK.ray_query.builtin.flow.ahit.triangles

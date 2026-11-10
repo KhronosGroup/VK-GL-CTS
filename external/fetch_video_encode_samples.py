@@ -37,6 +37,10 @@ PACKAGES = [
         "0a53b9fc8739399f2cdfa73c5dc08357d21fc7a5d874c4454c35a2a618ed2425",
         "yuv/720x480_420_8le.yuv"),
     SourceFile(
+        "yuv/FT_720x480_420_10le.yuv",
+        "eccf4eb80a37e70153f6de5c852f572c67a77e1c649f9b4f9bed2d12d926c0a8",
+        "yuv/720x480_420_10le.yuv"),
+    SourceFile(
         "yuv/FT_1920x1080_420_8le.yuv",
         "b02e215436c336e610cae4eb35c758534552d059776ec0571fd4703143b95b52",
         "yuv/1920x1080_420_8le.yuv"),

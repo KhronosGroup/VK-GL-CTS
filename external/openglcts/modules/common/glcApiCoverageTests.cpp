@@ -8286,7 +8286,7 @@ bool ApiCoverageTestCase::TestCoverageGLCallGetBufferParameteri64v(void)
     bool success = true;
     GLuint cb;
     GLuint data[64];
-    GLint64 param;
+    GLint64 param = 0;
 
     (void)gl.getError(); // clear error from previous test, if any
 

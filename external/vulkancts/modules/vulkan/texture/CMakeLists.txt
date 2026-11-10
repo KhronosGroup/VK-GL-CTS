@@ -4,7 +4,6 @@ include_directories(
 	..
 	../shaderexecutor
 	../amber
-	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_TEXTURE_SRCS

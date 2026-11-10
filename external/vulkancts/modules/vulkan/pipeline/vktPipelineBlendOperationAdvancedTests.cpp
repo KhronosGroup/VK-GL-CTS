@@ -1526,13 +1526,8 @@ void BlendOperationAdvancedTest::checkSupport(Context &context) const
 
     context.requireDeviceFunctionality("VK_EXT_blend_operation_advanced");
 
-    VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT blendProperties;
-    blendProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BLEND_OPERATION_ADVANCED_PROPERTIES_EXT;
-    blendProperties.pNext = nullptr;
-
-    VkPhysicalDeviceProperties2 properties2;
-    properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    properties2.pNext = &blendProperties;
+    VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT blendProperties = initVulkanStructure();
+    VkPhysicalDeviceProperties2 properties2                             = initVulkanStructure(&blendProperties);
     vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties2);
 
     if (!blendProperties.advancedBlendAllOperations)

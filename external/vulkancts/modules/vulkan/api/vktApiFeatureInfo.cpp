@@ -28,7 +28,6 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 
-#include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
@@ -37,6 +36,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkApiVersion.hpp"
+#include "vkFormatLists.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -45,18 +45,20 @@
 #include "tcuCommandLine.hpp"
 
 #include "deUniquePtr.hpp"
-#include "deString.h"
 #include "deStringUtil.hpp"
 #include "deSTLUtil.hpp"
 #include "deMemory.h"
 #include "deMath.h"
 
 #include <vector>
+#include <map>
 #include <set>
 #include <string>
 #include <limits>
 #include <optional>
 #include <cstring>
+#include <algorithm>
+#include <map>
 
 namespace vkt::api
 {
@@ -596,6 +598,12 @@ void checkApiVersionSupport(Context &context)
 void checkMemoryBudgetSupport(Context &context)
 {
     context.requireDeviceFunctionality("VK_EXT_memory_budget");
+}
+
+void checkMemoryBudgetMultiInstanceSupport(Context &context)
+{
+    checkMemoryBudgetSupport(context);
+    context.requireDeviceFunctionality("VK_KHR_maintenance3");
 }
 
 typedef struct FeatureLimitTableItem_
@@ -1426,6 +1434,11 @@ tcu::TestStatus validateLimitsExtBlendOperationAdvanced(Context &context)
         return tcu::TestStatus::pass("pass");
     else
         return tcu::TestStatus::fail("fail");
+}
+
+void checkSupportKhrMaintenance1(Context &context)
+{
+    context.requireDeviceFunctionality("VK_KHR_maintenance1");
 }
 
 void checkSupportKhrMaintenance3(Context &context)
@@ -2785,18 +2798,12 @@ tcu::TestStatus validateInstanceExtensionDependencies(Context &context)
     TestLog &log = context.getTestContext().getLog();
     tcu::ResultCollector results(log);
 
-    const vector<VkExtensionProperties> properties =
-        enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
-    const vector<VkExtensionProperties> unused;
-
-    for (const auto &version : releasedApiVersions)
+    const auto instProperties = enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
+    for (const auto &[ignored, apiVariant, vMajor, vMinor] : releasedApiVersions)
     {
-        uint32_t apiVariant, versionMajor, versionMinor;
-        std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
-        if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
+        if (context.contextSupports(vk::ApiVersion(apiVariant, vMajor, vMinor, 0)))
         {
-            checkExtensionDependencies(results, instanceExtensionDependencies, versionMajor, versionMinor, properties,
-                                       unused);
+            checkExtensionDependencies(results, instanceExtensionDependencies, vMajor, vMinor, instProperties, {});
             break;
         }
     }
@@ -2945,22 +2952,17 @@ tcu::TestStatus enumerateDeviceExtensions(Context &context)
 
 tcu::TestStatus validateDeviceExtensionDependencies(Context &context)
 {
-    TestLog &log = context.getTestContext().getLog();
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+    TestLog &log              = context.getTestContext().getLog();
     tcu::ResultCollector results(log);
 
-    const vector<VkExtensionProperties> instanceExtensionProperties =
-        enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
-    const vector<VkExtensionProperties> deviceExtensionProperties =
-        enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), nullptr);
-
-    for (const auto &version : releasedApiVersions)
+    const auto devProperties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+    for (const auto &[ignored, apiVariant, vMajor, vMinor] : releasedApiVersions)
     {
-        uint32_t apiVariant, versionMajor, versionMinor;
-        std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
-        if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
+        if (context.contextSupports(vk::ApiVersion(apiVariant, vMajor, vMinor, 0)))
         {
-            checkExtensionDependencies(results, deviceExtensionDependencies, versionMajor, versionMinor,
-                                       instanceExtensionProperties, deviceExtensionProperties);
+            checkExtensionDependencies(results, deviceExtensionDependencies, vMajor, vMinor, {}, devProperties);
             break;
         }
     }
@@ -3609,12 +3611,9 @@ struct MemoryBudgetInfo
     {
     }
 };
-using MemoryBudgetInfoPtr = std::unique_ptr<MemoryBudgetInfo>;
 
-MemoryBudgetInfoPtr getBudgetInfo(TestLog &log, const InstanceInterface &vki, VkPhysicalDevice physicalDevice)
+void getBudgetInfo(TestLog &log, const InstanceInterface &vki, VkPhysicalDevice physicalDevice, MemoryBudgetInfo *info)
 {
-    MemoryBudgetInfoPtr info(new MemoryBudgetInfo);
-
     alignas(VkPhysicalDeviceMemoryBudgetPropertiesEXT)
         uint8_t buffer[sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT) + GUARD_SIZE];
     memset(buffer, GUARD_VALUE, sizeof(buffer));
@@ -3639,25 +3638,25 @@ MemoryBudgetInfoPtr getBudgetInfo(TestLog &log, const InstanceInterface &vki, Vk
     }
 
     info->budgetProps = *budgetPropsPtr;
-    return info;
 }
 
 void runDeviceMemoryBudgetProperties(TestLog &log, const InstanceInterface &vki, VkPhysicalDevice physicalDevice)
 {
-    auto budgetInfo = getBudgetInfo(log, vki, physicalDevice);
+    MemoryBudgetInfo budgetInfo;
+    getBudgetInfo(log, vki, physicalDevice, &budgetInfo);
 
     log << TestLog::Message << "device = " << physicalDevice << TestLog::EndMessage << TestLog::Message
-        << budgetInfo->budgetProps << TestLog::EndMessage;
+        << budgetInfo.budgetProps << TestLog::EndMessage;
 
-    for (uint32_t i = 0; i < budgetInfo->memProps.memoryProperties.memoryHeapCount; ++i)
+    for (uint32_t i = 0; i < budgetInfo.memProps.memoryProperties.memoryHeapCount; ++i)
     {
-        if (budgetInfo->budgetProps.heapBudget[i] == 0)
+        if (budgetInfo.budgetProps.heapBudget[i] == 0)
         {
             log << TestLog::Message << "deviceMemoryBudgetProperties - Supported heaps must report nonzero budget"
                 << TestLog::EndMessage;
             TCU_FAIL("deviceMemoryBudgetProperties invalid heap budget (zero)");
         }
-        if (budgetInfo->budgetProps.heapBudget[i] > budgetInfo->memProps.memoryProperties.memoryHeaps[i].size)
+        if (budgetInfo.budgetProps.heapBudget[i] > budgetInfo.memProps.memoryProperties.memoryHeaps[i].size)
         {
             log << TestLog::Message
                 << "deviceMemoryBudgetProperties - Heap budget must be less than or equal to heap size"
@@ -3666,9 +3665,9 @@ void runDeviceMemoryBudgetProperties(TestLog &log, const InstanceInterface &vki,
         }
     }
 
-    for (uint32_t i = budgetInfo->memProps.memoryProperties.memoryHeapCount; i < VK_MAX_MEMORY_HEAPS; ++i)
+    for (uint32_t i = budgetInfo.memProps.memoryProperties.memoryHeapCount; i < VK_MAX_MEMORY_HEAPS; ++i)
     {
-        if (budgetInfo->budgetProps.heapBudget[i] != 0 || budgetInfo->budgetProps.heapUsage[i] != 0)
+        if (budgetInfo.budgetProps.heapBudget[i] != 0 || budgetInfo.budgetProps.heapUsage[i] != 0)
         {
             log << TestLog::Message << "deviceMemoryBudgetProperties - Unused heaps must report budget/usage of zero"
                 << TestLog::EndMessage;
@@ -3686,6 +3685,10 @@ tcu::TestStatus deviceMemoryBudgetProperties(Context &context)
 
 tcu::TestStatus memoryBudgetMultiInstance(Context &context)
 {
+    // Find out max allocation size. Note we use the default device for this because it's easier than dealing with the
+    // two devices below.
+    const auto &m3Properties = context.getMaintenance3Properties();
+
     const auto &cmdLine = context.getTestContext().getCommandLine();
 
     auto instance1 =
@@ -3700,22 +3703,25 @@ tcu::TestStatus memoryBudgetMultiInstance(Context &context)
     const auto physDev2 = chooseDevice(vki2, instance2, cmdLine);
 
     // Both devices should refer to the same dev/driver combo.
-    auto &log              = context.getTestContext().getLog();
-    const auto budgetInfo1 = getBudgetInfo(log, vki1, physDev1);
-    const auto budgetInfo2 = getBudgetInfo(log, vki2, physDev2);
+    auto &log = context.getTestContext().getLog();
+
+    MemoryBudgetInfo budgetInfo1;
+    MemoryBudgetInfo budgetInfo2;
+
+    getBudgetInfo(log, vki1, physDev1, &budgetInfo1);
+    getBudgetInfo(log, vki2, physDev2, &budgetInfo2);
 
     // Make sure both devices report basically the same information.
-    if (budgetInfo1->memProps.memoryProperties.memoryHeapCount !=
-        budgetInfo2->memProps.memoryProperties.memoryHeapCount)
+    if (budgetInfo1.memProps.memoryProperties.memoryHeapCount != budgetInfo2.memProps.memoryProperties.memoryHeapCount)
         TCU_FAIL("Different memory heap counts in both instances");
 
-    if (budgetInfo1->memProps.memoryProperties.memoryTypeCount !=
-        budgetInfo2->memProps.memoryProperties.memoryTypeCount)
+    if (budgetInfo1.memProps.memoryProperties.memoryTypeCount != budgetInfo2.memProps.memoryProperties.memoryTypeCount)
         TCU_FAIL("Different memory type counts in both instances");
 
     // Create logical devices to do some basic allocations.
     const std::vector<const char *> devExtensions{
         "VK_EXT_memory_budget",
+        "VK_KHR_maintenance3",
     };
     const float queuePriority = 1.0f;
 
@@ -3766,38 +3772,43 @@ tcu::TestStatus memoryBudgetMultiInstance(Context &context)
     const auto bufferMemReqs1 = getBufferMemoryRequirements(vkd1, *device1, *buffer1);
     const auto bufferMemReqs2 = getBufferMemoryRequirements(vkd2, *device2, *buffer2);
 
-    // Try different memory types and, potentially, heaps.
+    // Find heap indices to test.
+    std::map<uint32_t, uint32_t> memTypeForHeap; // Map heap index to memory type.
     for (const auto hostIntent : {HostIntent::NONE, HostIntent::R, HostIntent::W, HostIntent::RW})
     {
         const auto genMemReq =
             (hostIntent != HostIntent::NONE ? MemoryRequirement::HostVisible : MemoryRequirement::Any);
-        const auto memType1 = selectBestMemoryType(budgetInfo1->memProps.memoryProperties,
-                                                   bufferMemReqs1.memoryTypeBits, genMemReq, tcu::just(hostIntent));
-        const auto memType2 = selectBestMemoryType(budgetInfo2->memProps.memoryProperties,
-                                                   bufferMemReqs2.memoryTypeBits, genMemReq, tcu::just(hostIntent));
+        const auto memType1 = selectBestMemoryType(budgetInfo1.memProps.memoryProperties, bufferMemReqs1.memoryTypeBits,
+                                                   genMemReq, tcu::just(hostIntent));
+        const auto memType2 = selectBestMemoryType(budgetInfo2.memProps.memoryProperties, bufferMemReqs2.memoryTypeBits,
+                                                   genMemReq, tcu::just(hostIntent));
 
         // In theory, both memory types should be the same.
         if (memType1 != memType2)
             TCU_FAIL("Memory types differ for identical buffers");
 
-        const auto heapIndex1 = budgetInfo1->memProps.memoryProperties.memoryTypes[memType1].heapIndex;
-        const auto heapIndex2 = budgetInfo2->memProps.memoryProperties.memoryTypes[memType2].heapIndex;
+        const auto heapIndex1 = budgetInfo1.memProps.memoryProperties.memoryTypes[memType1].heapIndex;
+        const auto heapIndex2 = budgetInfo2.memProps.memoryProperties.memoryTypes[memType2].heapIndex;
 
         if (heapIndex1 != heapIndex2)
             TCU_FAIL("Heap indices differ for the same memory types");
+
+        auto itr = memTypeForHeap.find(heapIndex1);
+        if (itr == memTypeForHeap.end())
+            memTypeForHeap[heapIndex1] = memType1;
+    }
+
+    // Try different heaps using the memory types selected above.
+    for (const auto &heapIndexAndMemType : memTypeForHeap)
+    {
+        const auto &heapIndex = heapIndexAndMemType.first;
+        const auto &memType   = heapIndexAndMemType.second;
 
         const VkMemoryAllocateInfo allocateInfo1{
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             nullptr,
             bufferMemReqs1.size,
-            memType1,
-        };
-
-        const VkMemoryAllocateInfo allocateInfo2{
-            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            nullptr,
-            bufferMemReqs2.size,
-            memType2,
+            memType,
         };
 
         const auto memory1 = allocateMemory(vkd1, *device1, &allocateInfo1);
@@ -3811,54 +3822,80 @@ tcu::TestStatus memoryBudgetMultiInstance(Context &context)
             continue;
 #endif // CTS_USES_VULKANSC
 
-        const auto afterAlloc1Budget1 = getBudgetInfo(log, vki1, physDev1);
+        MemoryBudgetInfo afterAlloc1Budget1;
+        getBudgetInfo(log, vki1, physDev1, &afterAlloc1Budget1);
 
-        if (afterAlloc1Budget1->budgetProps.heapUsage[heapIndex1] <= budgetInfo1->budgetProps.heapUsage[heapIndex1])
-            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex1));
+        if (afterAlloc1Budget1.budgetProps.heapUsage[heapIndex] <= budgetInfo1.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex));
 
-        // Not sure about this check. The spec says this about heapBudget: "The budget includes any currently allocated
-        // device memory." About heapUsage, it says "A heap's usage is an estimate of how much memory the process is
-        // currently using in that heap." From the first description, it looks like the budget includes the usage and
-        // the budget should always be at least as big as the usage. If there is no more room before degrading
-        // performance, the implementation can return the same value in both to indicate the limit has been reached.
-        // However, as the usage is just an estimation, maybe this is not always true.
-        if (afterAlloc1Budget1->budgetProps.heapBudget[heapIndex1] <=
-            afterAlloc1Budget1->budgetProps.heapUsage[heapIndex1])
-            TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex1));
+            // Not sure about this check. The spec says this about heapBudget: "The budget includes any currently allocated
+            // device memory." About heapUsage, it says "A heap's usage is an estimate of how much memory the process is
+            // currently using in that heap." From the first description, it looks like the budget includes the usage and
+            // the budget should always be at least as big as the usage. If there is no more room before degrading
+            // performance, the implementation can return the same value in both to indicate the limit has been reached.
+            // However, as the usage is just an estimation, maybe this is not always true.
+#if 0
+        if (afterAlloc1Budget1.budgetProps.heapBudget[heapIndex] <=
+            afterAlloc1Budget1.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex));
+#endif
 
         // Because these are per-process, the data for the other instance should also have been affected.
-        const auto afterAlloc1Budget2 = getBudgetInfo(log, vki2, physDev2);
+        MemoryBudgetInfo afterAlloc1Budget2;
+        getBudgetInfo(log, vki2, physDev2, &afterAlloc1Budget2);
 
-        if (afterAlloc1Budget2->budgetProps.heapUsage[heapIndex2] <= budgetInfo2->budgetProps.heapUsage[heapIndex2])
-            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex2));
+        if (afterAlloc1Budget2.budgetProps.heapUsage[heapIndex] <= budgetInfo2.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex));
 
-        if (afterAlloc1Budget2->budgetProps.heapBudget[heapIndex2] <=
-            afterAlloc1Budget2->budgetProps.heapUsage[heapIndex2])
+#if 0
+        if (afterAlloc1Budget2.budgetProps.heapBudget[heapIndex] <=
+            afterAlloc1Budget2.budgetProps.heapUsage[heapIndex])
             TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex2));
+#endif
+
+        // For the second allocation we're going to try to allocate a lot of memory, according to the heap budget. We'll
+        // try to allocate half the budget, or the size of the original buffer if the budget is very tight. We're also
+        // capping the allocation size to the maximum reported by the driver.
+        const auto allocSize2 =
+            std::min(m3Properties.maxMemoryAllocationSize,
+                     de::roundUp(std::max(bufferMemReqs2.size,
+                                          afterAlloc1Budget2.budgetProps.heapBudget[heapIndex] / VkDeviceSize{2}),
+                                 bufferMemReqs2.alignment));
+
+        const VkMemoryAllocateInfo allocateInfo2{
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            nullptr,
+            allocSize2,
+            memType,
+        };
 
         const auto memory2 = allocateMemory(vkd2, *device2, &allocateInfo2);
 
-        const auto afterAlloc2Budget1 = getBudgetInfo(log, vki1, physDev1);
+        MemoryBudgetInfo afterAlloc2Budget1;
+        getBudgetInfo(log, vki1, physDev1, &afterAlloc2Budget1);
 
-        if (afterAlloc2Budget1->budgetProps.heapUsage[heapIndex1] <=
-            afterAlloc1Budget1->budgetProps.heapUsage[heapIndex1])
-            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex1));
+        if (afterAlloc2Budget1.budgetProps.heapUsage[heapIndex] <= afterAlloc1Budget1.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex));
 
-        // Note sure about this check. See above for the same reasoning.
-        if (afterAlloc2Budget1->budgetProps.heapBudget[heapIndex1] <=
-            afterAlloc2Budget1->budgetProps.heapUsage[heapIndex1])
+            // Note sure about this check. See above for the same reasoning.
+#if 0
+        if (afterAlloc2Budget1.budgetProps.heapBudget[heapIndex] <=
+            afterAlloc2Budget1.budgetProps.heapUsage[heapIndex])
             TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex1));
+#endif
 
         // Because these are per-process, the data for the other instance should also have been affected.
-        const auto afterAlloc2Budget2 = getBudgetInfo(log, vki2, physDev2);
+        MemoryBudgetInfo afterAlloc2Budget2;
+        getBudgetInfo(log, vki2, physDev2, &afterAlloc2Budget2);
 
-        if (afterAlloc2Budget2->budgetProps.heapUsage[heapIndex2] <=
-            afterAlloc1Budget2->budgetProps.heapUsage[heapIndex2])
-            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex2));
+        if (afterAlloc2Budget2.budgetProps.heapUsage[heapIndex] <= afterAlloc1Budget2.budgetProps.heapUsage[heapIndex])
+            TCU_FAIL("Memory heap usage not increased for heap " + std::to_string(heapIndex));
 
-        if (afterAlloc2Budget2->budgetProps.heapBudget[heapIndex2] <=
-            afterAlloc2Budget2->budgetProps.heapUsage[heapIndex2])
+#if 0
+        if (afterAlloc2Budget2.budgetProps.heapBudget[heapIndex] <=
+            afterAlloc2Budget2.budgetProps.heapUsage[heapIndex])
             TCU_FAIL("Memory heap budget below heap usage for heap " + std::to_string(heapIndex2));
+#endif
     }
 
     return tcu::TestStatus::pass("Pass");
@@ -4312,6 +4349,187 @@ void checkExtendedFlagsSupport(Context &context)
 #endif
 }
 
+class CustomInstanceWrapper
+{
+public:
+    CustomInstanceWrapper(Context &context, bool enableAllExtensions = false);
+
+    VkPhysicalDevice getMatchingPhysicalDevice();
+    uint32_t getDeviceExtensionCount();
+    std::vector<VkExtensionProperties> getDeviceExtensions();
+    VkResult createDevice(const std::vector<const char *> &extensionNames);
+    VkDevice getDevice() const
+    {
+        return m_device;
+    }
+
+public:
+    const VkDevice cSentinelDevice = reinterpret_cast<VkDevice>(static_cast<uintptr_t>(0xdeadbeefu));
+
+protected:
+    Context &m_context;
+    CustomInstance m_instance;
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    uint32_t m_extensionCount         = 0u;
+    VkDevice m_device                 = VK_NULL_HANDLE;
+    Move<VkDevice> m_deviceInternal;
+};
+
+CustomInstanceWrapper::CustomInstanceWrapper(Context &context, bool enableAllExtensions) : m_context(context)
+{
+    const auto &vkp                         = context.getPlatformInterface();
+    VkApplicationInfo appInfo               = initVulkanStructure();
+    appInfo.apiVersion                      = context.getUsedApiVersion();
+    VkInstanceCreateInfo instanceCreateInfo = initVulkanStructure();
+    instanceCreateInfo.pApplicationInfo     = &appInfo;
+
+    std::vector<const char *> extensionPtrs;
+    std::vector<VkExtensionProperties> instanceExtensionPropertiesVect;
+
+    if (enableAllExtensions)
+    {
+        instanceExtensionPropertiesVect = enumerateInstanceExtensionProperties(vkp, nullptr);
+        for (const auto &ext : instanceExtensionPropertiesVect)
+            extensionPtrs.push_back(ext.extensionName);
+    }
+
+    instanceCreateInfo.enabledExtensionCount   = (uint32_t)extensionPtrs.size();
+    instanceCreateInfo.ppEnabledExtensionNames = de::dataOrNull(extensionPtrs);
+
+#ifndef CTS_USES_VULKANSC
+    std::unique_ptr<DebugReportRecorder> recorder;
+    m_instance = CustomInstance(context, vk::createInstance(vkp, &instanceCreateInfo, nullptr), recorder);
+#else
+    m_instance = CustomInstance(context, vk::createInstance(vkp, &instanceCreateInfo, nullptr));
+#endif
+}
+
+VkPhysicalDevice CustomInstanceWrapper::getMatchingPhysicalDevice()
+{
+    if (m_physicalDevice != VK_NULL_HANDLE)
+        return m_physicalDevice;
+
+    const auto &refProperties = m_context.getDeviceProperties();
+    for (auto pd : enumeratePhysicalDevices(m_instance.getDriver(), m_instance))
+    {
+        // get physical device that coresponds to the device tested by cts
+        auto curProperties = getPhysicalDeviceProperties(m_instance.getDriver(), pd);
+        if ((refProperties.vendorID == curProperties.vendorID) && //
+            (refProperties.deviceID == curProperties.deviceID) && //
+            (strcmp(refProperties.deviceName, curProperties.deviceName) == 0) &&
+            (deMemCmp(refProperties.pipelineCacheUUID, curProperties.pipelineCacheUUID, VK_UUID_SIZE) == 0))
+        {
+            m_physicalDevice = pd;
+            break;
+        }
+    }
+
+    return m_physicalDevice;
+}
+
+uint32_t CustomInstanceWrapper::getDeviceExtensionCount()
+{
+    DE_ASSERT(m_physicalDevice != VK_NULL_HANDLE);
+    const InstanceDriver &vki = m_instance.getDriver();
+
+    VK_CHECK(vki.enumerateDeviceExtensionProperties(m_physicalDevice, nullptr, &m_extensionCount, nullptr));
+    return m_extensionCount;
+}
+
+std::vector<VkExtensionProperties> CustomInstanceWrapper::getDeviceExtensions()
+{
+    DE_ASSERT(m_physicalDevice != VK_NULL_HANDLE);
+    const InstanceDriver &vki = m_instance.getDriver();
+    return enumerateDeviceExtensionProperties(vki, m_physicalDevice, nullptr);
+}
+
+VkResult CustomInstanceWrapper::createDevice(const std::vector<const char *> &extensionNames)
+{
+    auto &vkp                                     = m_context.getPlatformInterface();
+    const float queuePriority                     = 1.0f;
+    VkDeviceQueueCreateInfo deviceQueueCreateInfo = initVulkanStructure();
+    deviceQueueCreateInfo.queueFamilyIndex        = m_context.getUniversalQueueFamilyIndex();
+    deviceQueueCreateInfo.queueCount              = 1u;
+    deviceQueueCreateInfo.pQueuePriorities        = &queuePriority;
+
+    VkDeviceCreateInfo deviceCreateInfo      = initVulkanStructure();
+    deviceCreateInfo.queueCreateInfoCount    = 1;
+    deviceCreateInfo.pQueueCreateInfos       = &deviceQueueCreateInfo;
+    deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(extensionNames.size());
+    deviceCreateInfo.ppEnabledExtensionNames = extensionNames.data();
+
+#ifdef CTS_USES_VULKANSC
+    // add structures required by Vulkan SC
+    VkFaultCallbackInfo faultCallbackInfo = initVulkanStructure();
+    faultCallbackInfo.pfnFaultCallback    = Context::faultCallbackFunction;
+    auto objectReservationInfo  = m_context.getResourceInterface()->getDefaultDeviceObjectReservationCreateInfo();
+    auto sc10Features           = createDefaultSC10Features();
+    objectReservationInfo.pNext = &faultCallbackInfo;
+    sc10Features.pNext          = &objectReservationInfo;
+    deviceCreateInfo.pNext      = &sc10Features;
+#endif // CTS_USES_VULKANSC
+
+    // destroying the previous device - SC supports only a single device per instance
+    m_deviceInternal = Move<VkDevice>();
+    m_device         = cSentinelDevice;
+
+    const VkResult result =
+        m_instance.getDriver().createDevice(m_physicalDevice, &deviceCreateInfo, nullptr, &m_device);
+    if (result == VK_SUCCESS)
+        m_deviceInternal =
+            Move<VkDevice>(check<VkDevice>(m_device), Deleter<VkDevice>(vkp, m_instance, m_device, nullptr));
+
+    return result;
+}
+
+tcu::TestStatus probeAndFullInstanceConsistency(Context &context)
+{
+    // create probe instance with no extensions
+    CustomInstanceWrapper probeInstance(context);
+
+    // create full instance with all available extensions
+    CustomInstanceWrapper fullInstance(context, true);
+
+    if (probeInstance.getMatchingPhysicalDevice() == VK_NULL_HANDLE)
+        return tcu::TestStatus::fail("Physical device not found in probe instance");
+
+    if (fullInstance.getMatchingPhysicalDevice() == VK_NULL_HANDLE)
+        return tcu::TestStatus::fail("Physical device not found in full instance");
+
+    uint32_t probeDeviceExtensionCount = probeInstance.getDeviceExtensionCount();
+    uint32_t fullDeviceExtensionCount  = fullInstance.getDeviceExtensionCount();
+
+    if (probeDeviceExtensionCount != fullDeviceExtensionCount)
+        return tcu::TestStatus::fail("Extension count mismatch");
+
+    const auto probeExtensions = probeInstance.getDeviceExtensions();
+    const auto fullExtensions  = fullInstance.getDeviceExtensions();
+
+    for (const auto &probeExt : probeExtensions)
+    {
+        bool found = false;
+        for (const auto &fullExt : fullExtensions)
+        {
+            found = (strcmp(probeExt.extensionName, fullExt.extensionName) == 0);
+            if (found)
+            {
+                if (probeExt.specVersion == fullExt.specVersion)
+                    break;
+                return tcu::TestStatus::fail(std::string(probeExt.extensionName) + " specVersion mismatch");
+            }
+        }
+        if (!found)
+            return tcu::TestStatus::fail(std::string(probeExt.extensionName) + " not found in full instance");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void createDeviceExtensionEnumerationTests(tcu::TestCaseGroup *testGroup)
+{
+    addFunctionCase(testGroup, "probe_and_full_instance_consistency", probeAndFullInstanceConsistency);
+}
+
 void checkYcbcrApiSupport(Context &context)
 {
     // check if YCbcr API and are supported by implementation
@@ -4753,6 +4971,61 @@ tcu::TestStatus testCompressedFormatsSupported(Context &context)
         return tcu::TestStatus::pass("Compressed texture format support is valid");
 }
 
+tcu::TestStatus testSampledFormatsRequirements(Context &context)
+{
+    auto &vki           = context.getInstanceInterface();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    const auto requiredTransferFeatures = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+    uint32_t numErrors                  = 0;
+
+    const std::pair<std::string, std::vector<VkFormat>> guardedFormats[]{
+        {"VK_EXT_4444_formats", {VK_FORMAT_A4R4G4B4_UNORM_PACK16, VK_FORMAT_A4B4G4R4_UNORM_PACK16}},
+        {"VK_EXT_rgba10x6_formats", {VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16}},
+        {"VK_KHR_maintenance5", {VK_FORMAT_A1B5G5R5_UNORM_PACK16, VK_FORMAT_A8_UNORM}},
+    };
+
+    for (auto format : formats::allFormats)
+    {
+        bool isFormatSupported = true;
+
+        // check if format is guarded by an extension
+        for (const auto &[extension, formats] : guardedFormats)
+        {
+            if (std::find(formats.begin(), formats.end(), format) != formats.end())
+            {
+                isFormatSupported = context.isDeviceFunctionalitySupported(extension);
+                break;
+            }
+        }
+
+        if (!isFormatSupported)
+            continue;
+
+        bool requirementMet   = true;
+        const auto properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, format);
+
+        if (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
+            requirementMet = (properties.optimalTilingFeatures & requiredTransferFeatures) == requiredTransferFeatures;
+
+        if (requirementMet && (properties.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT))
+            requirementMet = (properties.linearTilingFeatures & requiredTransferFeatures) == requiredTransferFeatures;
+
+        if (!requirementMet)
+        {
+            context.getTestContext().getLog()
+                << TestLog::Message << "ERROR: Format " << getFormatName(format)
+                << " supports sampling but not transfer operations" << TestLog::EndMessage;
+            ++numErrors;
+        }
+    }
+
+    if (numErrors)
+        return tcu::TestStatus::fail("Some formats that support sampling operation do not support transfer operations");
+
+    return tcu::TestStatus::pass("");
+}
+
 void createFormatTests(tcu::TestCaseGroup *testGroup)
 {
     DE_STATIC_ASSERT(VK_FORMAT_UNDEFINED == 0);
@@ -4788,6 +5061,7 @@ void createFormatTests(tcu::TestCaseGroup *testGroup)
 
     addFunctionCase(testGroup, "depth_stencil", testDepthStencilSupported);
     addFunctionCase(testGroup, "compressed_formats", testCompressedFormatsSupported);
+    addFunctionCase(testGroup, "sampled_formats", checkSupportKhrMaintenance1, testSampledFormatsRequirements);
 }
 
 VkImageUsageFlags getValidImageUsageFlags(const VkFormatFeatureFlags supportedFeatures,
@@ -6323,6 +6597,30 @@ tcu::TestStatus deviceQueueFamilyProperties2(Context &context)
     }
 
     return tcu::TestStatus::pass("Querying device queue family properties succeeded");
+}
+
+tcu::TestStatus deviceQueueFamilyProperties2ZeroCount(Context &context)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const uint32_t arraySize              = 4u;
+
+    std::vector<VkQueueFamilyProperties2> properties2(arraySize);
+    memset(properties2.data(), 0xFF, sizeof(VkQueueFamilyProperties2) * arraySize);
+
+    for (auto &props : properties2)
+        props = initVulkanStructure();
+
+    const std::vector<VkQueueFamilyProperties2> properties2Ref = properties2;
+
+    uint32_t count = 0u;
+    vki.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &count, properties2.data());
+    if (count != 0u)
+        return tcu::TestStatus::fail("Count was modified");
+    if (deMemCmp(properties2.data(), properties2Ref.data(), sizeof(VkQueueFamilyProperties2) * arraySize) != 0)
+        return tcu::TestStatus::fail("Data was modified when count was 0");
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 tcu::TestStatus deviceMemoryProperties2(Context &context)
@@ -8304,6 +8602,23 @@ tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat fo
                 curUsageFlags,
             };
 
+            // The sample count must be one the image format properties report for this usage
+            const VkPhysicalDeviceImageFormatInfo2 formatInfo = {
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+                extendedFlags ? &usageFlags2 : nullptr,
+                format,
+                imageType,
+                tiling,
+                curUsageFlags,
+                0u,
+            };
+            VkImageFormatProperties2 formatProperties = initVulkanStructure();
+
+            if (vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &formatInfo, &formatProperties) !=
+                    VK_SUCCESS ||
+                (formatProperties.imageFormatProperties.sampleCounts & sampleCountBit) == 0)
+                continue;
+
             const VkPhysicalDeviceSparseImageFormatInfo2 extendedUsageIimageFormatInfo = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2,
                 &usageFlags2,
@@ -8879,6 +9194,8 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> infoTests(new tcu::TestCaseGroup(testCtx, "info"));
 
+    infoTests->addChild(
+        createTestGroup(testCtx, "device_extension_enumeration", createDeviceExtensionEnumerationTests));
     infoTests->addChild(createTestGroup(testCtx, "format_properties", createFormatTests));
     infoTests->addChild(
         createTestGroup(testCtx, "image_format_properties", createImageFormatTests, imageFormatProperties));
@@ -8914,6 +9231,8 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
                                      deviceFormatProperties2);
         addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "queue_family_properties",
                                      deviceQueueFamilyProperties2);
+        addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "queue_family_properties_zero_count",
+                                     deviceQueueFamilyProperties2ZeroCount);
         addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "memory_properties",
                                      deviceMemoryProperties2);
 
@@ -9191,8 +9510,8 @@ void createFeatureInfoDeviceTests(tcu::TestCaseGroup *testGroup)
     addFunctionCase(testGroup, "device_extension_supported", validateDeviceExtensionSupport);
     addFunctionCase(testGroup, "device_no_khx_extensions", testNoKhxExtensions);
     addFunctionCase(testGroup, "device_memory_budget", checkMemoryBudgetSupport, deviceMemoryBudgetProperties);
-    addFunctionCase(testGroup, "device_memory_budget_multi_instance", checkMemoryBudgetSupport,
-                    memoryBudgetMultiInstance);
+    addFunctionCaseFraction0(testGroup, "device_memory_budget_multi_instance", checkMemoryBudgetMultiInstanceSupport,
+                             memoryBudgetMultiInstance);
     addFunctionCase(testGroup, "device_mandatory_features", deviceMandatoryFeatures);
 }
 

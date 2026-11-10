@@ -203,7 +203,6 @@ target_include_directories(deqp-vk-pipeline
 		../amber
 		../util
 		../shader_object
-		${DEQP_INL_DIR}
 )
 target_include_directories(deqp-vksc-pipeline
 	PRIVATE

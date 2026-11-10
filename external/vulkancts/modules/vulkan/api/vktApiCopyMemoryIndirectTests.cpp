@@ -1186,13 +1186,17 @@ void add2dMemoryToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
 
         group->addChild(new CopyMemoryToImageIndirectTestCase(testCtx, "whole", params));
 
-        params.useConditionalRender = true;
-        params.conditionalPredicate = 0;
-        group->addChild(new CopyMemoryToImageIndirectTestCase(testCtx, "conditional_off", params));
+        // Conditional rendering needs a queue with graphics or compute capabilities
+        if (params.queueSelection != QueueSelectionOptions::TransferOnly)
+        {
+            params.useConditionalRender = true;
+            params.conditionalPredicate = 0;
+            group->addChild(new CopyMemoryToImageIndirectTestCase(testCtx, "conditional_off", params));
 
-        params.useConditionalRender = true;
-        params.conditionalPredicate = 1;
-        group->addChild(new CopyMemoryToImageIndirectTestCase(testCtx, "conditional_on", params));
+            params.useConditionalRender = true;
+            params.conditionalPredicate = 1;
+            group->addChild(new CopyMemoryToImageIndirectTestCase(testCtx, "conditional_on", params));
+        }
     }
 
     {

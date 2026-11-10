@@ -11,8 +11,6 @@ if (DEQP_SUPPORT_WGL)
 	add_definitions(-DDEQP_SUPPORT_WGL=1)
 endif ()
 
-include_directories(${PROJECT_BINARY_DIR}/external/vulkancts/framework/vulkan)
-
 if (DE_OS_IS_ANDROID)
 	include_directories(${PROJECT_SOURCE_DIR}/framework/platform/android)
 	# The Android platform file includes the Vulkan header, which needs the generated files
@@ -27,4 +25,3 @@ if (DE_OS_IS_ANDROID)
 endif ()
 
 add_library(glcts-runner STATIC ${GLCTS_RUNNER_SRCS})
-add_dependencies(glcts-runner deqp-vk-inl)

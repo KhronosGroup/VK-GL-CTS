@@ -3,7 +3,6 @@
 include_directories(
 	..
 	../draw
-	${DEQP_INL_DIR}
 	)
 
 set(DEQP_VK_VKSC_RENDER_PASS_SRCS
@@ -42,6 +41,8 @@ set(DEQP_VK_VKSC_RENDER_PASS_SRCS
 	vktRenderPassLowResolutionZTests.hpp
 	vktDynamicRenderingSuspendResumeTestsUtil.cpp
 	vktDynamicRenderingSuspendResumeTestsUtil.hpp
+	vktRenderPassInputAttachmentIndicesTests.cpp
+	vktRenderPassInputAttachmentIndicesTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_SRCS

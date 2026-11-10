@@ -652,6 +652,9 @@ void StoreTest::checkSupport(Context &context) const
     {
         TCU_THROW(NotSupportedError, "This format and tiling combination does not support this number of miplevels");
     }
+
+    // Depth formats run on the universal queue only
+    checkDepthStencilCopyQueueSupport(context, isDepthStencilFormat(m_format));
 }
 
 void StoreTest::initPrograms(SourceCollections &programCollection) const
@@ -1446,6 +1449,9 @@ void LoadStoreTest::checkSupport(Context &context) const
     {
         TCU_THROW(NotSupportedError, "This format and tiling combination does not support this number of miplevels");
     }
+
+    // Depth formats run on the universal queue only
+    checkDepthStencilCopyQueueSupport(context, isDepthStencilFormat(m_format));
 }
 
 void LoadStoreTest::makePrograms(SourceCollections &programCollection, const DeviceScopeType deviceScopeType,

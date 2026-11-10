@@ -448,8 +448,9 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
             auto preImageMemoryBarrier =
                 makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, imageLayout,
                                        **image, subresourceRange);
-            vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE_KHR, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-                                  0u, nullptr, 0u, nullptr, 1, &preImageMemoryBarrier);
+            // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+            vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  0u, 0u, nullptr, 0u, nullptr, 1, &preImageMemoryBarrier);
             vk::endCommandBuffer(vk, *cmdBuffer);
             vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
         }
@@ -472,7 +473,8 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
                     auto preImageMemoryBarrier =
                         makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
                                                imageLayout, **image, layersSubresourceRange);
-                    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_NONE_KHR,
+                    // VUID-vkCmdPipelineBarrier-srcStageMask-03937
+                    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                           vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1,
                                           &preImageMemoryBarrier);
                 }
