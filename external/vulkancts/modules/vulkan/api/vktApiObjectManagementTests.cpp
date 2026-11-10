@@ -771,6 +771,9 @@ struct DeviceGroup
                 for (uint32_t physicalDeviceIdx = 0; physicalDeviceIdx < physicalDeviceCount; physicalDeviceIdx++)
                     physicalDevices[physicalDeviceIdx] =
                         devGroupProperties[params.deviceGroupIndex].physicalDevices[physicalDeviceIdx];
+
+                if (physicalDevices.size() <= (size_t)params.deviceIndex)
+                    TCU_THROW(NotSupportedError, "Device not found");
             }
 
             {
