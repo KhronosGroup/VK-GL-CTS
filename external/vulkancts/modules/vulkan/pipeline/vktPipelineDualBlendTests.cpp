@@ -180,6 +180,10 @@ static VkPipelineColorBlendAttachmentState &updateColorWriteMask(VkPipelineColor
         state.colorWriteMask |= VK_COLOR_COMPONENT_R_BIT;
     }
 
+    // E5B9G9R9 needs all four components or none (VUID-VkGraphicsPipelineCreateInfo-None-09043)
+    if (format == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32)
+        state.colorWriteMask |= VK_COLOR_COMPONENT_A_BIT;
+
     return state;
 }
 
