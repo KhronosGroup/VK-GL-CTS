@@ -239,7 +239,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                                                const vk::VkSurfaceCapabilitiesKHR &capabilities,
                                                const std::vector<vk::VkSurfaceFormatKHR> &formats,
                                                const std::vector<vk::VkPresentModeKHR> &presentModes,
-                                               bool isExtensionForPresentModeEnabled,
+                                               bool isExtensionForPresentModeEnabled, bool isFifoLatestReadyEnabled,
                                                SwapchainCreationExecutor testExecutor)
 {
     tcu::TestLog &log                                     = context.getTestContext().getLog();
@@ -836,6 +836,13 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                     continue;
                 }
             }
+            // Needs VK_KHR_present_mode_fifo_latest_ready or VK_EXT_present_mode_fifo_latest_ready and its feature
+            if (*curMode == vk::VK_PRESENT_MODE_FIFO_LATEST_READY_KHR && !isFifoLatestReadyEnabled)
+            {
+                log << tcu::TestLog::Message << "Present mode (" << *curMode << ") not supported. Skipping test case "
+                    << ++testIndex << "/" << testCount << tcu::TestLog::EndMessage;
+                continue;
+            }
             createInfo.presentMode = *curMode;
             testExecutor(vkd, device, wsiType, createInfo, log, ++testIndex, testCount);
         }
@@ -864,7 +871,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
 
 tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimension dimension,
                                                const ProtectedContext &context, vk::VkSurfaceKHR surface,
-                                               bool isExtensionForPresentModeEnabled,
+                                               bool isExtensionForPresentModeEnabled, bool isFifoLatestReadyEnabled,
                                                SwapchainCreationExecutor testExecutor)
 {
     const vk::InstanceInterface &vki    = context.getInstanceInterface();
@@ -877,12 +884,13 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
         vk::wsi::getPhysicalDeviceSurfacePresentModes(vki, physicalDevice, surface);
 
     return executeSwapchainParameterCases(wsiType, dimension, context, capabilities, formats, presentModes,
-                                          isExtensionForPresentModeEnabled, testExecutor);
+                                          isExtensionForPresentModeEnabled, isFifoLatestReadyEnabled, testExecutor);
 }
 
 tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
 {
     bool isExtensionForPresentModeEnabled = false;
+    bool isFifoLatestReadyEnabled         = false;
     std::vector<vk::VkExtensionProperties> supportedExtensions(
         enumerateInstanceExtensionProperties(baseCtx.getPlatformInterface(), nullptr));
     std::vector<std::string> instExts = getRequiredWsiExtensions(supportedExtensions, params.wsiType);
@@ -899,6 +907,17 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
             {
                 devExts.emplace_back("VK_KHR_shared_presentable_image");
                 isExtensionForPresentModeEnabled = true;
+                break;
+            }
+        }
+
+        // And VK_KHR_present_mode_fifo_latest_ready or its EXT version for VK_PRESENT_MODE_FIFO_LATEST_READY_KHR
+        for (const char *name : {"VK_KHR_present_mode_fifo_latest_ready", "VK_EXT_present_mode_fifo_latest_ready"})
+        {
+            if (isExtensionStructSupported(deviceExtensions, vk::RequiredExtension(name)))
+            {
+                devExts.emplace_back(name);
+                isFifoLatestReadyEnabled = true;
                 break;
             }
         }
@@ -933,7 +952,8 @@ tcu::TestStatus createSwapchainTest(Context &baseCtx, TestParameters params)
     }
 
     return executeSwapchainParameterCases(params.wsiType, params.dimension, context, surface,
-                                          isExtensionForPresentModeEnabled, swapchainCreateExecutor);
+                                          isExtensionForPresentModeEnabled, isFifoLatestReadyEnabled,
+                                          swapchainCreateExecutor);
 }
 
 struct GroupParameters

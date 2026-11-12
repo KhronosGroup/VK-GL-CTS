@@ -29,6 +29,9 @@
 #include "gluShaderUtil.hpp"
 #include "gluVarType.hpp"
 
+#include <cstdlib>
+#include <new>
+
 namespace vkt
 {
 
@@ -284,9 +287,52 @@ struct BlockDataPtr
     }
 };
 
+// Host reference data, zero-filled. Do not replace this with std::vector: resize() writes every byte, and each
+// 64-bit indexing case has two buffers of about 4 GB of which only the last elements of each array are used.
+// Writing them costs seconds of system time and 8 GB of memory per case, also in vk-build-programs, which only
+// needs the values for the shader source. A vector allocator that skips the initialization still loops over every
+// byte in unoptimized builds. calloc returns memory that is already zero, and for large sizes the OS provides only
+// the pages that are touched.
+class RefDataBuffer
+{
+public:
+    explicit RefDataBuffer(size_t size) : m_data(static_cast<uint8_t *>(std::calloc(size, 1))), m_size(size)
+    {
+        if (size != 0 && m_data == nullptr)
+            throw std::bad_alloc();
+    }
+
+    ~RefDataBuffer(void)
+    {
+        std::free(m_data);
+    }
+
+    RefDataBuffer(const RefDataBuffer &)            = delete;
+    RefDataBuffer &operator=(const RefDataBuffer &) = delete;
+
+    uint8_t *data(void)
+    {
+        return m_data;
+    }
+
+    size_t size(void) const
+    {
+        return m_size;
+    }
+
+    bool empty(void) const
+    {
+        return m_size == 0;
+    }
+
+private:
+    uint8_t *const m_data;
+    const size_t m_size;
+};
+
 struct RefDataStorage
 {
-    mutable de::SharedPtr<std::vector<uint8_t>> data;
+    mutable de::SharedPtr<RefDataBuffer> data;
     std::vector<BlockDataPtr> pointers;
 };
 

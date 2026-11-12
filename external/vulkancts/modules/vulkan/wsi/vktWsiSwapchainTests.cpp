@@ -103,6 +103,10 @@ static auto getRequiredWsiInstanceExtensions(const Extensions &supportedExtensio
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_swapchain_colorspace")))
         extensions.push_back("VK_EXT_swapchain_colorspace");
 
+    // Required by VK_KHR_shared_presentable_image, which the device enables for the shared present modes.
+    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_get_surface_capabilities2")))
+        extensions.push_back("VK_KHR_get_surface_capabilities2");
+
     return extensions;
 }
 
@@ -162,6 +166,8 @@ static CustomDevice createDeviceWithWsi(const InstanceWrapper &instance, VkPhysi
             extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
             hasFifoLatestReadyExtension = true;
         }
+        else if (strcmp(ext.extensionName, "VK_KHR_shared_presentable_image") == 0)
+            extensions.push_back("VK_KHR_shared_presentable_image");
     }
 
     if (hasFifoLatestReadyExtension)
@@ -551,6 +557,11 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases(const InstanceI
         {
             cases.push_back(baseParameters);
             cases.back().presentMode = *curMode;
+
+            // VUID-VkSwapchainCreateInfoKHR-minImageCount-01383
+            if (*curMode == VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR ||
+                *curMode == VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR)
+                cases.back().minImageCount = 1u;
         }
 
         break;

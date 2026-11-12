@@ -2527,8 +2527,18 @@ tcu::TestStatus NullAddressInstance::runTest(ReplayParams &replayParams)
         pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, pcRangePtr);
     else
     {
-        const auto &heapProps       = m_context.getDescriptorHeapPropertiesEXT();
-        const auto descriptorStride = de::lcm(heapProps.bufferDescriptorSize, heapProps.bufferDescriptorAlignment);
+        const auto &heapProps          = m_context.getDescriptorHeapPropertiesEXT();
+        const auto getDescriptorStride = [&](VkDescriptorType descType)
+        {
+            // Clamp to 1 so wrong property values cannot cause a division by zero.
+            const auto one = VkDeviceSize{1};
+            return isTexelBuffer(descType) ? de::lcm(std::max(heapProps.imageDescriptorSize, one),
+                                                     std::max(heapProps.imageDescriptorAlignment, one)) :
+                                             de::lcm(std::max(heapProps.bufferDescriptorSize, one),
+                                                     std::max(heapProps.bufferDescriptorAlignment, one));
+        };
+
+        const auto descriptorStride = de::max(getDescriptorStride(srcDescType), getDescriptorStride(dstDescType));
         heapStride                  = (heapProps.minResourceHeapReservedRange != 0 ?
                                            de::lcm(descriptorStride, heapProps.minResourceHeapReservedRange) :
                                            descriptorStride);

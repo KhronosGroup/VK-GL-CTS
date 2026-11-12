@@ -2704,8 +2704,12 @@ tcu::TestStatus FragShaderOnlyColorTestInstance::iterate()
 
     if (m_groupParams->useSecondaryCmdBuffer)
     {
+        // Building the pipelines chained readInputIndexInfo to readLocationInfo, so chain copies with no pNext
+        VkRenderingInputAttachmentIndexInfo readInheritanceInputIndexInfo = readInputIndexInfo;
+        readInheritanceInputIndexInfo.pNext                               = nullptr;
+
         VkRenderingAttachmentLocationInfo readInheritanceLocationInfo = readLocationInfo;
-        readInheritanceLocationInfo.pNext                             = &readInputIndexInfo;
+        readInheritanceLocationInfo.pNext                             = &readInheritanceInputIndexInfo;
 
         VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo = initVulkanStructure(&writeLocationInfo);
         inheritanceRenderingInfo.colorAttachmentCount                    = renderingCreateInfo.colorAttachmentCount;

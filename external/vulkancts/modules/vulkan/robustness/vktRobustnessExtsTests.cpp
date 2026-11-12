@@ -2477,6 +2477,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
     Move<VkDescriptorSetLayout> descriptorSetLayoutR64;
     Move<VkDescriptorPool> descriptorPoolR64;
     Move<VkDescriptorSet> descriptorSetFillImage;
+    Move<VkImageView> imageViewFillImage;
     Move<VkShaderModule> shaderModuleFillImage;
     Move<VkPipelineLayout> pipelineLayoutFillImage;
     Move<VkPipeline> pipelineFillImage;
@@ -2585,9 +2586,12 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                                                                        m_data.imageDim[2] :
                                                                        1;
 
+    // The fill shader for 64-bit multisample images writes them as storage images.
     const VkImageUsageFlags usageImage =
-        (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ? VK_IMAGE_USAGE_STORAGE_BIT :
-                                                                     (VkImageUsageFlagBits)0);
+        (m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE ||
+                 (m_data.samples > VK_SAMPLE_COUNT_1_BIT && formatIsR64(m_data.format)) ?
+             VK_IMAGE_USAGE_STORAGE_BIT :
+             (VkImageUsageFlagBits)0);
 
     const VkImageCreateInfo imageCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,       // VkStructureType sType;
@@ -2752,6 +2756,10 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                     else
                         TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned unexpected error");
                 }
+
+                if ((formatProperties.sampleCounts & imgCreateInfo.samples) == 0)
+                    TCU_THROW(NotSupportedError,
+                              "Sample count not supported for format " + de::toString(m_data.format));
             }
 
             if (b == 0)
@@ -2857,8 +2865,13 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
                     pipelineFillImage =
                         makeComputePipeline(vk, device, *pipelineLayoutFillImage, *shaderModuleFillImage);
 
+                    // The view above may use a 32-bit format, the fill shader writes 64-bit values.
+                    VkImageViewCreateInfo fillImageViewCreateInfo = imageViewCreateInfo;
+                    fillImageViewCreateInfo.format                = m_data.format;
+                    imageViewFillImage = createImageView(vk, device, &fillImageViewCreateInfo);
+
                     const VkDescriptorImageInfo descResultImageInfo =
-                        makeDescriptorImageInfo(VK_NULL_HANDLE, **imageViews[b], VK_IMAGE_LAYOUT_GENERAL);
+                        makeDescriptorImageInfo(VK_NULL_HANDLE, *imageViewFillImage, VK_IMAGE_LAYOUT_GENERAL);
                     const VkDescriptorBufferInfo descResultBufferInfo =
                         makeDescriptorBufferInfo(bufferR64, 0, sizeImageR64);
 
@@ -4294,7 +4307,7 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                             }
 
                             // VUID-vkCmdDispatch-SampledType-04472
-                            if (fmtCases[fmtNdx].count == VK_FORMAT_R64_SINT &&
+                            if (formatIsR64((VkFormat)fmtCases[fmtNdx].count) &&
                                 descCases[descNdx].count == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER)
                             {
                                 continue;

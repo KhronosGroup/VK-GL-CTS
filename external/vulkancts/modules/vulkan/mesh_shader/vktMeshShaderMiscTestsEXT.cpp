@@ -7171,7 +7171,7 @@ tcu::TestStatus iterate(Context &context, ParamsPtr params)
             0u,
             DE_SIZEOF32(tcu::Vec4),
             VK_VERTEX_INPUT_RATE_VERTEX,
-            0u,
+            1u,
         };
         const VkVertexInputAttributeDescription2EXT vtxAttrib{
             VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,

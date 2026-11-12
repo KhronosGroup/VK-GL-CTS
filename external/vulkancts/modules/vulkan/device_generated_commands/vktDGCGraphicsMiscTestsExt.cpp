@@ -5648,7 +5648,7 @@ tcu::TestStatus DynVtxInputInstance::iterate()
             0u,
             0u,
             VK_VERTEX_INPUT_RATE_VERTEX,
-            0u,
+            1u,
         },
         VkVertexInputBindingDescription2EXT{
             VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
@@ -5656,7 +5656,7 @@ tcu::TestStatus DynVtxInputInstance::iterate()
             1u,
             0u,
             VK_VERTEX_INPUT_RATE_VERTEX,
-            0u,
+            1u,
         },
     };
 
