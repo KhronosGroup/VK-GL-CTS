@@ -36,6 +36,7 @@
 
 #include "gluTextureUtil.hpp"
 
+#include <cstdint>
 #include <functional>
 
 namespace gl4cts
@@ -105,6 +106,72 @@ public:
 
 private:
     std::function<bool(deqp::Context &)> &m_testFunc;
+};
+
+class ClearTexImageViewTest : public deqp::TestCase
+{
+public:
+    struct ViewClearSpec
+    {
+        const char *name;
+        const char *description;
+        glw::GLenum parentTarget;
+        glw::GLenum parentInternalFormat;
+        glw::GLsizei parentWidth;
+        glw::GLsizei parentHeight;
+        glw::GLsizei parentDepth;
+        glw::GLsizei parentLevels;
+        bool useMidView;
+        glw::GLenum midTarget;
+        glw::GLenum midInternalFormat;
+        glw::GLuint midMinLevel;
+        glw::GLuint midNumLevels;
+        glw::GLuint midMinLayer;
+        glw::GLuint midNumLayers;
+        glw::GLenum viewTarget;
+        glw::GLenum viewInternalFormat;
+        glw::GLuint viewMinLevel;
+        glw::GLuint viewNumLevels;
+        glw::GLuint viewMinLayer;
+        glw::GLuint viewNumLayers;
+        bool useSubImage;
+        glw::GLint clearLevel;
+        glw::GLint xoffset;
+        glw::GLint yoffset;
+        glw::GLint zoffset;
+        glw::GLsizei clearWidth;
+        glw::GLsizei clearHeight;
+        glw::GLsizei clearDepth;
+        glw::GLenum clearFormat;
+        glw::GLenum clearType;
+        bool nullClearData;
+        uint8_t clearDataBytes[16];
+        glw::GLsizei texelSizeBytes;
+        uint8_t expectedTexelBytes[16];
+    };
+
+    ClearTexImageViewTest(deqp::Context &context, const ViewClearSpec &spec);
+    ~ClearTexImageViewTest() = default;
+
+    tcu::TestNode::IterateResult iterate(void);
+
+private:
+    bool runTest(void);
+
+    ViewClearSpec m_spec;
+};
+
+class ClearTexImageViewNegativeTest : public deqp::TestCase
+{
+public:
+    ClearTexImageViewNegativeTest(deqp::Context &context, const char *testName, const char *testDescription,
+                                  std::function<bool(deqp::Context &)> testFunc);
+    ~ClearTexImageViewNegativeTest() = default;
+
+    tcu::TestNode::IterateResult iterate(void);
+
+private:
+    std::function<bool(deqp::Context &)> m_testFunc;
 };
 
 class ClearTextureImageTestCases : public deqp::TestCaseGroup
