@@ -43,6 +43,7 @@
 #include "tcuCommandLine.hpp"
 
 #include "deRandom.hpp"
+#include "ycbcr/vktYCbCrUtil.hpp"
 
 #include <vector>
 #include <sstream>
@@ -449,6 +450,10 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect(VkImageAspectFlagB
     const bool use24LSB = ((m_params.imageFormat == VK_FORMAT_X8_D24_UNORM_PACK32 ||
                             m_params.imageFormat == VK_FORMAT_D24_UNORM_S8_UINT) &&
                            imageAspect == VK_IMAGE_ASPECT_DEPTH_BIT);
+    // For packed 10-bit/12-bit formats, the low 6 or 4 bits per 16-bit word are unused padding.
+    const bool useX6Masking = ycbcr::areLsb6BitsDontCare(m_params.imageFormat, m_params.imageFormat);
+    const bool useX4Masking = ycbcr::areLsb4BitsDontCare(m_params.imageFormat, m_params.imageFormat);
+    const uint8_t lsbMask   = useX6Masking ? 0xC0 : 0xF0;
 
     if (tcuFormat.type == tcu::TextureFormat::FLOAT ||
         (m_params.imageFormat == VK_FORMAT_D32_SFLOAT_S8_UINT && imageAspect == VK_IMAGE_ASPECT_DEPTH_BIT))
@@ -653,7 +658,7 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect(VkImageAspectFlagB
             const auto layerImagePtr     = imagePtr + layerImageOffset + (m_params.imageOffset ? req.alignment : 0u);
             bool pixelMatch;
 
-            // We could do this row by row to be faster, but in the use24LSB case we need to manipulate pixels independently.
+            // We could do this row by row to be faster, but in the use24LSB/useX6Masking cases we need to manipulate pixels independently.
             for (uint32_t x = 0u; x < subresourceWidth; ++x)
                 for (uint32_t y = 0u; y < subresourceHeight; ++y)
                     for (uint32_t z = 0u; z < subresourceDepth; ++z)
@@ -672,6 +677,20 @@ tcu::TestStatus ImageSubresourceLayoutInstance::iterateAspect(VkImageAspectFlagB
                             deMemcpy(&pixelValue, imagePixelPtr, pixelSizeSz);
                             pixelValue &= 0xFFFFFFu; // Discard the 8 MSB.
                             pixelMatch = (deMemCmp(bufferPixelPtr, &pixelValue, pixelSizeSz) == 0);
+                        }
+                        else if (useX6Masking || useX4Masking)
+                        {
+                            // Mask out unused low bits in each 16-bit word of packed 10/12-bit formats.
+                            pixelMatch = true;
+                            for (size_t byteNdx = 0; byteNdx < pixelSizeSz; ++byteNdx)
+                            {
+                                const uint8_t mask = (byteNdx & 0x01) ? 0xFF : lsbMask;
+                                if ((bufferPixelPtr[byteNdx] & mask) != (imagePixelPtr[byteNdx] & mask))
+                                {
+                                    pixelMatch = false;
+                                    break;
+                                }
+                            }
                         }
                         else
                             pixelMatch = (deMemCmp(bufferPixelPtr, imagePixelPtr, pixelSizeSz) == 0);

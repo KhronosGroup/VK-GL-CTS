@@ -3420,7 +3420,7 @@ void DescriptorBufferTestInstance::createDescriptorSetLayouts()
 
         dsl.layout = createDescriptorSetLayout(*m_deviceInterface, *m_device, &createInfo);
 
-        // VUID-vkGetDescriptorSetLayoutSizeEXT-layout-11812
+        // VUID-vkGetDescriptorSetLayoutSizeEXT-layout-11811 and VUID-vkGetDescriptorSetLayoutSizeEXT-layout-11812
         if (!dsl.usePushDescriptors && !dsl.hasEmbeddedImmutableSamplers)
         {
             m_deviceInterface->getDescriptorSetLayoutSizeEXT(*m_device, *dsl.layout, &dsl.sizeOfLayout);
@@ -3514,9 +3514,15 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
             dsl.bufferOffset = currentBuffer.setOffset;
         }
 
+        VkDeviceSize setSize = dsl.sizeOfLayout;
+        if (setSize == 0 && dsl.usePushDescriptors && !m_descriptorBufferProperties.bufferlessPushDescriptors)
+        {
+            setSize = m_descriptorBufferProperties.descriptorBufferOffsetAlignment;
+        }
+
         currentBuffer.numSets += 1;
         currentBuffer.setOffset +=
-            deAlignSize(static_cast<std::size_t>(dsl.sizeOfLayout),
+            deAlignSize(static_cast<std::size_t>(setSize),
                         static_cast<std::size_t>(m_descriptorBufferProperties.descriptorBufferOffsetAlignment));
 
         VkMemoryAllocateFlagsInfo allocFlagsInfo = initVulkanStructure();
@@ -3686,7 +3692,7 @@ void DescriptorBufferTestInstance::createDescriptorBuffers()
         }
     }
 
-    if (allocateStagingBuffer)
+    if (allocateStagingBuffer && stagingBufferDescriptorSetOffset != 0)
     {
         DE_ASSERT(!m_descriptorStagingBuffer.alloc);
 

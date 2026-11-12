@@ -332,9 +332,12 @@ tcu::TestStatus createPipelineMultiCallsTest(Context &ctx, CacheTestParams param
             else
             {
                 // cache missed and failure expected
-                VkPipeline object = VK_NULL_HANDLE;
-                VK_CHECK_COMPILE_REQUIRED(vk.createDataGraphPipelinesARM(device, VK_NULL_HANDLE, pipelineCache.get(),
-                                                                         1u, &pipelineCreateInfo, nullptr, &object));
+                VkPipeline object     = VK_NULL_HANDLE;
+                const VkResult result = vk.createDataGraphPipelinesARM(device, VK_NULL_HANDLE, pipelineCache.get(), 1u,
+                                                                       &pipelineCreateInfo, nullptr, &object);
+                if (object != VK_NULL_HANDLE)
+                    vk.destroyPipeline(device, object, nullptr);
+                VK_CHECK_COMPILE_REQUIRED(result);
                 checkIsNull(object);
             }
         }
@@ -534,18 +537,21 @@ tcu::TestStatus createPipelineSingleCallTest(Context &ctx, CacheTestParams param
 
     /* create pipelines */
 
+    const VkResult result = vk.createDataGraphPipelinesARM(device, VK_NULL_HANDLE, pipelineCache.get(),
+                                                           static_cast<uint32_t>(pipelineCreateInfos.size()),
+                                                           pipelineCreateInfos.data(), nullptr, pipelines.data());
+
+    // The checks below only compare the handles, destroy the pipelines now so a failed check does not leak them
+    for (const auto &pipeline : pipelines)
+    {
+        if (pipeline != VK_NULL_HANDLE)
+            vk.destroyPipeline(device, pipeline, nullptr);
+    }
+
     if (testContainsCacheMiss && params.failureMode != IGNORE_CACHE_MISS)
-    {
-        VK_CHECK_COMPILE_REQUIRED(vk.createDataGraphPipelinesARM(
-            device, VK_NULL_HANDLE, pipelineCache.get(), static_cast<uint32_t>(pipelineCreateInfos.size()),
-            pipelineCreateInfos.data(), nullptr, pipelines.data()));
-    }
+        VK_CHECK_COMPILE_REQUIRED(result);
     else
-    {
-        VK_CHECK(vk.createDataGraphPipelinesARM(device, VK_NULL_HANDLE, pipelineCache.get(),
-                                                static_cast<uint32_t>(pipelineCreateInfos.size()),
-                                                pipelineCreateInfos.data(), nullptr, pipelines.data()));
-    }
+        VK_CHECK(result);
 
     /* check that pipelines are valid/invalid as expected */
 
@@ -557,7 +563,6 @@ tcu::TestStatus createPipelineSingleCallTest(Context &ctx, CacheTestParams param
         if (params.cacheModes.at(i) != MISS_CACHE && !expectFailure)
         {
             check<VkPipeline>(pipeline);
-            vk.destroyPipeline(device, pipeline, nullptr);
         }
         else
         {

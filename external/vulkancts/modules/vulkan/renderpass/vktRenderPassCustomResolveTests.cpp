@@ -2683,6 +2683,30 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                                       de::sizeU32(allDescriptorSets), de::dataOrNull(allDescriptorSets), 0u, nullptr);
         ctx.vkd.cmdPushConstants(targetCmdBuffer, resolvePipelineLayout.get(), pcStages, 0u, pcSize, &resolvePass.area);
         resolvePipelines.at(resolvePassIndex)->bind(targetCmdBuffer);
+#ifndef CTS_USES_VULKANSC
+        // With shader objects every attachment of the rendering is active, also those past the last one the resolve
+        // pipeline uses (their formats were trimmed): the last color blend enable and write mask calls must cover them
+        // (VUID-vkCmdDraw-firstAttachment-07476 and VUID-vkCmdDraw-firstAttachment-07478), and so must the last color
+        // write enable call if the colorWriteEnable feature is enabled (VUID-vkCmdDraw-attachmentCount-07750). Their
+        // results are not checked, so writes to them can stay enabled.
+        if (isConstructionTypeShaderObject(m_params.groupParams->pipelineConstructionType))
+        {
+            const uint32_t renderingCount = resolveRenderingInfos.at(resolvePassIndex).colorAttachmentCount;
+            const uint32_t pipelineCount  = resolveAttFormats.at(resolvePassIndex).colorAttachmentCount;
+            if (renderingCount > pipelineCount)
+            {
+                const std::vector<VkBool32> writeEnables(renderingCount, VK_TRUE);
+                const std::vector<VkBool32> blendEnables(renderingCount, VK_FALSE);
+                const std::vector<VkColorComponentFlags> writeMasks(
+                    renderingCount, (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                     VK_COLOR_COMPONENT_A_BIT));
+                if (m_context.getColorWriteEnableFeaturesEXT().colorWriteEnable)
+                    ctx.vkd.cmdSetColorWriteEnableEXT(targetCmdBuffer, renderingCount, writeEnables.data());
+                ctx.vkd.cmdSetColorBlendEnableEXT(targetCmdBuffer, 0u, renderingCount, blendEnables.data());
+                ctx.vkd.cmdSetColorWriteMaskEXT(targetCmdBuffer, 0u, renderingCount, writeMasks.data());
+            }
+        }
+#endif
         ctx.vkd.cmdDraw(targetCmdBuffer, 4u, 1u, 0u, 0u);
     };
 
