@@ -123,6 +123,10 @@ class Archive;
 bool matchWildcards(std::string::const_iterator patternStart, std::string::const_iterator patternEnd,
                     std::string::const_iterator pathStart, std::string::const_iterator pathEnd, bool allowPrefix);
 
+// True if the --deqp-device-fault-subprocess-count value is the marker a main process passes to its
+// device fault subprocesses, rather than a user-supplied case count.
+bool isDeviceFaultSubprocessMarker(const std::string &deviceFaultSubprocessCount);
+
 class CaseListFilter
 {
 public:
