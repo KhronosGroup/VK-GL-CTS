@@ -832,6 +832,9 @@ MultipleRenderTargetsTestCase::IterateResult MultipleRenderTargetsTestCase::iter
         m_gl.readBuffer(m_colorBuffers[i]);
         glu::readPixels(m_context.getRenderContext(), 0, 0, result.getAccess());
         verifyRenderbuffer(m_testCtx.getLog(), m_texFmt, reference, result);
+
+        if (m_testCtx.getTestResult() != QP_TEST_RESULT_PASS)
+            return STOP;
     }
 
     return STOP;
