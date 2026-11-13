@@ -7803,6 +7803,43 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures 
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAddressBindingUnrestrictedFeaturesEXT (Context& context)
+{
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const InstanceWrapper instance(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const VkPhysicalDevice                    physicalDevice = instance.getPhysicalDevice();
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT, vertexAddressBindingUnrestricted),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT*>(featuresStruct);
+        checkFeatures(instance, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeatures (Context& context)
 {
     tcu::TestLog&                            log = context.getTestContext().getLog();
@@ -8848,6 +8885,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "unified_image_layouts_features_khr", createDeviceWithUnsupportedFeaturesTestUnifiedImageLayoutsFeaturesKHR);
 	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", createDeviceWithUnsupportedFeaturesTestUniformBufferStandardLayoutFeatures);
 	addFunctionCase(testGroup, "variable_pointers_features", createDeviceWithUnsupportedFeaturesTestVariablePointersFeatures);
+	addFunctionCase(testGroup, "vertex_address_binding_unrestricted_features_ext", createDeviceWithUnsupportedFeaturesTestVertexAddressBindingUnrestrictedFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_attribute_divisor_features", createDeviceWithUnsupportedFeaturesTestVertexAttributeDivisorFeatures);
 	addFunctionCase(testGroup, "vertex_attribute_robustness_features_ext", createDeviceWithUnsupportedFeaturesTestVertexAttributeRobustnessFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT);

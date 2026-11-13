@@ -1439,6 +1439,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTransformFeedba
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceUniformBufferStandardLayoutFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVariablePointersFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT& value);

@@ -6699,6 +6699,45 @@ tcu::TestStatus testPhysicalDeviceFeatureVariablePointersFeatures (Context& cont
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureVertexAddressBindingUnrestrictedFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT deviceVertexAddressBindingUnrestrictedFeaturesEXT[count];
+    const bool                                                  isVertexAddressBindingUnrestrictedFeaturesEXT = checkExtension(properties, "VK_EXT_vertex_address_binding_unrestricted");
+
+    if (!isVertexAddressBindingUnrestrictedFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceVertexAddressBindingUnrestrictedFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT));
+        deviceVertexAddressBindingUnrestrictedFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ADDRESS_BINDING_UNRESTRICTED_FEATURES_EXT;
+        deviceVertexAddressBindingUnrestrictedFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceVertexAddressBindingUnrestrictedFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceVertexAddressBindingUnrestrictedFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceVertexAddressBindingUnrestrictedFeaturesEXT[0].vertexAddressBindingUnrestricted != deviceVertexAddressBindingUnrestrictedFeaturesEXT[1].vertexAddressBindingUnrestricted)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureVertexAttributeDivisorFeatures (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7998,6 +8037,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "unified_image_layouts_features_khr", testPhysicalDeviceFeatureUnifiedImageLayoutsFeaturesKHR);
 	addFunctionCase(testGroup, "uniform_buffer_standard_layout_features", testPhysicalDeviceFeatureUniformBufferStandardLayoutFeatures);
 	addFunctionCase(testGroup, "variable_pointers_features", testPhysicalDeviceFeatureVariablePointersFeatures);
+	addFunctionCase(testGroup, "vertex_address_binding_unrestricted_features_ext", testPhysicalDeviceFeatureVertexAddressBindingUnrestrictedFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_attribute_divisor_features", testPhysicalDeviceFeatureVertexAttributeDivisorFeatures);
 	addFunctionCase(testGroup, "vertex_attribute_robustness_features_ext", testPhysicalDeviceFeatureVertexAttributeRobustnessFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT);

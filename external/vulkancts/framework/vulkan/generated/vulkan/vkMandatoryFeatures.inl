@@ -1021,6 +1021,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_variable_pointers"))
 		addFeatures(&physicalDeviceVariablePointersFeatures);
 
+	// VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT for ext [VK_EXT_vertex_address_binding_unrestricted]
+	vk::VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT physicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_vertex_address_binding_unrestricted"))
+		addFeatures(&physicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT);
+
 	// VkPhysicalDeviceVertexAttributeDivisorFeatures, VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR, VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT for ext [VK_KHR_vertex_attribute_divisor, VK_EXT_vertex_attribute_divisor]
 	vk::VkPhysicalDeviceVertexAttributeDivisorFeatures physicalDeviceVertexAttributeDivisorFeatures = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_vertex_attribute_divisor", "VK_EXT_vertex_attribute_divisor"))
@@ -2857,6 +2862,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDevicePrimitiveRestartIndexFeaturesEXT.primitiveRestartIndex == VK_FALSE )
 			failMesages.push_back("primitiveRestartIndex");
+	}
+
+	// VkPhysicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_address_binding_unrestricted")) )
+	{
+		if ( physicalDeviceVertexAddressBindingUnrestrictedFeaturesEXT.vertexAddressBindingUnrestricted == VK_FALSE )
+			failMesages.push_back("vertexAddressBindingUnrestricted");
 	}
 
 	// VkPhysicalDeviceImageTilingControlFeaturesEXT

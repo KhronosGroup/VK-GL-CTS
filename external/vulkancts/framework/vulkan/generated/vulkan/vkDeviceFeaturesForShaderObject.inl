@@ -206,6 +206,7 @@ auto fTransformFeedbackFeaturesEXT                      = m_context.getTransform
 auto fUnifiedImageLayoutsFeatures                       = m_context.getUnifiedImageLayoutsFeatures();
 auto fUniformBufferStandardLayoutFeatures               = m_context.getUniformBufferStandardLayoutFeatures();
 auto fVariablePointersFeatures                          = m_context.getVariablePointersFeatures();
+auto fVertexAddressBindingUnrestrictedFeaturesEXT       = m_context.getVertexAddressBindingUnrestrictedFeaturesEXT();
 auto fVertexAttributeDivisorFeatures                    = m_context.getVertexAttributeDivisorFeatures();
 auto fVertexAttributeRobustnessFeaturesEXT              = m_context.getVertexAttributeRobustnessFeaturesEXT();
 auto fVertexInputDynamicStateFeaturesEXT                = m_context.getVertexInputDynamicStateFeaturesEXT();
@@ -424,6 +425,7 @@ std::vector<void *> pNextFeatures = {
 	&fUnifiedImageLayoutsFeatures,
 	&fUniformBufferStandardLayoutFeatures,
 	&fVariablePointersFeatures,
+	&fVertexAddressBindingUnrestrictedFeaturesEXT,
 	&fVertexAttributeDivisorFeatures,
 	&fVertexAttributeRobustnessFeaturesEXT,
 	&fVertexInputDynamicStateFeaturesEXT,
