@@ -790,6 +790,716 @@ tcu::TestStatus dynamicSampleShadingTest(Context &context, DSS::Params params)
 }
 #endif // CTS_USES_VULKANSC
 
+namespace VPCountIncrease
+{
+
+enum class Scenario
+{
+    VIEWPORT_2_1_2 = 0,
+    SCISSOR_2_1_2,
+    VIEWPORT_4_1_4,
+    SCISSOR_4_1_4,
+    SCISSOR_ZERO_RECT,
+    VIEWPORT_AFTER_SET_VIEWPORT,
+    SCISSOR_AFTER_SET_SCISSOR,
+    VIEWPORT_FROM_DISCARD,
+    SCISSOR_FROM_DISCARD,
+    VIEWPORT_STATIC_PIPELINE,
+    SCISSOR_STATIC_PIPELINE,
+    VIEWPORT_STATIC_COUNT_DYNAMIC_STATE,
+    SCISSOR_STATIC_COUNT_DYNAMIC_STATE,
+};
+
+struct Params
+{
+    PipelineConstructionType constructionType;
+    Scenario scenario;
+};
+
+struct PushConstants
+{
+    tcu::Vec4 color;
+    int32_t viewportIndex;
+};
+
+uint32_t getRequiredMaxViewports(Scenario scenario)
+{
+    switch (scenario)
+    {
+    case Scenario::VIEWPORT_FROM_DISCARD:
+    case Scenario::SCISSOR_FROM_DISCARD:
+        return 1u;
+    case Scenario::VIEWPORT_4_1_4:
+    case Scenario::SCISSOR_4_1_4:
+        return 4u;
+    case Scenario::VIEWPORT_2_1_2:
+    case Scenario::SCISSOR_2_1_2:
+    case Scenario::SCISSOR_ZERO_RECT:
+    case Scenario::VIEWPORT_AFTER_SET_VIEWPORT:
+    case Scenario::SCISSOR_AFTER_SET_SCISSOR:
+    case Scenario::VIEWPORT_STATIC_PIPELINE:
+    case Scenario::SCISSOR_STATIC_PIPELINE:
+    case Scenario::VIEWPORT_STATIC_COUNT_DYNAMIC_STATE:
+    case Scenario::SCISSOR_STATIC_COUNT_DYNAMIC_STATE:
+        return 2u;
+    default:
+        DE_ASSERT(false);
+        return 1u;
+    }
+}
+
+bool usesWithCountDynamicState(Scenario scenario)
+{
+    switch (scenario)
+    {
+    case Scenario::VIEWPORT_STATIC_COUNT_DYNAMIC_STATE:
+    case Scenario::SCISSOR_STATIC_COUNT_DYNAMIC_STATE:
+        return false;
+    default:
+        return true;
+    }
+}
+
+void setViewportWithCount(const DeviceInterface &vkd, VkCommandBuffer cmdBuffer, const std::vector<VkViewport> &vps)
+{
+#ifndef CTS_USES_VULKANSC
+    vkd.cmdSetViewportWithCount(cmdBuffer, de::sizeU32(vps), de::dataOrNull(vps));
+#else
+    vkd.cmdSetViewportWithCountEXT(cmdBuffer, de::sizeU32(vps), de::dataOrNull(vps));
+#endif // CTS_USES_VULKANSC
+}
+
+void setScissorWithCount(const DeviceInterface &vkd, VkCommandBuffer cmdBuffer, const std::vector<VkRect2D> &scs)
+{
+#ifndef CTS_USES_VULKANSC
+    vkd.cmdSetScissorWithCount(cmdBuffer, de::sizeU32(scs), de::dataOrNull(scs));
+#else
+    vkd.cmdSetScissorWithCountEXT(cmdBuffer, de::sizeU32(scs), de::dataOrNull(scs));
+#endif // CTS_USES_VULKANSC
+}
+
+void fillRect(const tcu::PixelBufferAccess &access, const VkRect2D &rect, const tcu::Vec4 &color)
+{
+    const int endX = rect.offset.x + static_cast<int>(rect.extent.width);
+    const int endY = rect.offset.y + static_cast<int>(rect.extent.height);
+
+    for (int y = rect.offset.y; y < endY; ++y)
+        for (int x = rect.offset.x; x < endX; ++x)
+            access.setPixel(color, x, y);
+}
+
+void checkViewportScissorCountIncreaseSupport(Context &context, Params params)
+{
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          params.constructionType);
+
+    if (usesWithCountDynamicState(params.scenario) &&
+        !context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState)
+        TCU_THROW(NotSupportedError, "extendedDynamicState is not supported");
+
+    const uint32_t requiredViewports = getRequiredMaxViewports(params.scenario);
+    if (requiredViewports > 1u)
+    {
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+        if (context.getDeviceProperties().limits.maxViewports < requiredViewports)
+            TCU_THROW(NotSupportedError, "Insufficient maxViewports limit");
+    }
+}
+
+void initViewportScissorCountIncreasePrograms(SourceCollections &programCollection, Params params)
+{
+    initFullScreenQuadVertexProgram(programCollection, "vert");
+
+    if (getRequiredMaxViewports(params.scenario) > 1u)
+    {
+        std::ostringstream geom;
+        geom << "#version 460\n"
+             << "layout (triangles) in;\n"
+             << "layout (triangle_strip, max_vertices = 3) out;\n"
+             << "layout (push_constant) uniform PushConstants {\n"
+             << "    layout (offset = 0) vec4 color;\n"
+             << "    layout (offset = 16) int viewportIndex;\n"
+             << "} pc;\n"
+             << "void main (void) {\n"
+             << "    for (int i = 0; i < 3; ++i) {\n"
+             << "        gl_Position = gl_in[i].gl_Position;\n"
+             << "        gl_ViewportIndex = pc.viewportIndex;\n"
+             << "        EmitVertex();\n"
+             << "    }\n"
+             << "    EndPrimitive();\n"
+             << "}\n";
+        programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
+    }
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location = 0) out vec4 outColor;\n"
+         << "layout (push_constant) uniform PushConstants {\n"
+         << "    layout (offset = 0) vec4 color;\n"
+         << "    layout (offset = 16) int viewportIndex;\n"
+         << "} pc;\n"
+         << "void main (void) {\n"
+         << "    outColor = pc.color;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus viewportScissorCountIncreaseTest(Context &context, Params params)
+{
+    const auto &ctx               = context.getContextCommonData();
+    const bool useMultiViewport   = (getRequiredMaxViewports(params.scenario) > 1u);
+    const VkFormat colorFormat    = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto tcuFormat          = mapVkFormat(colorFormat);
+    const VkImageUsageFlags usage = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto colorSRR           = makeDefaultImageSubresourceRange();
+    const tcu::IVec3 fbExtent(16, 16, 1);
+    const auto vkExtent   = makeExtent3D(fbExtent);
+    const auto renderArea = makeRect2D(fbExtent);
+
+    const tcu::Vec4 kBlack(0.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 kRed(1.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 kGreen(0.0f, 1.0f, 0.0f, 1.0f);
+    const tcu::Vec4 kBlue(0.0f, 0.0f, 1.0f, 1.0f);
+    const tcu::Vec4 kYellow(1.0f, 1.0f, 0.0f, 1.0f);
+    const tcu::Vec4 kCyan(0.0f, 1.0f, 1.0f, 1.0f);
+    const tcu::Vec4 kMagenta(1.0f, 0.0f, 1.0f, 1.0f);
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
+
+    const VkViewport vpFull    = makeViewport(0.0f, 0.0f, 16.0f, 16.0f, 0.0f, 1.0f);
+    const VkViewport vpLeft    = makeViewport(0.0f, 0.0f, 8.0f, 16.0f, 0.0f, 1.0f);
+    const VkViewport vpRight   = makeViewport(8.0f, 0.0f, 8.0f, 16.0f, 0.0f, 1.0f);
+    const VkViewport vpTopLeft = makeViewport(0.0f, 0.0f, 8.0f, 8.0f, 0.0f, 1.0f);
+
+    const std::vector<VkViewport> vpQ{
+        makeViewport(0.0f, 0.0f, 8.0f, 8.0f, 0.0f, 1.0f),
+        makeViewport(8.0f, 0.0f, 8.0f, 8.0f, 0.0f, 1.0f),
+        makeViewport(0.0f, 8.0f, 8.0f, 8.0f, 0.0f, 1.0f),
+        makeViewport(8.0f, 8.0f, 8.0f, 8.0f, 0.0f, 1.0f),
+    };
+    const std::vector<VkViewport> vpSmallQ{
+        makeViewport(0.0f, 0.0f, 4.0f, 4.0f, 0.0f, 1.0f),
+        makeViewport(8.0f, 0.0f, 4.0f, 4.0f, 0.0f, 1.0f),
+        makeViewport(0.0f, 8.0f, 4.0f, 4.0f, 0.0f, 1.0f),
+        makeViewport(8.0f, 8.0f, 4.0f, 4.0f, 0.0f, 1.0f),
+    };
+
+    const VkRect2D scFull        = makeRect2D(0, 0, 16u, 16u);
+    const VkRect2D scLeft        = makeRect2D(0, 0, 8u, 16u);
+    const VkRect2D scRight       = makeRect2D(8, 0, 8u, 16u);
+    const VkRect2D scTopRight    = makeRect2D(8, 0, 8u, 8u);
+    const VkRect2D scBottomRight = makeRect2D(8, 8, 8u, 8u);
+    const VkRect2D scZero        = makeRect2D(0, 0, 0u, 0u);
+
+    const std::vector<VkRect2D> scQ{
+        makeRect2D(0, 0, 8u, 8u),
+        makeRect2D(8, 0, 8u, 8u),
+        makeRect2D(0, 8, 8u, 8u),
+        makeRect2D(8, 8, 8u, 8u),
+    };
+    const std::vector<VkRect2D> scInnerQ{
+        makeRect2D(2, 2, 4u, 4u),
+        makeRect2D(10, 2, 4u, 4u),
+        makeRect2D(2, 10, 4u, 4u),
+        makeRect2D(10, 10, 4u, 4u),
+    };
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, vkExtent, colorFormat, usage, VK_IMAGE_TYPE_2D,
+                                colorSRR, 1u, VK_SAMPLE_COUNT_1_BIT);
+
+    RenderPassWrapper renderPass(params.constructionType, ctx.vkd, ctx.device, colorFormat);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(),
+                                 vkExtent.width, vkExtent.height);
+
+    const VkShaderStageFlags pushStages =
+        useMultiViewport ? (VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) : VK_SHADER_STAGE_FRAGMENT_BIT;
+    const VkPushConstantRange pushConstantRange = {
+        pushStages,                                   // VkShaderStageFlags stageFlags;
+        0u,                                           // uint32_t offset;
+        static_cast<uint32_t>(sizeof(PushConstants)), // uint32_t size;
+    };
+    const PipelineLayoutWrapper pipelineLayout(params.constructionType, ctx.vkd, ctx.device, 0u, nullptr, 1u,
+                                               &pushConstantRange);
+
+    const auto &binaries        = context.getBinaryCollection();
+    const ShaderWrapper vertMod = ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
+    const ShaderWrapper geomMod =
+        useMultiViewport ? ShaderWrapper(ctx.vkd, ctx.device, binaries.get("geom")) : ShaderWrapper();
+    const ShaderWrapper fragMod = ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructureConst();
+
+    const auto makePipeline = [&](const std::vector<VkDynamicState> &dynStates, const std::vector<VkViewport> &vps,
+                                  const std::vector<VkRect2D> &scs, bool rasterizerDiscard = false)
+    {
+        std::unique_ptr<GraphicsPipelineWrapper> pipe(new GraphicsPipelineWrapper(
+            ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(), params.constructionType));
+
+        VkPipelineDynamicStateCreateInfo dynStateInfo = initVulkanStructure();
+        dynStateInfo.dynamicStateCount                = de::sizeU32(dynStates);
+        dynStateInfo.pDynamicStates                   = de::dataOrNull(dynStates);
+
+        pipe->setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDefaultMultisampleState()
+            .setDefaultColorBlendState();
+
+        if (!dynStates.empty())
+            pipe->setDynamicState(&dynStateInfo);
+
+        if (rasterizerDiscard)
+        {
+            pipe->setDefaultRasterizerDiscardEnable(true).disableViewportState(true);
+        }
+        else
+        {
+            if (vps.empty())
+                pipe->setDefaultViewportsCount(0u);
+            if (scs.empty())
+                pipe->setDefaultScissorsCount(0u);
+        }
+
+        const ShaderWrapper activeFrag = rasterizerDiscard ? ShaderWrapper() : fragMod;
+
+        pipe->setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(vps, scs, pipelineLayout, *renderPass, 0u, vertMod, nullptr,
+                                              ShaderWrapper(), ShaderWrapper(), geomMod)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, activeFrag)
+            .setupFragmentOutputState(*renderPass, 0u)
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .buildPipeline();
+
+        return pipe;
+    };
+
+    const std::vector<VkDynamicState> withCountDynStates{
+        VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT_EXT,
+        VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT_EXT,
+    };
+    const std::vector<VkDynamicState> classicDynStates{
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+    };
+
+    std::unique_ptr<GraphicsPipelineWrapper> pipeWithCount;
+    if (usesWithCountDynamicState(params.scenario))
+        pipeWithCount = makePipeline(withCountDynStates, {}, {});
+
+    std::unique_ptr<GraphicsPipelineWrapper> pipeDyn1;
+    std::unique_ptr<GraphicsPipelineWrapper> pipeDyn2;
+    std::unique_ptr<GraphicsPipelineWrapper> pipeDiscard;
+    std::unique_ptr<GraphicsPipelineWrapper> pipeStatic1;
+    std::unique_ptr<GraphicsPipelineWrapper> pipeStatic2;
+
+    switch (params.scenario)
+    {
+    case Scenario::VIEWPORT_AFTER_SET_VIEWPORT:
+    case Scenario::SCISSOR_AFTER_SET_SCISSOR:
+        pipeDyn1 = makePipeline(classicDynStates, {vpFull}, {scFull});
+        break;
+    case Scenario::VIEWPORT_FROM_DISCARD:
+    case Scenario::SCISSOR_FROM_DISCARD:
+        pipeDiscard = makePipeline({}, {}, {}, true);
+        break;
+    case Scenario::VIEWPORT_STATIC_PIPELINE:
+        pipeStatic1 = makePipeline({}, {vpLeft}, {scLeft});
+        pipeStatic2 = makePipeline({}, {vpLeft, vpRight}, {scLeft, scRight});
+        break;
+    case Scenario::SCISSOR_STATIC_PIPELINE:
+        pipeStatic1 = makePipeline({}, {vpLeft}, {scLeft});
+        pipeStatic2 = makePipeline({}, {vpLeft, vpRight}, {scLeft, scBottomRight});
+        break;
+    case Scenario::VIEWPORT_STATIC_COUNT_DYNAMIC_STATE:
+    case Scenario::SCISSOR_STATIC_COUNT_DYNAMIC_STATE:
+        pipeDyn1 = makePipeline(classicDynStates, {vpFull}, {scFull});
+        pipeDyn2 = makePipeline(classicDynStates, {vpFull, vpFull}, {scFull, scFull});
+        break;
+    default:
+        break;
+    }
+
+    tcu::TextureLevel referenceLevel(tcuFormat, fbExtent.x(), fbExtent.y());
+    const auto referenceAccess = referenceLevel.getAccess();
+    tcu::clear(referenceAccess, kBlack);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const VkCommandBuffer cmdBuffer = *cmd.cmdBuffer;
+
+    const auto drawQuad = [&](int32_t vpIdx, const tcu::Vec4 &color)
+    {
+        const PushConstants pc{color, vpIdx};
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pushStages, 0u, static_cast<uint32_t>(sizeof(pc)), &pc);
+        ctx.vkd.cmdDraw(cmdBuffer, kVertexCount, 1u, 0u, 0u);
+    };
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPass.begin(ctx.vkd, cmdBuffer, renderArea, kBlack);
+
+    switch (params.scenario)
+    {
+    case Scenario::VIEWPORT_2_1_2:
+    {
+        pipeWithCount->bind(cmdBuffer);
+
+        // Draw 0: flush wrong slot 1 viewport (vpTopLeft) into hardware state.
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpTopLeft});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scFull, scFull});
+        drawQuad(0, kRed);
+        drawQuad(1, kRed);
+
+        // Populate CPU slot 1 with vpRight without flushing, then draw with count 1 to clear dirty bits.
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpTopLeft, vpRight});
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft});
+        drawQuad(0, kBlue);
+
+        // Increase count 1 -> 2 with {vpLeft, vpRight} matching the CPU array.
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpRight});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft, scRight});
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+
+        fillRect(referenceAccess, scLeft, kGreen);
+        fillRect(referenceAccess, scRight, kYellow);
+        break;
+    }
+
+    case Scenario::SCISSOR_2_1_2:
+    {
+        pipeWithCount->bind(cmdBuffer);
+
+        // Draw 0: flush scTopRight into hardware slot 1 and paint left + top-right red.
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpRight});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft, scTopRight});
+        drawQuad(0, kRed);
+        drawQuad(1, kRed);
+
+        // Populate CPU slot 1 with scBottomRight without flushing, then draw with count 1.
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scTopRight, scBottomRight});
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft});
+        drawQuad(0, kBlue);
+
+        // Increase count 1 -> 2 with {scLeft, scBottomRight} matching the CPU array.
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpRight});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft, scBottomRight});
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+
+        fillRect(referenceAccess, scLeft, kGreen);
+        fillRect(referenceAccess, scTopRight, kRed);
+        fillRect(referenceAccess, scBottomRight, kYellow);
+        break;
+    }
+
+    case Scenario::VIEWPORT_4_1_4:
+    {
+        pipeWithCount->bind(cmdBuffer);
+
+        // Draw 0: flush small 4x4 viewports into hardware slots 0..3.
+        setViewportWithCount(ctx.vkd, cmdBuffer, vpSmallQ);
+        setScissorWithCount(ctx.vkd, cmdBuffer, scQ);
+        for (int32_t i = 0; i < 4; ++i)
+            drawQuad(i, kRed);
+
+        // Populate CPU slots 1..3 with full quadrant viewports without flushing, then draw with count 1.
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpSmallQ[0], vpQ[1], vpQ[2], vpQ[3]});
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpQ[0]});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scQ[0]});
+        drawQuad(0, kBlue);
+
+        // Increase count 1 -> 4 with vpQ matching CPU slots 0..3.
+        setViewportWithCount(ctx.vkd, cmdBuffer, vpQ);
+        setScissorWithCount(ctx.vkd, cmdBuffer, scQ);
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+        drawQuad(2, kCyan);
+        drawQuad(3, kMagenta);
+
+        fillRect(referenceAccess, scQ[0], kGreen);
+        fillRect(referenceAccess, scQ[1], kYellow);
+        fillRect(referenceAccess, scQ[2], kCyan);
+        fillRect(referenceAccess, scQ[3], kMagenta);
+        break;
+    }
+
+    case Scenario::SCISSOR_4_1_4:
+    {
+        pipeWithCount->bind(cmdBuffer);
+
+        // Draw 0: flush full quadrant scissors into hardware slots 0..3 and paint background red.
+        setViewportWithCount(ctx.vkd, cmdBuffer, vpQ);
+        setScissorWithCount(ctx.vkd, cmdBuffer, scQ);
+        for (int32_t i = 0; i < 4; ++i)
+            drawQuad(i, kRed);
+
+        // Populate CPU slots 1..3 with inner 4x4 scissors without flushing, then draw with count 1.
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scQ[0], scInnerQ[1], scInnerQ[2], scInnerQ[3]});
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpQ[0]});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scInnerQ[0]});
+        drawQuad(0, kBlue);
+
+        // Increase count 1 -> 4 with scInnerQ matching CPU slots 0..3.
+        setViewportWithCount(ctx.vkd, cmdBuffer, vpQ);
+        setScissorWithCount(ctx.vkd, cmdBuffer, scInnerQ);
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+        drawQuad(2, kCyan);
+        drawQuad(3, kMagenta);
+
+        fillRect(referenceAccess, scFull, kRed);
+        fillRect(referenceAccess, scInnerQ[0], kGreen);
+        fillRect(referenceAccess, scInnerQ[1], kYellow);
+        fillRect(referenceAccess, scInnerQ[2], kCyan);
+        fillRect(referenceAccess, scInnerQ[3], kMagenta);
+        break;
+    }
+
+    case Scenario::SCISSOR_ZERO_RECT:
+    {
+        pipeWithCount->bind(cmdBuffer);
+
+        // Fresh command buffer: slot 1 in zero-initialized CPU state already matches scZero {{0,0},{0,0}}.
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft});
+        drawQuad(0, kBlue);
+
+        // Increase count 1 -> 2 with slot 1 set to scZero; viewport 1 must be completely clipped.
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpRight});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft, scZero});
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+
+        fillRect(referenceAccess, scLeft, kGreen);
+        break;
+    }
+
+    case Scenario::VIEWPORT_AFTER_SET_VIEWPORT:
+    {
+        // Draw 0: flush wrong slot 1 viewport (vpLeft) into hardware state.
+        pipeWithCount->bind(cmdBuffer);
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpLeft});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scFull, scFull});
+        drawQuad(0, kRed);
+        drawQuad(1, kRed);
+
+        // Draw 1: pipeline with static viewportCount = 1, populate 2 viewports via vkCmdSetViewport.
+        pipeDyn1->bind(cmdBuffer);
+        const std::vector<VkViewport> twoVps{vpLeft, vpRight};
+        ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 2u, twoVps.data());
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &scLeft);
+        drawQuad(0, kBlue);
+
+        // Draw 2: switch back to WITH_COUNT and set 2 viewports identical to CPU slots 0..1.
+        pipeWithCount->bind(cmdBuffer);
+        setViewportWithCount(ctx.vkd, cmdBuffer, twoVps);
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft, scRight});
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+
+        fillRect(referenceAccess, scLeft, kGreen);
+        fillRect(referenceAccess, scRight, kYellow);
+        break;
+    }
+
+    case Scenario::SCISSOR_AFTER_SET_SCISSOR:
+    {
+        // Draw 0: flush scTopRight into hardware slot 1 and paint left + top-right red.
+        pipeWithCount->bind(cmdBuffer);
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpRight});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft, scTopRight});
+        drawQuad(0, kRed);
+        drawQuad(1, kRed);
+
+        // Draw 1: pipeline with static scissorCount = 1, populate 2 scissors via vkCmdSetScissor.
+        pipeDyn1->bind(cmdBuffer);
+        const std::vector<VkRect2D> twoScs{scLeft, scBottomRight};
+        ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1u, &vpLeft);
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 2u, twoScs.data());
+        drawQuad(0, kBlue);
+
+        // Draw 2: switch back to WITH_COUNT and set 2 scissors identical to CPU slots 0..1.
+        pipeWithCount->bind(cmdBuffer);
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpRight});
+        setScissorWithCount(ctx.vkd, cmdBuffer, twoScs);
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+
+        fillRect(referenceAccess, scLeft, kGreen);
+        fillRect(referenceAccess, scTopRight, kRed);
+        fillRect(referenceAccess, scBottomRight, kYellow);
+        break;
+    }
+
+    case Scenario::VIEWPORT_FROM_DISCARD:
+    {
+        // Pre-populate CPU slot 0 while viewport_count is 0, then draw with rasterizer discard to clear dirty bits.
+        ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1u, &vpRight);
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &scFull);
+        pipeDiscard->bind(cmdBuffer);
+        ctx.vkd.cmdDraw(cmdBuffer, kVertexCount, 1u, 0u, 0u);
+
+        // Increase count 0 -> 1 with vpRight matching CPU slot 0.
+        pipeWithCount->bind(cmdBuffer);
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpRight});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scFull});
+        drawQuad(0, kGreen);
+
+        fillRect(referenceAccess, scRight, kGreen);
+        break;
+    }
+
+    case Scenario::SCISSOR_FROM_DISCARD:
+    {
+        // Pre-populate CPU slot 0 while scissor_count is 0, then draw with rasterizer discard to clear dirty bits.
+        ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 1u, &vpFull);
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 1u, &scRight);
+        pipeDiscard->bind(cmdBuffer);
+        ctx.vkd.cmdDraw(cmdBuffer, kVertexCount, 1u, 0u, 0u);
+
+        // Increase count 0 -> 1 with scRight matching CPU slot 0.
+        pipeWithCount->bind(cmdBuffer);
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpFull});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scRight});
+        drawQuad(0, kGreen);
+
+        fillRect(referenceAccess, scRight, kGreen);
+        break;
+    }
+
+    case Scenario::VIEWPORT_STATIC_PIPELINE:
+    {
+        // Draw 0: flush wrong slot 1 viewport (vpLeft) into hardware state.
+        pipeWithCount->bind(cmdBuffer);
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpLeft});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scFull, scFull});
+        drawQuad(0, kRed);
+        drawQuad(1, kRed);
+
+        // Populate CPU slot 1 with vpRight without flushing, then bind static 1-viewport pipeline and draw.
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpRight});
+        pipeStatic1->bind(cmdBuffer);
+        drawQuad(0, kBlue);
+
+        // Bind static 2-viewport pipeline ({vpLeft, vpRight}) increasing static count 1 -> 2.
+        pipeStatic2->bind(cmdBuffer);
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+
+        fillRect(referenceAccess, scLeft, kGreen);
+        fillRect(referenceAccess, scRight, kYellow);
+        break;
+    }
+
+    case Scenario::SCISSOR_STATIC_PIPELINE:
+    {
+        // Draw 0: flush scTopRight into hardware slot 1 and paint left + top-right red.
+        pipeWithCount->bind(cmdBuffer);
+        setViewportWithCount(ctx.vkd, cmdBuffer, {vpLeft, vpRight});
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft, scTopRight});
+        drawQuad(0, kRed);
+        drawQuad(1, kRed);
+
+        // Populate CPU slot 1 with scBottomRight without flushing, then bind static 1-scissor pipeline and draw.
+        setScissorWithCount(ctx.vkd, cmdBuffer, {scLeft, scBottomRight});
+        pipeStatic1->bind(cmdBuffer);
+        drawQuad(0, kBlue);
+
+        // Bind static 2-scissor pipeline ({scLeft, scBottomRight}) increasing static count 1 -> 2.
+        pipeStatic2->bind(cmdBuffer);
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+
+        fillRect(referenceAccess, scLeft, kGreen);
+        fillRect(referenceAccess, scTopRight, kRed);
+        fillRect(referenceAccess, scBottomRight, kYellow);
+        break;
+    }
+
+    case Scenario::VIEWPORT_STATIC_COUNT_DYNAMIC_STATE:
+    {
+        // Draw 0: flush wrong slot 1 viewport (vpLeft) with static viewportCount = 2.
+        pipeDyn2->bind(cmdBuffer);
+        const std::vector<VkViewport> wrongVps{vpLeft, vpLeft};
+        const std::vector<VkRect2D> fullScs{scFull, scFull};
+        ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 2u, wrongVps.data());
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 2u, fullScs.data());
+        drawQuad(0, kRed);
+        drawQuad(1, kRed);
+
+        // Draw 1: bind static viewportCount = 1 pipeline and set 2 dynamic viewports {vpLeft, vpRight}.
+        pipeDyn1->bind(cmdBuffer);
+        const std::vector<VkViewport> finalVps{vpLeft, vpRight};
+        const std::vector<VkRect2D> finalScs{scLeft, scRight};
+        ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 2u, finalVps.data());
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 2u, finalScs.data());
+        drawQuad(0, kBlue);
+
+        // Draw 2: bind static viewportCount = 2 pipeline without re-calling vkCmdSetViewport.
+        pipeDyn2->bind(cmdBuffer);
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+
+        fillRect(referenceAccess, scLeft, kGreen);
+        fillRect(referenceAccess, scRight, kYellow);
+        break;
+    }
+
+    case Scenario::SCISSOR_STATIC_COUNT_DYNAMIC_STATE:
+    {
+        // Draw 0: flush scTopRight into hardware slot 1 with static scissorCount = 2.
+        pipeDyn2->bind(cmdBuffer);
+        const std::vector<VkViewport> twoVps{vpLeft, vpRight};
+        const std::vector<VkRect2D> initScs{scLeft, scTopRight};
+        ctx.vkd.cmdSetViewport(cmdBuffer, 0u, 2u, twoVps.data());
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 2u, initScs.data());
+        drawQuad(0, kRed);
+        drawQuad(1, kRed);
+
+        // Draw 1: bind static scissorCount = 1 pipeline and set 2 dynamic scissors {scLeft, scBottomRight}.
+        pipeDyn1->bind(cmdBuffer);
+        const std::vector<VkRect2D> finalScs{scLeft, scBottomRight};
+        ctx.vkd.cmdSetScissor(cmdBuffer, 0u, 2u, finalScs.data());
+        drawQuad(0, kBlue);
+
+        // Draw 2: bind static scissorCount = 2 pipeline without re-calling vkCmdSetScissor.
+        pipeDyn2->bind(cmdBuffer);
+        drawQuad(0, kGreen);
+        drawQuad(1, kYellow);
+
+        fillRect(referenceAccess, scLeft, kGreen);
+        fillRect(referenceAccess, scTopRight, kRed);
+        fillRect(referenceAccess, scBottomRight, kYellow);
+        break;
+    }
+
+    default:
+        DE_ASSERT(false);
+        break;
+    }
+
+    renderPass.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1),
+                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                      VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    const tcu::ConstPixelBufferAccess resultAccess(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    auto &log = context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace VPCountIncrease
+
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
 } // anonymous namespace
@@ -830,6 +1540,50 @@ tcu::TestCaseGroup *createExtendedDynamicStateMiscTests(tcu::TestContext &testCt
             }
     }
 #endif // CTS_USES_VULKANSC
+
+    {
+        using VPCountIncrease::Scenario;
+
+        const std::pair<const char *, Scenario> allConstructionCases[] = {
+            {"viewport_count_increase_2_1_2", Scenario::VIEWPORT_2_1_2},
+            {"scissor_count_increase_2_1_2", Scenario::SCISSOR_2_1_2},
+            {"viewport_count_increase_4_1_4", Scenario::VIEWPORT_4_1_4},
+            {"scissor_count_increase_4_1_4", Scenario::SCISSOR_4_1_4},
+            {"scissor_count_increase_zero_rect", Scenario::SCISSOR_ZERO_RECT},
+        };
+
+        for (const auto &entry : allConstructionCases)
+        {
+            const VPCountIncrease::Params params{pipelineConstructionType, entry.second};
+            addFunctionCaseWithPrograms(miscGroup.get(), entry.first,
+                                        VPCountIncrease::checkViewportScissorCountIncreaseSupport,
+                                        VPCountIncrease::initViewportScissorCountIncreasePrograms,
+                                        VPCountIncrease::viewportScissorCountIncreaseTest, params);
+        }
+
+        if (!isConstructionTypeShaderObject(pipelineConstructionType))
+        {
+            const std::pair<const char *, Scenario> pipelineOnlyCases[] = {
+                {"viewport_count_increase_after_set_viewport", Scenario::VIEWPORT_AFTER_SET_VIEWPORT},
+                {"scissor_count_increase_after_set_scissor", Scenario::SCISSOR_AFTER_SET_SCISSOR},
+                {"viewport_count_increase_from_discard", Scenario::VIEWPORT_FROM_DISCARD},
+                {"scissor_count_increase_from_discard", Scenario::SCISSOR_FROM_DISCARD},
+                {"viewport_count_increase_static_pipeline", Scenario::VIEWPORT_STATIC_PIPELINE},
+                {"scissor_count_increase_static_pipeline", Scenario::SCISSOR_STATIC_PIPELINE},
+                {"viewport_count_increase_static_count_dynamic_state", Scenario::VIEWPORT_STATIC_COUNT_DYNAMIC_STATE},
+                {"scissor_count_increase_static_count_dynamic_state", Scenario::SCISSOR_STATIC_COUNT_DYNAMIC_STATE},
+            };
+
+            for (const auto &entry : pipelineOnlyCases)
+            {
+                const VPCountIncrease::Params params{pipelineConstructionType, entry.second};
+                addFunctionCaseWithPrograms(miscGroup.get(), entry.first,
+                                            VPCountIncrease::checkViewportScissorCountIncreaseSupport,
+                                            VPCountIncrease::initViewportScissorCountIncreasePrograms,
+                                            VPCountIncrease::viewportScissorCountIncreaseTest, params);
+            }
+        }
+    }
 
     return miscGroup.release();
 }
