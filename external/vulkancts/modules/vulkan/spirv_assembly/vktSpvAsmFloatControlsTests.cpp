@@ -271,6 +271,8 @@ enum ValueId
 
     V_CONV_DENORM_SMALLER, // used e.g. when converting fp16 denorm to fp32
     V_CONV_DENORM_BIGGER,
+    V_PLUS_DENORM,
+    V_MINUS_DENORM,
 };
 
 // Enum containing all tested operations. Operations are defined in generic way so that
@@ -399,7 +401,26 @@ enum OperationId
     OID_NCLAMP,
 
     OID_ORTE_ROUND,
-    OID_ORTZ_ROUND
+    OID_ORTZ_ROUND,
+
+    OID_SELECT_ORD_LT_MIN,
+    OID_SELECT_ORD_GT_MAX,
+    OID_SELECT_ORD_LE_MIN,
+    OID_SELECT_ORD_GE_MAX,
+    OID_SELECT_ORD_GT_MIN,
+    OID_SELECT_ORD_LT_MAX,
+    OID_SELECT_UORD_LT_MIN,
+    OID_SELECT_UORD_LE_MIN,
+    OID_SELECT_UORD_GT_MAX,
+    OID_SELECT_UORD_GE_MAX,
+    OID_SELECT_ORD_EQ,
+    OID_SELECT_UORD_NE,
+    OID_PHI_ORD_LT_MIN,
+    OID_PHI_ORD_GT_MAX,
+    OID_SELECT_VEC2_ORD_LT_MIN,
+    OID_SELECT_VEC2_ORD_GT_MAX,
+    OID_SELECT_ZERO_ORD_LT_MAX,
+    OID_SELECT_NEG_ZERO_ORD_GT_MAX
 };
 
 // Structures storing data required to test DenormPreserve and DenormFlushToZero modes.
@@ -863,6 +884,7 @@ TypeValues<deFloat16>::TypeValues() : TypeValuesBase()
     // there is no precision to store fp32 denorm nor fp64 denorm
     vm[V_CONV_DENORM_SMALLER] = vm[V_ZERO];
     vm[V_CONV_DENORM_BIGGER]  = vm[V_ZERO];
+    vm[V_MINUS_DENORM]        = 0x83f0;
 }
 
 template <>
@@ -1010,6 +1032,7 @@ TypeValues<float>::TypeValues() : TypeValuesBase()
     // there is no precision to store fp64 denorm
     vm[V_CONV_DENORM_SMALLER] = exactByteEquivalent<uint32_t>(0x387c0000); // fp16 denorm
     vm[V_CONV_DENORM_BIGGER]  = vm[V_ZERO];
+    vm[V_MINUS_DENORM]        = exactByteEquivalent<uint32_t>(0x800003f0u);
 }
 
 template <>
@@ -1168,6 +1191,7 @@ TypeValues<double>::TypeValues() : TypeValuesBase()
 
     vm[V_CONV_DENORM_SMALLER] = exactByteEquivalent<uint64_t>(0x3f0f800000000000); // 0x03f0 is fp16 denorm
     vm[V_CONV_DENORM_BIGGER]  = exactByteEquivalent<uint64_t>(0x373f800000000000); // 0x000003f0 is fp32 denorm
+    vm[V_MINUS_DENORM]        = exactByteEquivalent<uint64_t>(0x80000000000003f0ull);
 }
 
 // Each type (fp16, fp32, fp64, uint16, uint32, uint64, int16, int32, int64)
@@ -1482,6 +1506,7 @@ void TypeSnippetsBase::updateSpirvSnippets()
     sm[V_TWO]          = "OpFAdd %type_valueType %c_valueType_1 %c_valueType_1\n";
     sm[V_INF]          = "OpFDiv %type_valueType %c_valueType_1 %c_valueType_0\n"; // x / 0 == Inf
     sm[V_DENORM]       = "OpFSub %type_valueType %c_valueType_denorm_base %c_valueType_eps\n";
+    sm[V_MINUS_DENORM] = "OpFSub %type_valueType %c_valueType_eps %c_valueType_denorm_base\n";
     sm[V_NAN]          = "OpFDiv %type_valueType %c_valueType_0 %c_valueType_0\n"; // 0 / 0 == Nan
 
     for (const auto &[v, s] : sm)
@@ -2654,6 +2679,103 @@ void TestCasesBuilder::init()
     mo[OID_ORTZ_ROUND] = Op("ortz_round", FLOAT_STORAGE_ONLY, FP32, "OpDecorate %result FPRoundingMode RTZ\n", "", "",
                             "%result             = OpFConvert %type_f16 %arg1\n", B_STATEMENT_USAGE_COMMANDS_TYPE_FP16);
 
+    mo[OID_SELECT_ORD_LT_MIN]      = Op("cmp_select_ord_lt_min", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdLessThan %type_bool %arg1 %arg2\n"
+                                             "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_ORD_GT_MAX]      = Op("cmp_select_ord_gt_max", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
+                                             "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_ORD_LE_MIN]      = Op("cmp_select_ord_le_min", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdLessThanEqual %type_bool %arg1 %arg2\n"
+                                             "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_ORD_GE_MAX]      = Op("cmp_select_ord_ge_max", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdGreaterThanEqual %type_bool %arg1 %arg2\n"
+                                             "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_ORD_GT_MIN]      = Op("cmp_select_ord_gt_min", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
+                                             "%result             = OpSelect %type_valueType %cmp %arg2 %arg1\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_ORD_LT_MAX]      = Op("cmp_select_ord_lt_max", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdLessThan %type_bool %arg1 %arg2\n"
+                                             "%result             = OpSelect %type_valueType %cmp %arg2 %arg1\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_UORD_LT_MIN]     = Op("cmp_select_uord_lt_min", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFUnordLessThan %type_bool %arg1 %arg2\n"
+                                            "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_UORD_LE_MIN]     = Op("cmp_select_uord_le_min", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFUnordLessThanEqual %type_bool %arg1 %arg2\n"
+                                            "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_UORD_GT_MAX]     = Op("cmp_select_uord_gt_max", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFUnordGreaterThan %type_bool %arg1 %arg2\n"
+                                            "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_UORD_GE_MAX]     = Op("cmp_select_uord_ge_max", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFUnordGreaterThanEqual %type_bool %arg1 %arg2\n"
+                                            "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_ORD_EQ]          = Op("cmp_select_ord_eq", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdEqual %type_bool %arg1 %arg2\n"
+                                                 "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_UORD_NE]         = Op("cmp_select_uord_ne", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFUnordNotEqual %type_bool %arg1 %arg2\n"
+                                                "%result             = OpSelect %type_valueType %cmp %arg1 %arg2\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_PHI_ORD_LT_MIN]         = Op("cmp_phi_ord_lt_min", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdLessThan %type_bool %arg1 %arg2\n"
+                                                "                      OpSelectionMerge %comp_merge None\n"
+                                                "                      OpBranchConditional %cmp %true_branch %false_branch\n"
+                                                "%true_branch        = OpLabel\n"
+                                                "                      OpBranch %comp_merge\n"
+                                                "%false_branch       = OpLabel\n"
+                                                "                      OpBranch %comp_merge\n"
+                                                "%comp_merge         = OpLabel\n"
+                                                "%result             = OpPhi %type_valueType %arg1 %true_branch %arg2 %false_branch\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_PHI_ORD_GT_MAX]         = Op("cmp_phi_ord_gt_max", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdGreaterThan %type_bool %arg1 %arg2\n"
+                                                "                      OpSelectionMerge %comp_merge None\n"
+                                                "                      OpBranchConditional %cmp %true_branch %false_branch\n"
+                                                "%true_branch        = OpLabel\n"
+                                                "                      OpBranch %comp_merge\n"
+                                                "%false_branch       = OpLabel\n"
+                                                "                      OpBranch %comp_merge\n"
+                                                "%comp_merge         = OpLabel\n"
+                                                "%result             = OpPhi %type_valueType %arg1 %true_branch %arg2 %false_branch\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_VEC2_ORD_LT_MIN] = Op("cmp_select_vec2_ord_lt_min", FLOAT_ARITHMETIC, "",
+                                        "%type_bool_vec2     = OpTypeVector %type_bool 2\n", "", "", "",
+                                        "%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg2\n"
+                                        "%vec2               = OpCompositeConstruct %type_valueType_vec2 %arg2 %arg1\n"
+                                        "%cmp                = OpFOrdLessThan %type_bool_vec2 %vec1 %vec2\n"
+                                        "%sel                = OpSelect %type_valueType_vec2 %cmp %vec1 %vec2\n"
+                                        "%result             = OpCompositeExtract %type_valueType %sel 0\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_VEC2_ORD_GT_MAX] = Op("cmp_select_vec2_ord_gt_max", FLOAT_ARITHMETIC, "",
+                                        "%type_bool_vec2     = OpTypeVector %type_bool 2\n", "", "", "",
+                                        "%vec1               = OpCompositeConstruct %type_valueType_vec2 %arg2 %arg1\n"
+                                        "%vec2               = OpCompositeConstruct %type_valueType_vec2 %arg1 %arg2\n"
+                                        "%cmp                = OpFOrdGreaterThan %type_bool_vec2 %vec1 %vec2\n"
+                                        "%sel                = OpSelect %type_valueType_vec2 %cmp %vec1 %vec2\n"
+                                        "%result             = OpCompositeExtract %type_valueType %sel 1\n",
+                                        B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_ZERO_ORD_LT_MAX] = Op("cmp_select_zero_ord_lt_max", FLOAT_ARITHMETIC,
+                                        "%cmp                = OpFOrdLessThan %type_bool %arg1 %c_valueType_0\n"
+                                        "%result             = OpSelect %type_valueType %cmp %c_valueType_0 %arg1\n",
+                                        B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+    mo[OID_SELECT_NEG_ZERO_ORD_GT_MAX] =
+        Op("cmp_select_neg_zero_ord_gt_max", FLOAT_ARITHMETIC, "", "",
+           "%c_neg_0            = OpConstant %type_valueType -0.0\n", "", "",
+           "%cmp                = OpFOrdGreaterThan %type_bool %arg1 %c_neg_0\n"
+           "%result             = OpSelect %type_valueType %cmp %arg1 %c_neg_0\n",
+           B_STATEMENT_USAGE_CONSTS_TYPE_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
+
     DE_ASSERT(m_saved_strings.size() == m_num_expected_strings);
 }
 
@@ -2663,7 +2785,7 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
     // this method constructs a list of test cases; this list is a bit different
     // for every combination of float type, arguments preparation method and tested float control
 
-    testCases.reserve(750);
+    testCases.reserve(900);
 
     bool isFP16 = typeTestResults->variableType() == FP16;
 
@@ -2823,6 +2945,140 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
         if (isFP16)
             testCases.emplace_back("denorm_op_var_preserve", B_DENORM_PRESERVE, cc.operationId, V_DENORM, V_ONE,
                                    cc.denormPreserveResult, true);
+    }
+
+    // Compare+select, compare+phi, and non-vacuous denorm/NaN comparison cases.
+    struct CompareSelectCase
+    {
+        OperationId operationId;
+        const char *baseName;
+        BehaviorFlags behaviorFlags;
+        ValueId arg1;
+        ValueId arg2;
+        ValueId expectedResult;
+        bool allowGeneratedArgs;
+    };
+
+    const CompareSelectCase compareSelectCases[] = {
+        // Ordered scalar OpSelect (min/max, <, >, <=, >=)
+        {OID_SELECT_ORD_LT_MIN, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_NAN, true},
+        {OID_SELECT_ORD_LT_MIN, "op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO,
+         V_MINUS_DENORM, true},
+        {OID_SELECT_ORD_LT_MIN, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_ONE, false},
+        {OID_SELECT_ORD_LT_MIN, "op_szero_lhs_preserve", B_ZIN_PRESERVE, V_MINUS_ZERO, V_ZERO, V_ZERO, true},
+        {OID_SELECT_ORD_LT_MIN, "op_neg_pos_denorm_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_DENORM,
+         V_MINUS_DENORM, false},
+        {OID_SELECT_ORD_LT_MIN, "op_szero_denorm_preserve", B_DENORM_PRESERVE | B_ZIN_PRESERVE, V_MINUS_ZERO, V_DENORM,
+         V_MINUS_ZERO, false},
+
+        {OID_SELECT_ORD_GT_MAX, "op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_PLUS_DENORM, true},
+        {OID_SELECT_ORD_GT_MAX, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_NAN, false},
+        {OID_SELECT_ORD_GT_MAX, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_ONE, false},
+        {OID_SELECT_ORD_GT_MAX, "op_szero_rhs_preserve", B_ZIN_PRESERVE, V_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, false},
+        {OID_SELECT_ORD_GT_MAX, "op_pos_neg_denorm_preserve", B_DENORM_PRESERVE, V_DENORM, V_MINUS_DENORM,
+         V_PLUS_DENORM, false},
+        {OID_SELECT_ORD_GT_MAX, "op_nan_denorm_zin_preserve", B_ZIN_PRESERVE, V_NAN, V_DENORM, V_PLUS_DENORM, false},
+
+        {OID_SELECT_ORD_LE_MIN, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_NAN, false},
+        {OID_SELECT_ORD_LE_MIN, "op_szero_rhs_preserve", B_ZIN_PRESERVE, V_ZERO, V_MINUS_ZERO, V_ZERO, false},
+        {OID_SELECT_ORD_LE_MIN, "op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO,
+         V_MINUS_DENORM, false},
+
+        {OID_SELECT_ORD_GE_MAX, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_NAN, false},
+        {OID_SELECT_ORD_GE_MAX, "op_szero_lhs_preserve", B_ZIN_PRESERVE, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, false},
+        {OID_SELECT_ORD_GE_MAX, "op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_PLUS_DENORM, false},
+
+        // Swapped-arm ordered scalar OpSelect (a > b ? b : a, a < b ? b : a)
+        {OID_SELECT_ORD_GT_MIN, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_NAN, false},
+        {OID_SELECT_ORD_GT_MIN, "op_szero_rhs_preserve", B_ZIN_PRESERVE, V_ZERO, V_MINUS_ZERO, V_ZERO, false},
+        {OID_SELECT_ORD_GT_MIN, "op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO,
+         V_MINUS_DENORM, false},
+
+        {OID_SELECT_ORD_LT_MAX, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_NAN, false},
+        {OID_SELECT_ORD_LT_MAX, "op_szero_lhs_preserve", B_ZIN_PRESERVE, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, false},
+        {OID_SELECT_ORD_LT_MAX, "op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_PLUS_DENORM, false},
+
+        // Unordered scalar OpSelect across all 4 inequality predicates
+        {OID_SELECT_UORD_LT_MIN, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_NAN, true},
+        {OID_SELECT_UORD_LT_MIN, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_ONE, false},
+        {OID_SELECT_UORD_LT_MIN, "op_szero_lhs_preserve", B_ZIN_PRESERVE, V_MINUS_ZERO, V_ZERO, V_ZERO, false},
+
+        {OID_SELECT_UORD_LE_MIN, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_NAN, false},
+        {OID_SELECT_UORD_LE_MIN, "op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO,
+         V_MINUS_DENORM, false},
+
+        {OID_SELECT_UORD_GT_MAX, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_NAN, false},
+        {OID_SELECT_UORD_GT_MAX, "op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_PLUS_DENORM, false},
+
+        {OID_SELECT_UORD_GE_MAX, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_NAN, false},
+        {OID_SELECT_UORD_GE_MAX, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_ONE, false},
+        {OID_SELECT_UORD_GE_MAX, "op_szero_lhs_preserve", B_ZIN_PRESERVE, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, false},
+
+        // Equality and unordered-inequality OpSelect
+        {OID_SELECT_ORD_EQ, "op_szero_lhs_preserve", B_ZIN_PRESERVE, V_MINUS_ZERO, V_ZERO, V_MINUS_ZERO, false},
+        {OID_SELECT_ORD_EQ, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_ONE, false},
+        {OID_SELECT_ORD_EQ, "op_zero_denorm_preserve", B_DENORM_PRESERVE, V_ZERO, V_DENORM, V_PLUS_DENORM, false},
+
+        {OID_SELECT_UORD_NE, "op_szero_rhs_preserve", B_ZIN_PRESERVE, V_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, false},
+        {OID_SELECT_UORD_NE, "op_nan_lhs_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_NAN, false},
+        {OID_SELECT_UORD_NE, "op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_PLUS_DENORM, false},
+
+        // Control-flow OpBranchConditional + OpPhi with float_controls execution modes
+        {OID_PHI_ORD_LT_MIN, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_NAN, false},
+        {OID_PHI_ORD_LT_MIN, "op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO, V_MINUS_DENORM,
+         false},
+        {OID_PHI_ORD_GT_MAX, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_NAN, false},
+        {OID_PHI_ORD_GT_MAX, "op_szero_rhs_preserve", B_ZIN_PRESERVE, V_ZERO, V_MINUS_ZERO, V_MINUS_ZERO, false},
+
+        // Vector vec2 OpSelect (lanes 0 and 1)
+        {OID_SELECT_VEC2_ORD_LT_MIN, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_NAN, false},
+        {OID_SELECT_VEC2_ORD_LT_MIN, "op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO,
+         V_MINUS_DENORM, false},
+        {OID_SELECT_VEC2_ORD_GT_MAX, "op_nan_rhs_preserve", B_ZIN_PRESERVE, V_ONE, V_NAN, V_NAN, false},
+        {OID_SELECT_VEC2_ORD_GT_MAX, "op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_PLUS_DENORM,
+         false},
+
+        // Constant +/-0.0 ReLU / clamp idioms
+        {OID_SELECT_ZERO_ORD_LT_MAX, "op_nan_preserve", B_ZIN_PRESERVE, V_NAN, V_UNUSED, V_NAN, false},
+        {OID_SELECT_ZERO_ORD_LT_MAX, "op_szero_preserve", B_ZIN_PRESERVE, V_MINUS_ZERO, V_UNUSED, V_MINUS_ZERO, false},
+        {OID_SELECT_ZERO_ORD_LT_MAX, "op_denorm_preserve", B_DENORM_PRESERVE, V_DENORM, V_UNUSED, V_PLUS_DENORM, false},
+
+        {OID_SELECT_NEG_ZERO_ORD_GT_MAX, "op_zero_preserve", B_ZIN_PRESERVE, V_ZERO, V_UNUSED, V_MINUS_ZERO, false},
+        {OID_SELECT_NEG_ZERO_ORD_GT_MAX, "op_nan_preserve", B_ZIN_PRESERVE, V_NAN, V_UNUSED, V_MINUS_ZERO, false},
+        {OID_SELECT_NEG_ZERO_ORD_GT_MAX, "op_denorm_preserve", B_DENORM_PRESERVE | B_ZIN_PRESERVE, V_DENORM, V_UNUSED,
+         V_PLUS_DENORM, false},
+
+        // Direct float comparisons against 0.0 (DenormPreserve) and NaN (SignedZeroInfNanPreserve)
+        {OID_ORD_EQ, "cmp_op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_ZERO, true},
+        {OID_UORD_EQ, "cmp_op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_ZERO, false},
+        {OID_ORD_NEQ, "cmp_op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_ONE, false},
+        {OID_UORD_NEQ, "cmp_op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_ONE, false},
+        {OID_ORD_GT, "cmp_op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_ONE, false},
+        {OID_UORD_GT, "cmp_op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_ONE, false},
+        {OID_ORD_LE, "cmp_op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_ZERO, false},
+        {OID_UORD_LE, "cmp_op_denorm_zero_preserve", B_DENORM_PRESERVE, V_DENORM, V_ZERO, V_ZERO, false},
+
+        {OID_ORD_LS, "cmp_op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO, V_ONE, false},
+        {OID_UORD_LS, "cmp_op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO, V_ONE, false},
+        {OID_ORD_GE, "cmp_op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO, V_ZERO, false},
+        {OID_UORD_GE, "cmp_op_neg_denorm_zero_preserve", B_DENORM_PRESERVE, V_MINUS_DENORM, V_ZERO, V_ZERO, false},
+
+        {OID_ORD_EQ, "cmp_op_nan_preserve", B_ZIN_PRESERVE, V_NAN, V_NAN, V_ZERO, false},
+        {OID_UORD_EQ, "cmp_op_nan_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_ONE, false},
+        {OID_ORD_NEQ, "cmp_op_nan_preserve", B_ZIN_PRESERVE, V_NAN, V_ONE, V_ZERO, false},
+        {OID_UORD_NEQ, "cmp_op_nan_preserve", B_ZIN_PRESERVE, V_NAN, V_NAN, V_ONE, false},
+    };
+
+    for (const CompareSelectCase &csc : compareSelectCases)
+    {
+        if (!argumentsFromInput && !csc.allowGeneratedArgs)
+            continue;
+
+        testCases.emplace_back(csc.baseName, csc.behaviorFlags, csc.operationId, csc.arg1, csc.arg2,
+                               csc.expectedResult);
+        if (isFP16)
+            testCases.emplace_back(csc.baseName, csc.behaviorFlags, csc.operationId, csc.arg1, csc.arg2,
+                                   csc.expectedResult, true);
     }
 
     if (argumentsFromInput)
@@ -3499,6 +3755,24 @@ bool compareBytes(vector<uint8_t> &expectedBytes, AllocationSp outputAlloc, Test
             return true;
 
         log << TestLog::Message << "Expected Denorm" << TestLog::EndMessage;
+        return false;
+    }
+
+    if (expectedValueId == V_PLUS_DENORM)
+    {
+        if (returnedFloat.isDenorm() && !returnedFloat.signBit())
+            return true;
+
+        log << TestLog::Message << "Expected positive Denorm" << TestLog::EndMessage;
+        return false;
+    }
+
+    if (expectedValueId == V_MINUS_DENORM)
+    {
+        if (returnedFloat.isDenorm() && returnedFloat.signBit())
+            return true;
+
+        log << TestLog::Message << "Expected negative Denorm" << TestLog::EndMessage;
         return false;
     }
 
