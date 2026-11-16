@@ -37,6 +37,7 @@
 #include <memory>
 #include <vector>
 #include <cstring>
+#include <string>
 
 namespace vk
 {
@@ -100,6 +101,31 @@ public:
         return m_createSize;
     }
 
+    // Copies dataSize bytes from data to the buffer memory at bufferOffset, flushing the allocation if requested.
+    void writeData(const void *data, size_t dataSize, VkDeviceSize bufferOffset = 0, bool flush = true)
+    {
+        checkHostAccess("writeData", dataSize, bufferOffset);
+
+        const auto dst = static_cast<uint8_t *>(m_allocation->getHostPtr()) + static_cast<size_t>(bufferOffset);
+        std::memcpy(dst, data, dataSize);
+
+        if (flush)
+            flushAlloc(m_vk, m_device, *m_allocation);
+    }
+
+    // Copies dataSize bytes from the buffer memory at bufferOffset to data, invalidating the allocation first if
+    // requested.
+    void readData(void *data, size_t dataSize, VkDeviceSize bufferOffset = 0, bool invalidate = true) const
+    {
+        checkHostAccess("readData", dataSize, bufferOffset);
+
+        if (invalidate)
+            invalidateAlloc(m_vk, m_device, *m_allocation);
+
+        const auto src = static_cast<const uint8_t *>(m_allocation->getHostPtr()) + static_cast<size_t>(bufferOffset);
+        std::memcpy(data, src, dataSize);
+    }
+
 private:
     const vk::DeviceInterface &m_vk;
     const vk::VkDevice m_device;
@@ -107,6 +133,23 @@ private:
     const vk::VkDeviceSize m_createSize;
     const de::UniquePtr<vk::Allocation> m_allocation;
     bool m_memoryBound;
+
+    // Throws if the buffer memory cannot be accessed from the host in the given range. Written so the range check
+    // cannot overflow.
+    void checkHostAccess(const char *funcName, size_t dataSize, VkDeviceSize bufferOffset) const
+    {
+        const std::string prefix = std::string("BufferWithMemory::") + funcName + "(): ";
+
+        if (!m_memoryBound)
+            TCU_THROW(InternalError, prefix + "memory not bound");
+
+        if (!m_allocation->isHostVisible())
+            TCU_THROW(InternalError, prefix + "memory not host-visible");
+
+        const auto vkSize = static_cast<VkDeviceSize>(dataSize);
+        if (bufferOffset > m_createSize || vkSize > m_createSize - bufferOffset)
+            TCU_THROW(InternalError, prefix + "offset and size too large for buffer");
+    }
 
     // "deleted"
     BufferWithMemory(const BufferWithMemory &);
