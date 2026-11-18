@@ -63,7 +63,8 @@
 #include <utility>
 #include <limits>
 #include <tuple>
-#include <valarray>
+#include <functional>
+#include <vector>
 
 // Uncomment this to get evaluation trace dumps to std::cerr
 //#define GLS_ENABLE_TRACE
@@ -7730,7 +7731,7 @@ protected:
 
     void checkSupport(Context &context) const override;
 
-    typedef std::valarray<std::reference_wrapper<const StatementP>> StatementArray;
+    typedef std::vector<std::reference_wrapper<const StatementP>> StatementArray;
     template <typename In, typename Out>
     void testStatement(const Variables<In, Out> &variables, const StatementArray &stmts, SpirVCaseT spirvCase);
 
