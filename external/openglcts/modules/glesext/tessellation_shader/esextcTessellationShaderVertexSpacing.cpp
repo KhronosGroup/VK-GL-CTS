@@ -1100,9 +1100,31 @@ void TessellationShaderVertexSpacing::verifyEdges(const _tess_edges &edges, cons
             &outermost_edge_tess_level_clamped_rounded);
 
         /* Retrieve amount of segments the edge should consist of */
-        TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
-            run.vertex_spacing, edge.tess_level, m_gl_max_tess_gen_level_value, &edge_clamped_tess_level,
-            &edge_clamped_rounded_tess_level);
+        if (run.primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_QUADS && n_edge >= 4)
+        {
+            /* Edges of the inner quad are what remains of an edge subdivided using the inner
+             * tessellation level, after the first and the last segment has been removed. The
+             * level must therefore be clamped and rounded *before* these 2 segments are taken
+             * away. Clamping and rounding (inner - 2) instead gives a different result whenever
+             * clamping kicks in, e.g. for fractional_odd spacing with inner >= max level - 1.
+             *
+             * Edges are stored in tl-tr, tr-br, br-bl, bl-tl order, so inner[0] is used for
+             * even edges and inner[1] for odd ones. */
+            const float inner_tess_level = run.inner[(n_edge - 4) % 2];
+
+            TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
+                run.vertex_spacing, inner_tess_level, m_gl_max_tess_gen_level_value, &edge_clamped_tess_level,
+                &edge_clamped_rounded_tess_level);
+
+            edge_clamped_tess_level -= 2.0f;
+            edge_clamped_rounded_tess_level -= 2.0f;
+        }
+        else
+        {
+            TessellationShaderUtils::getTessellationLevelAfterVertexSpacing(
+                run.vertex_spacing, edge.tess_level, m_gl_max_tess_gen_level_value, &edge_clamped_tess_level,
+                &edge_clamped_rounded_tess_level);
+        }
 
         /* Take two subsequent points if they are available. Vertex spacing has no meaning
          * in a world of degenerate edges, so skip the check if we have just encountered one.
@@ -1268,13 +1290,9 @@ void TessellationShaderVertexSpacing::verifyEdges(const _tess_edges &edges, cons
                 }
                 else
                 {
+                    /* For edges of the inner quad, edge_clamped_rounded_tess_level already
+                     * accounts for the 2 segments connecting the inner and the outer quads. */
                     expected_counter = (int)edge_clamped_rounded_tess_level;
-                    if (run.primitive_mode == TESSELLATION_SHADER_PRIMITIVE_MODE_QUADS &&
-                        run.vertex_spacing == TESSELLATION_SHADER_VERTEX_SPACING_FRACTIONAL_ODD)
-                    {
-                        /* 8 edges expected in total; we should expect 2 segments less for the inner quad */
-                        expected_counter = (int)edge_clamped_rounded_tess_level - 2 * (n_edge / 4);
-                    }
 
                     /* For degenerate cases, always assume exactly one segment should be generated */
                     if (edge.tess_level <= 0.0f)
