@@ -450,13 +450,18 @@ tcu::TestNode::IterateResult TextureParameterQueriesTestCase::iterate()
         }
     }
 
-    if (m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
+    if (mNotSupportedTarget != GL_INVALID_VALUE)
     {
-        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
-        return STOP;
-    }
-    else if (mNotSupportedTarget != GL_INVALID_VALUE)
-    {
+        /* ARB_sparse_texture2 allows sparse multisample textures, so the ARB_sparse_texture
+         * INVALID_VALUE expectation for these targets no longer holds. Only this negative
+         * check is skipped; positive results for supported targets are still reported. */
+        if (m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
+        {
+            m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
+                                    "Target may be sparse when GL_ARB_sparse_texture2 is supported");
+            return STOP;
+        }
+
         mLog.str("");
 
         Texture::Generate(gl, texture);
@@ -468,7 +473,7 @@ tcu::TestNode::IterateResult TextureParameterQueriesTestCase::iterate()
 
         if (!result)
         {
-            m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail [positive tests]"
+            m_testCtx.getLog() << tcu::TestLog::Message << mLog.str() << "Fail [negative tests]"
                                << tcu::TestLog::EndMessage;
             m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail on negative tests");
             return STOP;
