@@ -599,14 +599,14 @@ const char *getCmdBufferTypeStr(const CmdBufferType cmdBufferType)
     }
 }
 
-void clearImage(ProtectedContext &ctx, vk::VkImage image)
+void clearImage(ProtectedContext &ctx, vk::VkImage image, ProtectionMode protectionMode)
 {
     const vk::DeviceInterface &vk   = ctx.getDeviceInterface();
     const vk::VkDevice device       = ctx.getDevice();
     const vk::VkQueue queue         = ctx.getQueue();
     const uint32_t queueFamilyIndex = ctx.getQueueFamilyIndex();
 
-    vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vk, device, PROTECTION_ENABLED, queueFamilyIndex));
+    vk::Unique<vk::VkCommandPool> cmdPool(makeCommandPool(vk, device, protectionMode, queueFamilyIndex));
     vk::Unique<vk::VkCommandBuffer> cmdBuffer(
         vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
@@ -657,7 +657,7 @@ void clearImage(ProtectedContext &ctx, vk::VkImage image)
 
     {
         const vk::Unique<vk::VkFence> fence(createFence(vk, device));
-        VK_CHECK(queueSubmit(ctx, PROTECTION_ENABLED, queue, *cmdBuffer, *fence, ~0ull));
+        VK_CHECK(queueSubmit(ctx, protectionMode, queue, *cmdBuffer, *fence, ~0ull));
     }
 }
 
