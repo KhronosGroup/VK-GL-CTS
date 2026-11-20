@@ -1331,6 +1331,14 @@ int CommandLine::getVKDeviceId(void) const
 {
     return m_cmdLine.getOption<opt::VKDeviceID>();
 }
+uint32_t CommandLine::getVKDeviceIndex(void) const
+{
+    const int deviceId = getVKDeviceId();
+    if (deviceId <= 0)
+        throw Exception("--deqp-vk-device-id must be a positive, explicit device id (1-based) here; "
+                        "0 (auto-select) is not supported by this code path");
+    return static_cast<uint32_t>(deviceId) - 1u;
+}
 int CommandLine::getMaxCustomDevices(void) const
 {
     return m_cmdLine.getOption<opt::MaxCustomDevices>();

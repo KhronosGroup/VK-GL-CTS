@@ -331,19 +331,10 @@ void setDefaultShaderObjectDynamicStates(const vk::DeviceInterface &vk, vk::VkCo
         vk.cmdSetExtraPrimitiveOverestimationSizeEXT(cmdBuffer, 0.0f);
     if (extensionEnabled(deviceExtensions, "VK_EXT_depth_clip_enable"))
         vk.cmdSetDepthClipEnableEXT(cmdBuffer, VK_FALSE);
+    // Sample locations are disabled, so vkCmdSetSampleLocationsEXT does not need to be called. Calling it here would
+    // also need a sample count from sampleLocationSampleCounts, where only VK_SAMPLE_COUNT_4_BIT is guaranteed.
     if (extensionEnabled(deviceExtensions, "VK_EXT_sample_locations"))
         vk.cmdSetSampleLocationsEnableEXT(cmdBuffer, VK_FALSE);
-    VkSampleLocationEXT sampleLocation                 = {0.5f, 0.5f};
-    const vk::VkSampleLocationsInfoEXT sampleLocations = {
-        vk::VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT, // VkStructureType               sType;
-        nullptr,                                         // const void*                   pNext;
-        VK_SAMPLE_COUNT_1_BIT,                           // VkSampleCountFlagBits         sampleLocationsPerPixel;
-        {1u, 1u},                                        // VkExtent2D                    sampleLocationGridSize;
-        1,                                               // uint32_t                      sampleLocationsCount;
-        &sampleLocation,                                 // const VkSampleLocationEXT*    pSampleLocations;
-    };
-    if (extensionEnabled(deviceExtensions, "VK_EXT_sample_locations"))
-        vk.cmdSetSampleLocationsEXT(cmdBuffer, &sampleLocations);
     vk::VkColorBlendAdvancedEXT colorBlendAdvanced;
     colorBlendAdvanced.advancedBlendOp  = vk::VK_BLEND_OP_SRC_EXT;
     colorBlendAdvanced.srcPremultiplied = VK_FALSE;

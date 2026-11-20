@@ -1996,7 +1996,7 @@ void initTests(tcu::TestCaseGroup *group)
 
                                             formatGroup->addChild(new DSResolveTest(
                                                 testCtx, compatibilityTestName.c_str(), compatibilityTestConfig,
-                                                CheckSupport::Args(checkSupport, testConfig)));
+                                                CheckSupport::Args(checkSupport, compatibilityTestConfig)));
                                         }
                                     }
                                 }
@@ -2036,7 +2036,7 @@ void initTests(tcu::TestCaseGroup *group)
                                         samplemaskTestConfig.sampleMask = true;
                                         formatGroup->addChild(
                                             new DSResolveTest(testCtx, samplemaskTestName.c_str(), samplemaskTestConfig,
-                                                              CheckSupport::Args(checkSupport, testConfig)));
+                                                              CheckSupport::Args(checkSupport, samplemaskTestConfig)));
                                     }
 
                                     // All formats with stencil and depth aspects have incompatible formats and sizes in the depth
@@ -2051,7 +2051,7 @@ void initTests(tcu::TestCaseGroup *group)
 
                                         formatGroup->addChild(new DSResolveTest(
                                             testCtx, compatibilityTestName.c_str(), compatibilityTestConfig,
-                                            CheckSupport::Args(checkSupport, testConfig)));
+                                            CheckSupport::Args(checkSupport, compatibilityTestConfig)));
                                     }
                                 }
 

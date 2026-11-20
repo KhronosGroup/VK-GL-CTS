@@ -4101,6 +4101,11 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                   (VkDependencyFlags)0, 0, nullptr, 1, &preBufferBarrier, 0, nullptr);
             vk.cmdCopyBufferToImage(*cmdBuffer, **srcBuffer, **image2, m_params.dstLayout, 1u, &bufferImageCopy);
+            const auto postImageBarrier =
+                makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, m_params.dstLayout,
+                                       m_params.dstLayout, **image2, subresourceRange);
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &postImageBarrier);
             vk::endCommandBuffer(vk, *cmdBuffer);
             submitCommandsAndWait(vk, device, queue, *cmdBuffer);
         }

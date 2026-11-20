@@ -1727,7 +1727,7 @@ public:
 
         std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount, VK_NULL_HANDLE);
         VK_CHECK(vki.enumeratePhysicalDevices(instance, &physicalDeviceCount, de::dataOrNull(physicalDevices)));
-        const auto physDev = physicalDevices.at(cmdLine.getVKDeviceId() - 1);
+        const auto physDev = physicalDevices.at(cmdLine.getVKDeviceIndex());
 
         const auto qfIndexMaybe = findQueueByTypeAndPriority(vki, physDev, queueType, priority);
         DE_ASSERT(static_cast<bool>(qfIndexMaybe));
