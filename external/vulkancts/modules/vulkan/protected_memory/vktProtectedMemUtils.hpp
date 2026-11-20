@@ -112,7 +112,7 @@ vk::Move<vk::VkPipeline> makeGraphicsPipeline(const vk::DeviceInterface &vk, con
                                               const tcu::UVec2 &renderSize, const vk::VkPrimitiveTopology topology,
                                               const vk::VkPipelineCreateFlags flags = 0);
 
-void clearImage(ProtectedContext &ctx, vk::VkImage image);
+void clearImage(ProtectedContext &ctx, vk::VkImage image, ProtectionMode protectionMode = PROTECTION_ENABLED);
 
 void uploadImage(ProtectedContext &ctx, vk::VkImage image, const tcu::Texture2D &texture2D);
 

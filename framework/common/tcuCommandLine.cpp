@@ -1333,6 +1333,14 @@ int CommandLine::getVKDeviceId(void) const
 {
     return m_cmdLine.getOption<opt::VKDeviceID>();
 }
+uint32_t CommandLine::getVKDeviceIndex(void) const
+{
+    const int deviceId = getVKDeviceId();
+    if (deviceId <= 0)
+        throw Exception("--deqp-vk-device-id must be a positive, explicit device id (1-based) here; "
+                        "0 (auto-select) is not supported by this code path");
+    return static_cast<uint32_t>(deviceId) - 1u;
+}
 int CommandLine::getMaxCustomDevices(void) const
 {
     return m_cmdLine.getOption<opt::MaxCustomDevices>();
@@ -1704,6 +1712,12 @@ CaseListFilter::CaseListFilter(void) : m_caseTree(nullptr), m_runnerType(tcu::RU
 {
 }
 
+bool isDeviceFaultSubprocessMarker(const std::string &deviceFaultSubprocessCount)
+{
+    // The marker is "@<stamp>@<cases>@<count>@", see SubprocessTestExecutor; user values start with a digit.
+    return de::beginsWith(deviceFaultSubprocessCount, "@");
+}
+
 CaseListFilter::CaseListFilter(const de::cmdline::CommandLine &cmdLine, const tcu::Archive &archive)
     : m_caseTree(nullptr)
 {
@@ -1766,7 +1780,11 @@ CaseListFilter::CaseListFilter(const de::cmdline::CommandLine &cmdLine, const tc
     if (cmdLine.hasOption<opt::ExcludeCasePath>())
         m_excludePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::ExcludeCasePath>()));
 
-    if (!cmdLine.getOption<opt::SubProcess>())
+    // Subprocesses run the case list the parent gives them, which is already fractioned.
+    const bool isDeviceFaultSubprocess =
+        cmdLine.hasOption<opt::DeviceFaultSubprocessCount>() &&
+        isDeviceFaultSubprocessMarker(cmdLine.getOption<opt::DeviceFaultSubprocessCount>());
+    if (!cmdLine.getOption<opt::SubProcess>() && !isDeviceFaultSubprocess)
         m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
 
     if (m_caseFraction.size() == 2 &&

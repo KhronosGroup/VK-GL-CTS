@@ -103,7 +103,7 @@ uint32_t SubprocessTestExecutor::getSubprocessCaseCount(TestContext &testCtx)
     const tcu::CommandLine &cmdLine = testCtx.getCommandLine();
     if (const char *var = cmdLine.getDeviceFaultSubprocessCount(); var[0])
     {
-        if (std::isdigit(var[0]))
+        if (!isDeviceFaultSubprocessMarker(var))
         {
             const auto vars = de::splitString(var, ',');
 
@@ -312,6 +312,11 @@ void SubprocessTestExecutor::spawnSubprocessCases(const std::string &groupPath)
     }
 
     const uint32_t casesMax = uint32_t(groupSubprocessCases.size());
+    if (casesMax == 0u) // e.g. none of the group's cases are in this fraction
+    {
+        return;
+    }
+
     const uint32_t intCount = uint32_t(casesMax / m_subprocessCaseCount);
     const uint32_t rem      = uint32_t(casesMax % m_subprocessCaseCount);
 

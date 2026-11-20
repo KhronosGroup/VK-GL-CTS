@@ -820,9 +820,29 @@ void *BufferMemoryRequirementsInstance::chainVkStructure<VkVideoProfileListInfoK
 }
 #endif // CTS_USES_VULKANSC
 
-static CustomDevice createProtectedDevice(const Context &context, const InstanceWrapper &instance)
+static CustomDevice createProtectedDevice(const Context &context, const InstanceWrapper &instance, bool video)
 {
     const float queuePriority = 1.0f;
+
+    // Video usage bits need the video extensions that define them (VUID-VkBufferCreateInfo-None-09499)
+    std::vector<const char *> extensions;
+#ifndef CTS_USES_VULKANSC
+    if (video)
+    {
+        for (const char *extension : {VK_KHR_VIDEO_QUEUE_EXTENSION_NAME, VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME,
+                                      VK_KHR_VIDEO_DECODE_H264_EXTENSION_NAME, VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME,
+                                      VK_KHR_VIDEO_ENCODE_H264_EXTENSION_NAME})
+        {
+            if (context.isDeviceFunctionalitySupported(extension))
+                extensions.push_back(extension);
+        }
+        // Before Vulkan 1.3 the video extensions depend on VK_KHR_synchronization2
+        if (!extensions.empty() && !context.contextSupports(vk::ApiVersion(0, 1, 3, 0)))
+            extensions.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+    }
+#else
+    DE_UNREF(video);
+#endif // CTS_USES_VULKANSC
 
     VkPhysicalDeviceProtectedMemoryFeatures protectedMemoryFeatures;
     protectedMemoryFeatures.sType           = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
@@ -845,8 +865,8 @@ static CustomDevice createProtectedDevice(const Context &context, const Instance
         &queueInfo,                           // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                   // uint32_t enabledLayerCount;
         nullptr,                              // const char* const* ppEnabledLayerNames;
-        0u,                                   // uint32_t enabledExtensionCount;
-        nullptr,                              // const char* const* ppEnabledExtensionNames;
+        de::sizeU32(extensions),              // uint32_t enabledExtensionCount;
+        de::dataOrNull(extensions),           // const char* const* ppEnabledExtensionNames;
         nullptr                               // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
     return instance.createCustomDevice(&deviceInfo);
@@ -868,7 +888,7 @@ TestStatus BufferMemoryRequirementsInstance::iterate(void)
     DeviceWrapper device(m_context);
     if (m_config.createBits->contains(VK_BUFFER_CREATE_PROTECTED_BIT))
     {
-        device = createProtectedDevice(m_context, instance);
+        device = createProtectedDevice(m_context, instance, m_config.fateBits->contains(BufferFateFlagBits::Video));
     }
     const DeviceInterface &vkd = device.getDriver();
 

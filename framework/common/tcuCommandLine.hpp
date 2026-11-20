@@ -123,6 +123,10 @@ class Archive;
 bool matchWildcards(std::string::const_iterator patternStart, std::string::const_iterator patternEnd,
                     std::string::const_iterator pathStart, std::string::const_iterator pathEnd, bool allowPrefix);
 
+// True if the --deqp-device-fault-subprocess-count value is the marker a main process passes to its
+// device fault subprocesses, rather than a user-supplied case count.
+bool isDeviceFaultSubprocessMarker(const std::string &deviceFaultSubprocessCount);
+
 class CaseListFilter
 {
 public:
@@ -264,6 +268,12 @@ public:
 
     //! Get Vulkan device ID (--deqp-vk-device-id)
     int getVKDeviceId(void) const;
+
+    //! Get 0-based Vulkan device index for --deqp-vk-device-id, for callers that
+    //! need a specific device and cannot support the "0 = auto-select" convention
+    //! documented for that option. Throws tcu::Exception instead of underflowing
+    //! to a huge index when the id is 0 or negative.
+    uint32_t getVKDeviceIndex(void) const;
 
     //! Get max custom device count (--deqp-vk-max-custom-devices)
     int getMaxCustomDevices(void) const;

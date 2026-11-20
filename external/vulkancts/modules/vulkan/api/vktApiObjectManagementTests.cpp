@@ -57,7 +57,6 @@
 
 #include <limits>
 #include <algorithm>
-#include <unordered_map>
 
 #define VK_DESCRIPTOR_TYPE_LAST (VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1)
 
@@ -698,6 +697,9 @@ struct DeviceGroup
                 for (uint32_t physicalDeviceIdx = 0; physicalDeviceIdx < physicalDeviceCount; physicalDeviceIdx++)
                     physicalDevices[physicalDeviceIdx] =
                         devGroupProperties[params.deviceGroupIndex].physicalDevices[physicalDeviceIdx];
+
+                if (physicalDevices.size() <= (size_t)params.deviceIndex)
+                    TCU_THROW(NotSupportedError, "Device not found");
             }
 
             {
@@ -1405,21 +1407,9 @@ struct MergedPipelineCache
 
     struct Resources
     {
-        inline static std::unordered_map<VkDevice, SharedPtr<Dependency<PipelineCache>>> srcPipelineCaches;
-        Resources(const Environment &env, const Parameters &params)
+        Dependency<PipelineCache> srcPipelineCache;
+        Resources(const Environment &env, const Parameters &params) : srcPipelineCache(env, {params.srcExternSync})
         {
-            if (srcPipelineCaches.find(env.device) == srcPipelineCaches.end())
-            {
-                srcPipelineCaches[env.device] =
-                    SharedPtr<Dependency<PipelineCache>>(new Dependency<PipelineCache>(env, {params.srcExternSync}));
-            }
-        }
-        ~Resources()
-        {
-            if (!srcPipelineCaches.empty())
-            {
-                srcPipelineCaches.clear();
-            }
         }
     };
 
@@ -1492,7 +1482,7 @@ struct MergedPipelineCache
 
         auto pipelineCache = createPipelineCache(env.vkd, env.device, &pipelineCacheInfo, env.allocationCallbacks);
 #ifndef CTS_USES_VULKANSC
-        VkPipelineCache srcCache = resources.srcPipelineCaches[env.device]->object.get();
+        VkPipelineCache srcCache = resources.srcPipelineCache.object.get();
         env.vkd.mergePipelineCaches(env.device, pipelineCache.get(), 1u, &srcCache);
 #endif
         return pipelineCache;

@@ -2830,7 +2830,7 @@ VKAPI_ATTR void *VKAPI_CALL reallocCallbackFunc(void *pUserData, void *pOriginal
 tcu::TestStatus createInstanceDeviceIntentionalAllocFail(Context &context)
 {
     const PlatformInterface &vkp        = context.getPlatformInterface();
-    const uint32_t chosenDevice         = context.getTestContext().getCommandLine().getVKDeviceId() - 1;
+    const uint32_t chosenDevice         = context.getTestContext().getCommandLine().getVKDeviceIndex();
     VkInstance instance                 = VK_NULL_HANDLE;
     VkDevice device                     = VK_NULL_HANDLE;
     uint32_t physicalDeviceCount        = 0;

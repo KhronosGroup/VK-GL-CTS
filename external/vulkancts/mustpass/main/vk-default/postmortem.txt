@@ -1,6 +1,5 @@
 dEQP-VK.postmortem.device_fault.no_fault.counts_query
 dEQP-VK.postmortem.device_fault.no_fault.max_fault_property_atleast_one
-dEQP-VK.postmortem.device_fault.no_fault.vendor_binary_size_query
 dEQP-VK.postmortem.device_fault.no_fault.very_short_timeout
 dEQP-VK.postmortem.device_fault.with_fault_base.async_query
 dEQP-VK.postmortem.device_fault.with_fault_base.blocking_query
