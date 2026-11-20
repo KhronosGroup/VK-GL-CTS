@@ -24,8 +24,10 @@
 #include "tcuTestLog.hpp"
 
 #include "vkQueryUtil.hpp"
+#include "vkRefUtil.hpp"
 
 #include "vktApiMaintenance3Check.hpp"
+#include "vktCustomInstancesDevices.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 
@@ -863,6 +865,1557 @@ std::string getDescriptorTypeShortName(const VkDescriptorType descType)
     return de::toLower(name);
 }
 
+bool hasDescriptorIndexingStructs(const Context &ctx)
+{
+    return ctx.getEquivalentApiVersion() >= VK_API_VERSION_1_2 ||
+           ctx.isDeviceFunctionalitySupported("VK_EXT_descriptor_indexing");
+}
+
+#ifndef CTS_USES_VULKANSC
+bool hasMutableDescriptorTypeSupport(const Context &ctx)
+{
+    return (ctx.isDeviceFunctionalitySupported("VK_EXT_mutable_descriptor_type") ||
+            ctx.isDeviceFunctionalitySupported("VK_VALVE_mutable_descriptor_type")) &&
+           (ctx.getMutableDescriptorTypeFeaturesEXT().mutableDescriptorType == VK_TRUE);
+}
+#endif // CTS_USES_VULKANSC
+
+VkShaderStageFlags getValidStagesForType(VkDescriptorType descriptorType)
+{
+    switch (descriptorType)
+    {
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+        return VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+#ifndef CTS_USES_VULKANSC
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+#endif // CTS_USES_VULKANSC
+        return VK_SHADER_STAGE_COMPUTE_BIT;
+
+    case VK_DESCRIPTOR_TYPE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+        return VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+#ifndef CTS_USES_VULKANSC
+    case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+    case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+#endif // CTS_USES_VULKANSC
+        return (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    default:
+        DE_ASSERT(false);
+        return VK_SHADER_STAGE_FRAGMENT_BIT;
+    }
+}
+
+bool isUpdateAfterBindCapableType(VkDescriptorType descriptorType)
+{
+    return descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC &&
+           descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC &&
+           descriptorType != VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+}
+
+void requireDescriptorTypeSupport(Context &context, VkDescriptorType descriptorType)
+{
+#ifndef CTS_USES_VULKANSC
+    if (descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+    {
+        context.requireDeviceFunctionality("VK_EXT_inline_uniform_block");
+        if (!context.getInlineUniformBlockFeatures().inlineUniformBlock)
+            TCU_THROW(NotSupportedError, "inlineUniformBlock feature not supported");
+        if (context.getInlineUniformBlockProperties().maxInlineUniformBlockSize < 4u)
+            TCU_THROW(NotSupportedError, "maxInlineUniformBlockSize < 4");
+    }
+    else if (descriptorType == VK_DESCRIPTOR_TYPE_MUTABLE_EXT)
+    {
+        if (!hasMutableDescriptorTypeSupport(context))
+            TCU_THROW(NotSupportedError, "VK_EXT_mutable_descriptor_type feature not supported");
+    }
+    else if (descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+    {
+        context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+        if (!context.getAccelerationStructureFeatures().accelerationStructure)
+            TCU_THROW(NotSupportedError, "accelerationStructure feature not supported");
+    }
+#else
+    DE_UNREF(context);
+    DE_UNREF(descriptorType);
+#endif // CTS_USES_VULKANSC
+}
+
+void requireUpdateAfterBindFeature(Context &context, VkDescriptorType descriptorType)
+{
+    const auto &indexingFeatures = context.getDescriptorIndexingFeatures();
+
+    switch (descriptorType)
+    {
+    case VK_DESCRIPTOR_TYPE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+        if (!indexingFeatures.descriptorBindingSampledImageUpdateAfterBind)
+            TCU_THROW(NotSupportedError, "descriptorBindingSampledImageUpdateAfterBind not supported");
+        break;
+
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+        if (!indexingFeatures.descriptorBindingStorageImageUpdateAfterBind)
+            TCU_THROW(NotSupportedError, "descriptorBindingStorageImageUpdateAfterBind not supported");
+        break;
+
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+        if (!indexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind)
+            TCU_THROW(NotSupportedError, "descriptorBindingUniformTexelBufferUpdateAfterBind not supported");
+        break;
+
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+        if (!indexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind)
+            TCU_THROW(NotSupportedError, "descriptorBindingStorageTexelBufferUpdateAfterBind not supported");
+        break;
+
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+        if (!indexingFeatures.descriptorBindingUniformBufferUpdateAfterBind)
+            TCU_THROW(NotSupportedError, "descriptorBindingUniformBufferUpdateAfterBind not supported");
+        break;
+
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+        if (!indexingFeatures.descriptorBindingStorageBufferUpdateAfterBind)
+            TCU_THROW(NotSupportedError, "descriptorBindingStorageBufferUpdateAfterBind not supported");
+        break;
+
+#ifndef CTS_USES_VULKANSC
+    case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+        if (!context.getInlineUniformBlockFeatures().descriptorBindingInlineUniformBlockUpdateAfterBind)
+            TCU_THROW(NotSupportedError, "descriptorBindingInlineUniformBlockUpdateAfterBind not supported");
+        break;
+
+    case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+        if (!indexingFeatures.descriptorBindingUniformBufferUpdateAfterBind ||
+            !indexingFeatures.descriptorBindingStorageBufferUpdateAfterBind)
+        {
+            TCU_THROW(NotSupportedError,
+                      "Uniform/storage buffer UpdateAfterBind required for mutable descriptor list not supported");
+        }
+        break;
+
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+        if (!context.getAccelerationStructureFeatures().descriptorBindingAccelerationStructureUpdateAfterBind)
+            TCU_THROW(NotSupportedError, "descriptorBindingAccelerationStructureUpdateAfterBind not supported");
+        break;
+#endif // CTS_USES_VULKANSC
+
+    default:
+        TCU_THROW(InternalError, "Unexpected descriptor type for UpdateAfterBind");
+    }
+}
+
+Move<VkSampler> makeStandardSampler(const DeviceInterface &vkd, VkDevice device)
+{
+    const VkSamplerCreateInfo samplerInfo = {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FILTER_NEAREST,
+        VK_FILTER_NEAREST,
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        0.0f,
+        VK_FALSE,
+        1.0f,
+        VK_FALSE,
+        VK_COMPARE_OP_NEVER,
+        0.0f,
+        0.0f,
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        VK_FALSE,
+    };
+    return createSampler(vkd, device, &samplerInfo);
+}
+
+struct DualSupportQueryResult
+{
+    bool supported;
+    bool countStructQueried;
+    uint32_t maxVariableDescriptorCount;
+};
+
+template <typename GetSupportFn>
+DualSupportQueryResult queryLayoutSupportPairWithFn(GetSupportFn getSupportFn, VkDevice device,
+                                                    const VkDescriptorSetLayoutCreateInfo *pCreateInfo,
+                                                    bool queryVarCountStruct, bool expectNonZeroVarCount,
+                                                    uint32_t requestedVarCount, VkDescriptorType varDescType)
+{
+    VkDescriptorSetLayoutSupport supportNullFalse = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT,
+        nullptr,
+        VK_FALSE,
+    };
+    getSupportFn(device, pCreateInfo, &supportNullFalse);
+
+    VkDescriptorSetLayoutSupport supportNullTrue = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT,
+        nullptr,
+        VK_TRUE,
+    };
+    getSupportFn(device, pCreateInfo, &supportNullTrue);
+
+    if ((supportNullFalse.supported != VK_TRUE && supportNullFalse.supported != VK_FALSE) ||
+        (supportNullTrue.supported != VK_TRUE && supportNullTrue.supported != VK_FALSE))
+    {
+        TCU_FAIL("Invalid VkBool32 written to VkDescriptorSetLayoutSupport::supported when pNext is NULL");
+    }
+
+    if (supportNullFalse.supported != supportNullTrue.supported)
+        TCU_FAIL("Inconsistent VkDescriptorSetLayoutSupport::supported across pre-fill values when pNext is NULL");
+
+    uint32_t maxVarCount = 0u;
+
+    if (queryVarCountStruct)
+    {
+        VkDescriptorSetVariableDescriptorCountLayoutSupport countA = initVulkanStructure();
+        countA.maxVariableDescriptorCount                          = 0xDEADBEEFu;
+        VkDescriptorSetLayoutSupport supportA                      = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT,
+            &countA,
+            VK_FALSE,
+        };
+        getSupportFn(device, pCreateInfo, &supportA);
+
+        VkDescriptorSetVariableDescriptorCountLayoutSupport countB = initVulkanStructure();
+        countB.maxVariableDescriptorCount                          = 0u;
+        VkDescriptorSetLayoutSupport supportB                      = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT,
+            &countB,
+            VK_TRUE,
+        };
+        getSupportFn(device, pCreateInfo, &supportB);
+
+        if ((supportA.supported != VK_TRUE && supportA.supported != VK_FALSE) ||
+            (supportB.supported != VK_TRUE && supportB.supported != VK_FALSE))
+        {
+            TCU_FAIL("Invalid VkBool32 written to VkDescriptorSetLayoutSupport::supported with count struct");
+        }
+
+        if (supportA.supported != supportB.supported)
+            TCU_FAIL("Inconsistent VkDescriptorSetLayoutSupport::supported across pre-fill values with count struct");
+
+        if (supportA.supported != supportNullFalse.supported)
+        {
+            TCU_FAIL("Mismatch in VkDescriptorSetLayoutSupport::supported with and without "
+                     "VkDescriptorSetVariableDescriptorCountLayoutSupport");
+        }
+
+        if (supportA.supported == VK_TRUE)
+        {
+            if (countA.maxVariableDescriptorCount != countB.maxVariableDescriptorCount)
+                TCU_FAIL("Inconsistent maxVariableDescriptorCount across sentinel pre-fill values");
+
+            maxVarCount = countA.maxVariableDescriptorCount;
+
+            if (!expectNonZeroVarCount)
+            {
+                if (maxVarCount != 0u)
+                    TCU_FAIL("Expected maxVariableDescriptorCount == 0 when variable descriptor count is inactive");
+            }
+            else
+            {
+#ifndef CTS_USES_VULKANSC
+                const uint32_t zeroFloor = (varDescType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK) ? 4u : 1u;
+#else
+                const uint32_t zeroFloor = 1u;
+                DE_UNREF(varDescType);
+#endif // CTS_USES_VULKANSC
+                const uint32_t minExpected = std::max(requestedVarCount, zeroFloor);
+                if (maxVarCount < minExpected)
+                    TCU_FAIL("maxVariableDescriptorCount is smaller than requested or minimum variable count");
+            }
+        }
+    }
+
+    return DualSupportQueryResult{(supportNullFalse.supported == VK_TRUE), queryVarCountStruct, maxVarCount};
+}
+
+DualSupportQueryResult queryLayoutSupportPair(const DeviceInterface &vkd, VkDevice device,
+                                              const VkDescriptorSetLayoutCreateInfo *pCreateInfo,
+                                              bool queryVarCountStruct, bool expectNonZeroVarCount,
+                                              uint32_t requestedVarCount, VkDescriptorType varDescType)
+{
+    const auto fn = [&vkd](VkDevice dev, const VkDescriptorSetLayoutCreateInfo *info, VkDescriptorSetLayoutSupport *out)
+    { vkd.getDescriptorSetLayoutSupport(dev, info, out); };
+
+    return queryLayoutSupportPairWithFn(fn, device, pCreateInfo, queryVarCountStruct, expectNonZeroVarCount,
+                                        requestedVarCount, varDescType);
+}
+
+enum class LayoutTopology : uint32_t
+{
+    SINGLE = 0,
+    ASCENDING_SPARSE,
+    DESCENDING,
+    UNORDERED_SPARSE,
+};
+
+const char *getLayoutTopologyName(LayoutTopology topology)
+{
+    switch (topology)
+    {
+    case LayoutTopology::SINGLE:
+        return "single";
+    case LayoutTopology::ASCENDING_SPARSE:
+        return "ascending_sparse";
+    case LayoutTopology::DESCENDING:
+        return "descending";
+    case LayoutTopology::UNORDERED_SPARSE:
+        return "unordered_sparse";
+    default:
+        DE_ASSERT(false);
+        return "";
+    }
+}
+
+enum class BindingFlagsMode : uint32_t
+{
+    NO_FLAGS_STRUCT = 0,
+    ZERO_BINDING_FLAGS,
+    NON_VARIABLE_FLAGS,
+    VARIABLE_COUNT,
+    VARIABLE_COUNT_UAB,
+};
+
+const char *getBindingFlagsModeName(BindingFlagsMode mode)
+{
+    switch (mode)
+    {
+    case BindingFlagsMode::NO_FLAGS_STRUCT:
+        return "no_flags_struct";
+    case BindingFlagsMode::ZERO_BINDING_FLAGS:
+        return "zero_binding_flags";
+    case BindingFlagsMode::NON_VARIABLE_FLAGS:
+        return "non_variable_flags";
+    case BindingFlagsMode::VARIABLE_COUNT:
+        return "variable_count";
+    case BindingFlagsMode::VARIABLE_COUNT_UAB:
+        return "variable_count_uab";
+    default:
+        DE_ASSERT(false);
+        return "";
+    }
+}
+
+struct LayoutSupportMatrixParams
+{
+    VkDescriptorType descriptorType;
+    LayoutTopology topology;
+    BindingFlagsMode flagsMode;
+    bool useImmutableSamplers;
+};
+
+void checkSupportLayoutSupportMatrix(Context &context, LayoutSupportMatrixParams params)
+{
+    context.requireDeviceFunctionality("VK_KHR_maintenance3");
+    requireDescriptorTypeSupport(context, params.descriptorType);
+
+    if (params.flagsMode != BindingFlagsMode::NO_FLAGS_STRUCT)
+    {
+        if (!hasDescriptorIndexingStructs(context))
+            TCU_THROW(NotSupportedError, "Descriptor indexing structures not supported");
+    }
+
+    const auto &indexingFeatures = context.getDescriptorIndexingFeatures();
+
+    if (params.flagsMode == BindingFlagsMode::NON_VARIABLE_FLAGS)
+    {
+        if (!indexingFeatures.descriptorBindingPartiallyBound)
+            TCU_THROW(NotSupportedError, "descriptorBindingPartiallyBound not supported");
+        if (!indexingFeatures.descriptorBindingUpdateUnusedWhilePending)
+            TCU_THROW(NotSupportedError, "descriptorBindingUpdateUnusedWhilePending not supported");
+
+        if (isUpdateAfterBindCapableType(params.descriptorType))
+            requireUpdateAfterBindFeature(context, params.descriptorType);
+    }
+    else if (params.flagsMode == BindingFlagsMode::VARIABLE_COUNT)
+    {
+        if (!indexingFeatures.descriptorBindingVariableDescriptorCount)
+            TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+    }
+    else if (params.flagsMode == BindingFlagsMode::VARIABLE_COUNT_UAB)
+    {
+        if (!indexingFeatures.descriptorBindingVariableDescriptorCount)
+            TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+        if (!indexingFeatures.descriptorBindingPartiallyBound)
+            TCU_THROW(NotSupportedError, "descriptorBindingPartiallyBound not supported");
+        if (!indexingFeatures.descriptorBindingUpdateUnusedWhilePending)
+            TCU_THROW(NotSupportedError, "descriptorBindingUpdateUnusedWhilePending not supported");
+
+        requireUpdateAfterBindFeature(context, params.descriptorType);
+    }
+}
+
+tcu::TestStatus testLayoutSupportMatrix(Context &context, LayoutSupportMatrixParams params)
+{
+    const auto &vkd                 = context.getDeviceInterface();
+    const VkDevice device           = context.getDevice();
+    const bool canQueryVarCount     = hasDescriptorIndexingStructs(context);
+    const bool isVariableMode       = (params.flagsMode == BindingFlagsMode::VARIABLE_COUNT ||
+                                 params.flagsMode == BindingFlagsMode::VARIABLE_COUNT_UAB);
+    const VkShaderStageFlags stages = getValidStagesForType(params.descriptorType);
+    const VkShaderStageFlags uboStg = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    Move<VkSampler> samplerObjs[4];
+    VkSampler rawSamplers[4] = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE};
+    if (params.useImmutableSamplers)
+    {
+        for (size_t i = 0; i < 4u; ++i)
+        {
+            samplerObjs[i] = makeStandardSampler(vkd, device);
+            rawSamplers[i] = *samplerObjs[i];
+        }
+    }
+
+    uint32_t initialCount = 1u;
+#ifndef CTS_USES_VULKANSC
+    if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+        initialCount = 4u;
+    else
+#endif // CTS_USES_VULKANSC
+        if (params.useImmutableSamplers)
+            initialCount = 2u;
+
+    const VkSampler *const targetSamplers = params.useImmutableSamplers ? rawSamplers : nullptr;
+
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    size_t targetIdx = 0u;
+
+    switch (params.topology)
+    {
+    case LayoutTopology::SINGLE:
+        bindings.push_back(
+            VkDescriptorSetLayoutBinding{0u, params.descriptorType, initialCount, stages, targetSamplers});
+        targetIdx = 0u;
+        break;
+
+    case LayoutTopology::ASCENDING_SPARSE:
+        bindings.push_back(VkDescriptorSetLayoutBinding{1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, uboStg, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{5u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u, 0u, nullptr});
+        bindings.push_back(
+            VkDescriptorSetLayoutBinding{10u, params.descriptorType, initialCount, stages, targetSamplers});
+        targetIdx = 2u;
+        break;
+
+    case LayoutTopology::DESCENDING:
+        bindings.push_back(
+            VkDescriptorSetLayoutBinding{3u, params.descriptorType, initialCount, stages, targetSamplers});
+        bindings.push_back(VkDescriptorSetLayoutBinding{2u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, uboStg, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, uboStg, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, uboStg, nullptr});
+        targetIdx = 0u;
+        break;
+
+    case LayoutTopology::UNORDERED_SPARSE:
+        bindings.push_back(VkDescriptorSetLayoutBinding{4u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, uboStg, nullptr});
+        bindings.push_back(
+            VkDescriptorSetLayoutBinding{12u, params.descriptorType, initialCount, stages, targetSamplers});
+        bindings.push_back(VkDescriptorSetLayoutBinding{0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u, 0u, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{7u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, uboStg, nullptr});
+        targetIdx = 1u;
+        break;
+
+    default:
+        DE_ASSERT(false);
+        break;
+    }
+
+    VkDescriptorSetLayoutCreateFlags layoutFlags = 0u;
+    std::vector<VkDescriptorBindingFlags> bindingFlags(bindings.size(), 0u);
+
+    if (params.flagsMode == BindingFlagsMode::NON_VARIABLE_FLAGS)
+    {
+        const bool useUab = isUpdateAfterBindCapableType(params.descriptorType);
+        if (useUab)
+            layoutFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+
+        for (size_t i = 0; i < bindings.size(); ++i)
+        {
+            if (bindings[i].descriptorCount == 0u)
+                continue;
+
+            bindingFlags[i] =
+                VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT;
+            if (i == targetIdx && useUab)
+                bindingFlags[i] |= VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+        }
+    }
+    else if (params.flagsMode == BindingFlagsMode::VARIABLE_COUNT)
+    {
+        bindingFlags[targetIdx] = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+    }
+    else if (params.flagsMode == BindingFlagsMode::VARIABLE_COUNT_UAB)
+    {
+        layoutFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+        for (size_t i = 0; i < bindings.size(); ++i)
+        {
+            if (i == targetIdx)
+            {
+                bindingFlags[i] =
+                    VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT |
+                    VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT;
+            }
+            else if (bindings[i].descriptorCount > 0u)
+            {
+                bindingFlags[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+            }
+        }
+    }
+
+    const void *pNextChain = nullptr;
+
+#ifndef CTS_USES_VULKANSC
+    static const VkDescriptorType kMutableBufferTypes[2] = {
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+    };
+    std::vector<VkMutableDescriptorTypeListEXT> mutableLists;
+    VkMutableDescriptorTypeCreateInfoEXT mutableInfo = initVulkanStructure();
+
+    if (params.descriptorType == VK_DESCRIPTOR_TYPE_MUTABLE_EXT)
+    {
+        mutableLists.assign(bindings.size(), VkMutableDescriptorTypeListEXT{0u, nullptr});
+        mutableLists[targetIdx]                    = VkMutableDescriptorTypeListEXT{2u, kMutableBufferTypes};
+        mutableInfo.pNext                          = nullptr;
+        mutableInfo.mutableDescriptorTypeListCount = de::sizeU32(mutableLists);
+        mutableInfo.pMutableDescriptorTypeLists    = de::dataOrNull(mutableLists);
+        pNextChain                                 = &mutableInfo;
+    }
+#endif // CTS_USES_VULKANSC
+
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+        pNextChain,
+        de::sizeU32(bindingFlags),
+        de::dataOrNull(bindingFlags),
+    };
+    if (params.flagsMode != BindingFlagsMode::NO_FLAGS_STRUCT)
+        pNextChain = &bindingFlagsInfo;
+
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        pNextChain,
+        layoutFlags,
+        de::sizeU32(bindings),
+        de::dataOrNull(bindings),
+    };
+
+    bool shouldCreateLayout = !(params.useImmutableSamplers && isVariableMode);
+#ifndef CTS_USES_VULKANSC
+    if (params.descriptorType == VK_DESCRIPTOR_TYPE_MUTABLE_EXT && params.topology != LayoutTopology::SINGLE)
+        shouldCreateLayout = false;
+#endif // CTS_USES_VULKANSC
+
+    const DualSupportQueryResult initialRes = queryLayoutSupportPair(
+        vkd, device, &layoutCreateInfo, canQueryVarCount, isVariableMode, initialCount, params.descriptorType);
+    if (!initialRes.supported)
+        TCU_THROW(NotSupportedError, "Descriptor set layout not supported");
+
+    if (params.flagsMode == BindingFlagsMode::ZERO_BINDING_FLAGS)
+    {
+        VkDescriptorSetLayoutBindingFlagsCreateInfo emptyFlagsInfo = bindingFlagsInfo;
+        emptyFlagsInfo.bindingCount                                = 0u;
+        emptyFlagsInfo.pBindingFlags                               = nullptr;
+
+        VkDescriptorSetLayoutCreateInfo emptyFlagsLayoutInfo = layoutCreateInfo;
+        emptyFlagsLayoutInfo.pNext                           = &emptyFlagsInfo;
+
+        const DualSupportQueryResult emptyFlagsRes = queryLayoutSupportPair(
+            vkd, device, &emptyFlagsLayoutInfo, canQueryVarCount, false, 0u, params.descriptorType);
+        if (emptyFlagsRes.supported != initialRes.supported ||
+            emptyFlagsRes.maxVariableDescriptorCount != initialRes.maxVariableDescriptorCount)
+        {
+            TCU_FAIL("Mismatch between zero-filled pBindingFlags and bindingCount == 0 in BindingFlagsCreateInfo");
+        }
+    }
+
+    if (shouldCreateLayout)
+    {
+        const Move<VkDescriptorSetLayout> layout = createDescriptorSetLayout(vkd, device, &layoutCreateInfo);
+        DE_ASSERT(*layout != VK_NULL_HANDLE);
+    }
+
+    if (isVariableMode)
+    {
+#ifndef CTS_USES_VULKANSC
+        if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+        {
+            const auto &iubProps = context.getInlineUniformBlockProperties();
+            if (initialRes.maxVariableDescriptorCount > iubProps.maxInlineUniformBlockSize)
+                TCU_FAIL("Implementation reports max IUB size larger than maxInlineUniformBlockSize");
+            if ((initialRes.maxVariableDescriptorCount % 4u) != 0u)
+                TCU_FAIL("Implementation reports max IUB size that is not a multiple of 4");
+        }
+#endif // CTS_USES_VULKANSC
+
+        // Sweep zero descriptor count on variable-sized binding.
+        bindings[targetIdx].descriptorCount = 0u;
+        const DualSupportQueryResult zeroRes =
+            queryLayoutSupportPair(vkd, device, &layoutCreateInfo, canQueryVarCount, true, 0u, params.descriptorType);
+        if (!zeroRes.supported)
+            TCU_FAIL("Implementation reports support for initial count but no support for zero variable count");
+        if (zeroRes.maxVariableDescriptorCount != initialRes.maxVariableDescriptorCount)
+            TCU_FAIL("Mismatch in maxVariableDescriptorCount between initial and zero variable count");
+
+        if (shouldCreateLayout)
+        {
+            const Move<VkDescriptorSetLayout> zeroLayout = createDescriptorSetLayout(vkd, device, &layoutCreateInfo);
+            DE_ASSERT(*zeroLayout != VK_NULL_HANDLE);
+        }
+
+        uint32_t midCount = 1u;
+        uint32_t maxCount = initialRes.maxVariableDescriptorCount;
+        if (params.useImmutableSamplers)
+        {
+            maxCount = std::min(4u, initialRes.maxVariableDescriptorCount);
+            midCount = std::min(1u, maxCount);
+        }
+#ifndef CTS_USES_VULKANSC
+        else if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+        {
+            midCount = ((initialRes.maxVariableDescriptorCount / 2u) & ~3u);
+            if (midCount == 0u)
+                midCount = 4u;
+        }
+#endif // CTS_USES_VULKANSC
+        else
+        {
+            midCount = std::min(initialRes.maxVariableDescriptorCount, 16u);
+        }
+
+        const uint32_t sweepCounts[2] = {midCount, maxCount};
+        for (size_t s = 0; s < 2u; ++s)
+        {
+            const uint32_t count = sweepCounts[s];
+            if (s == 1u && count == midCount)
+                continue;
+
+            bindings[targetIdx].descriptorCount   = count;
+            const DualSupportQueryResult sweepRes = queryLayoutSupportPair(
+                vkd, device, &layoutCreateInfo, canQueryVarCount, true, count, params.descriptorType);
+            if (!sweepRes.supported)
+                TCU_FAIL("Implementation reports no support within reported maxVariableDescriptorCount");
+            if (sweepRes.maxVariableDescriptorCount != initialRes.maxVariableDescriptorCount)
+                TCU_FAIL("Mismatch in maxVariableDescriptorCount across variable descriptor count sweep");
+
+            if (shouldCreateLayout)
+            {
+                const Move<VkDescriptorSetLayout> maxLayout = createDescriptorSetLayout(vkd, device, &layoutCreateInfo);
+                DE_ASSERT(*maxLayout != VK_NULL_HANDLE);
+            }
+        }
+
+        bindings[targetIdx].descriptorCount = initialCount;
+    }
+
+    if (params.topology == LayoutTopology::DESCENDING || params.topology == LayoutTopology::UNORDERED_SPARSE)
+    {
+        std::vector<size_t> order(bindings.size());
+        for (size_t i = 0; i < order.size(); ++i)
+            order[i] = i;
+
+        std::sort(order.begin(), order.end(),
+                  [&bindings](size_t a, size_t b) { return bindings[a].binding < bindings[b].binding; });
+
+        std::vector<VkDescriptorSetLayoutBinding> sortedBindings(bindings.size());
+        std::vector<VkDescriptorBindingFlags> sortedFlags(bindingFlags.size());
+        for (size_t i = 0; i < order.size(); ++i)
+        {
+            sortedBindings[i] = bindings[order[i]];
+            sortedFlags[i]    = bindingFlags[order[i]];
+        }
+
+        const void *sortedNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+        std::vector<VkMutableDescriptorTypeListEXT> sortedMutableLists;
+        VkMutableDescriptorTypeCreateInfoEXT sortedMutableInfo = initVulkanStructure();
+        if (params.descriptorType == VK_DESCRIPTOR_TYPE_MUTABLE_EXT)
+        {
+            sortedMutableLists.resize(mutableLists.size());
+            for (size_t i = 0; i < order.size(); ++i)
+                sortedMutableLists[i] = mutableLists[order[i]];
+
+            sortedMutableInfo.pNext                          = nullptr;
+            sortedMutableInfo.mutableDescriptorTypeListCount = de::sizeU32(sortedMutableLists);
+            sortedMutableInfo.pMutableDescriptorTypeLists    = de::dataOrNull(sortedMutableLists);
+            sortedNext                                       = &sortedMutableInfo;
+        }
+#endif // CTS_USES_VULKANSC
+
+        VkDescriptorSetLayoutBindingFlagsCreateInfo sortedFlagsInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            sortedNext,
+            de::sizeU32(sortedFlags),
+            de::dataOrNull(sortedFlags),
+        };
+        if (params.flagsMode != BindingFlagsMode::NO_FLAGS_STRUCT)
+            sortedNext = &sortedFlagsInfo;
+
+        const VkDescriptorSetLayoutCreateInfo sortedCreateInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            sortedNext,
+            layoutFlags,
+            de::sizeU32(sortedBindings),
+            de::dataOrNull(sortedBindings),
+        };
+
+        const DualSupportQueryResult sortedRes = queryLayoutSupportPair(
+            vkd, device, &sortedCreateInfo, canQueryVarCount, isVariableMode, initialCount, params.descriptorType);
+        if (sortedRes.supported != initialRes.supported ||
+            sortedRes.maxVariableDescriptorCount != initialRes.maxVariableDescriptorCount)
+        {
+            TCU_FAIL("pBindings array ordering changed vkGetDescriptorSetLayoutSupport output");
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+#ifndef CTS_USES_VULKANSC
+enum class CreateFlagsVariant : uint32_t
+{
+    PUSH_DESCRIPTOR_EMPTY = 0,
+    PUSH_DESCRIPTOR_UNIFORM_BUFFER,
+    PUSH_DESCRIPTOR_COMBINED_IMAGE_SAMPLER_IMMUTABLE,
+    PUSH_DESCRIPTOR_DESCENDING_PARTIALLY_BOUND,
+    PUSH_DESCRIPTOR_MAX_PUSH_DESCRIPTORS,
+    HOST_ONLY_POOL_UNIFORM_BUFFER_NO_VARIABLE,
+    HOST_ONLY_POOL_UNIFORM_BUFFER_VARIABLE_COUNT,
+    HOST_ONLY_POOL_MUTABLE_EXT_NO_VARIABLE,
+    HOST_ONLY_POOL_MUTABLE_EXT_VARIABLE_COUNT,
+    DESCRIPTOR_BUFFER_EMPTY,
+    DESCRIPTOR_BUFFER_UNIFORM_BUFFER_NO_VARIABLE,
+    DESCRIPTOR_BUFFER_UNIFORM_BUFFER_VARIABLE_COUNT,
+    DESCRIPTOR_BUFFER_SAMPLED_IMAGE_VARIABLE_COUNT,
+    DESCRIPTOR_BUFFER_INLINE_UNIFORM_BLOCK_VARIABLE_COUNT,
+    DESCRIPTOR_BUFFER_EMBEDDED_IMMUTABLE_SAMPLERS,
+    DESCRIPTOR_BUFFER_EMBEDDED_IMMUTABLE_SAMPLERS_SPARSE_ZERO_COUNT,
+};
+
+void checkSupportCreateFlagsVariant(Context &context, CreateFlagsVariant variant)
+{
+    context.requireDeviceFunctionality("VK_KHR_maintenance3");
+
+    switch (variant)
+    {
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_EMPTY:
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_UNIFORM_BUFFER:
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_COMBINED_IMAGE_SAMPLER_IMMUTABLE:
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_DESCENDING_PARTIALLY_BOUND:
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_MAX_PUSH_DESCRIPTORS:
+    {
+        context.requireDeviceFunctionality("VK_KHR_push_descriptor");
+        const uint32_t maxPush = context.getPushDescriptorProperties().maxPushDescriptors;
+        if (variant != CreateFlagsVariant::PUSH_DESCRIPTOR_EMPTY && maxPush == 0u)
+            TCU_THROW(NotSupportedError, "maxPushDescriptors is zero");
+        if (variant == CreateFlagsVariant::PUSH_DESCRIPTOR_DESCENDING_PARTIALLY_BOUND)
+        {
+            if (maxPush < 3u)
+                TCU_THROW(NotSupportedError, "maxPushDescriptors < 3");
+            if (!hasDescriptorIndexingStructs(context) ||
+                !context.getDescriptorIndexingFeatures().descriptorBindingPartiallyBound)
+            {
+                TCU_THROW(NotSupportedError, "descriptorBindingPartiallyBound not supported");
+            }
+        }
+        break;
+    }
+
+    case CreateFlagsVariant::HOST_ONLY_POOL_UNIFORM_BUFFER_NO_VARIABLE:
+    case CreateFlagsVariant::HOST_ONLY_POOL_UNIFORM_BUFFER_VARIABLE_COUNT:
+    case CreateFlagsVariant::HOST_ONLY_POOL_MUTABLE_EXT_NO_VARIABLE:
+    case CreateFlagsVariant::HOST_ONLY_POOL_MUTABLE_EXT_VARIABLE_COUNT:
+        if (!hasMutableDescriptorTypeSupport(context))
+            TCU_THROW(NotSupportedError, "VK_EXT_mutable_descriptor_type feature not supported");
+        if (variant == CreateFlagsVariant::HOST_ONLY_POOL_UNIFORM_BUFFER_VARIABLE_COUNT ||
+            variant == CreateFlagsVariant::HOST_ONLY_POOL_MUTABLE_EXT_VARIABLE_COUNT)
+        {
+            if (!hasDescriptorIndexingStructs(context) ||
+                !context.getDescriptorIndexingFeatures().descriptorBindingVariableDescriptorCount)
+            {
+                TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+            }
+        }
+        break;
+
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_EMPTY:
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_UNIFORM_BUFFER_NO_VARIABLE:
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_UNIFORM_BUFFER_VARIABLE_COUNT:
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_SAMPLED_IMAGE_VARIABLE_COUNT:
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_INLINE_UNIFORM_BLOCK_VARIABLE_COUNT:
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_EMBEDDED_IMMUTABLE_SAMPLERS:
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_EMBEDDED_IMMUTABLE_SAMPLERS_SPARSE_ZERO_COUNT:
+        context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
+        if (!context.getDescriptorBufferFeaturesEXT().descriptorBuffer)
+            TCU_THROW(NotSupportedError, "descriptorBuffer feature not supported");
+        if (variant == CreateFlagsVariant::DESCRIPTOR_BUFFER_INLINE_UNIFORM_BLOCK_VARIABLE_COUNT)
+            requireDescriptorTypeSupport(context, VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
+        if (variant == CreateFlagsVariant::DESCRIPTOR_BUFFER_UNIFORM_BUFFER_VARIABLE_COUNT ||
+            variant == CreateFlagsVariant::DESCRIPTOR_BUFFER_SAMPLED_IMAGE_VARIABLE_COUNT ||
+            variant == CreateFlagsVariant::DESCRIPTOR_BUFFER_INLINE_UNIFORM_BLOCK_VARIABLE_COUNT)
+        {
+            if (!hasDescriptorIndexingStructs(context) ||
+                !context.getDescriptorIndexingFeatures().descriptorBindingVariableDescriptorCount)
+            {
+                TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+            }
+        }
+        break;
+
+    default:
+        DE_ASSERT(false);
+        break;
+    }
+}
+
+tcu::TestStatus testCreateFlagsVariant(Context &context, CreateFlagsVariant variant)
+{
+    const auto &vkd             = context.getDeviceInterface();
+    const VkDevice device       = context.getDevice();
+    const bool canQueryVarCount = hasDescriptorIndexingStructs(context);
+
+    Move<VkSampler> samplerObjs[2];
+    VkSampler rawSamplers[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
+
+    VkDescriptorSetLayoutCreateFlags createFlags = 0u;
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    std::vector<VkDescriptorBindingFlags> bindingFlags;
+    bool useBindingFlags   = false;
+    bool isVariable        = false;
+    bool createLayoutAfter = true;
+    uint32_t varReqCount   = 0u;
+    VkDescriptorType varTp = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+    static const VkDescriptorType kMutableBufferTypes[2] = {
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+    };
+    std::vector<VkMutableDescriptorTypeListEXT> mutableLists;
+    VkMutableDescriptorTypeCreateInfoEXT mutableInfo = initVulkanStructure();
+    bool useMutableInfo                              = false;
+
+    switch (variant)
+    {
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_EMPTY:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT;
+        break;
+
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_UNIFORM_BUFFER:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT;
+        bindings.push_back(VkDescriptorSetLayoutBinding{0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, nullptr});
+        break;
+
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_COMBINED_IMAGE_SAMPLER_IMMUTABLE:
+    {
+        createFlags          = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT;
+        const uint32_t count = std::min(2u, context.getPushDescriptorProperties().maxPushDescriptors);
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            samplerObjs[i] = makeStandardSampler(vkd, device);
+            rawSamplers[i] = *samplerObjs[i];
+        }
+        bindings.push_back(VkDescriptorSetLayoutBinding{0u, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, count,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, rawSamplers});
+        break;
+    }
+
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_DESCENDING_PARTIALLY_BOUND:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT;
+        bindings.push_back(VkDescriptorSetLayoutBinding{2u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{1u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{0u, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_COMPUTE_BIT, nullptr});
+        bindingFlags.assign(3u, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
+        useBindingFlags = true;
+        break;
+
+    case CreateFlagsVariant::PUSH_DESCRIPTOR_MAX_PUSH_DESCRIPTORS:
+    {
+        createFlags           = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT;
+        const auto &limits    = context.getDeviceProperties().limits;
+        const uint32_t maxPsh = context.getPushDescriptorProperties().maxPushDescriptors;
+        const uint32_t count =
+            std::min(maxPsh, std::min(limits.maxPerStageDescriptorSampledImages, limits.maxDescriptorSetSampledImages));
+        if (count == 0u)
+            TCU_THROW(NotSupportedError, "Sampled image push descriptor limit is zero");
+        bindings.push_back(VkDescriptorSetLayoutBinding{0u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, count,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, nullptr});
+        break;
+    }
+
+    case CreateFlagsVariant::HOST_ONLY_POOL_UNIFORM_BUFFER_NO_VARIABLE:
+    case CreateFlagsVariant::HOST_ONLY_POOL_UNIFORM_BUFFER_VARIABLE_COUNT:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT;
+        bindings.push_back(VkDescriptorSetLayoutBinding{3u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_VERTEX_BIT, nullptr});
+        if (variant == CreateFlagsVariant::HOST_ONLY_POOL_UNIFORM_BUFFER_VARIABLE_COUNT)
+        {
+            bindingFlags    = {VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT, 0u};
+            useBindingFlags = true;
+            isVariable      = true;
+            varReqCount     = 1u;
+            varTp           = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        }
+        break;
+
+    case CreateFlagsVariant::HOST_ONLY_POOL_MUTABLE_EXT_NO_VARIABLE:
+    case CreateFlagsVariant::HOST_ONLY_POOL_MUTABLE_EXT_VARIABLE_COUNT:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_HOST_ONLY_POOL_BIT_EXT;
+        bindings.push_back(VkDescriptorSetLayoutBinding{3u, VK_DESCRIPTOR_TYPE_MUTABLE_EXT, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_VERTEX_BIT, nullptr});
+        mutableLists      = {VkMutableDescriptorTypeListEXT{2u, kMutableBufferTypes},
+                             VkMutableDescriptorTypeListEXT{0u, nullptr}};
+        useMutableInfo    = true;
+        createLayoutAfter = false;
+        if (variant == CreateFlagsVariant::HOST_ONLY_POOL_MUTABLE_EXT_VARIABLE_COUNT)
+        {
+            bindingFlags    = {VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT, 0u};
+            useBindingFlags = true;
+            isVariable      = true;
+            varReqCount     = 1u;
+            varTp           = VK_DESCRIPTOR_TYPE_MUTABLE_EXT;
+        }
+        break;
+
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_EMPTY:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+        break;
+
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_UNIFORM_BUFFER_NO_VARIABLE:
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_UNIFORM_BUFFER_VARIABLE_COUNT:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+        bindings.push_back(VkDescriptorSetLayoutBinding{3u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_VERTEX_BIT, nullptr});
+        if (variant == CreateFlagsVariant::DESCRIPTOR_BUFFER_UNIFORM_BUFFER_VARIABLE_COUNT)
+        {
+            bindingFlags    = {VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT, 0u};
+            useBindingFlags = true;
+            isVariable      = true;
+            varReqCount     = 1u;
+            varTp           = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        }
+        break;
+
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_SAMPLED_IMAGE_VARIABLE_COUNT:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+        bindings.push_back(VkDescriptorSetLayoutBinding{3u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_VERTEX_BIT, nullptr});
+        bindingFlags    = {VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT, 0u};
+        useBindingFlags = true;
+        isVariable      = true;
+        varReqCount     = 1u;
+        varTp           = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        break;
+
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_INLINE_UNIFORM_BLOCK_VARIABLE_COUNT:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+        bindings.push_back(VkDescriptorSetLayoutBinding{3u, VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK, 4u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, nullptr});
+        bindings.push_back(VkDescriptorSetLayoutBinding{1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u,
+                                                        VK_SHADER_STAGE_VERTEX_BIT, nullptr});
+        bindingFlags    = {VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT, 0u};
+        useBindingFlags = true;
+        isVariable      = true;
+        varReqCount     = 4u;
+        varTp           = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK;
+        break;
+
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_EMBEDDED_IMMUTABLE_SAMPLERS:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT |
+                      VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT;
+        samplerObjs[0] = makeStandardSampler(vkd, device);
+        samplerObjs[1] = makeStandardSampler(vkd, device);
+        rawSamplers[0] = *samplerObjs[0];
+        rawSamplers[1] = *samplerObjs[1];
+        bindings.push_back(VkDescriptorSetLayoutBinding{1u, VK_DESCRIPTOR_TYPE_SAMPLER, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, &rawSamplers[1]});
+        bindings.push_back(VkDescriptorSetLayoutBinding{0u, VK_DESCRIPTOR_TYPE_SAMPLER, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, &rawSamplers[0]});
+        break;
+
+    case CreateFlagsVariant::DESCRIPTOR_BUFFER_EMBEDDED_IMMUTABLE_SAMPLERS_SPARSE_ZERO_COUNT:
+        createFlags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT |
+                      VK_DESCRIPTOR_SET_LAYOUT_CREATE_EMBEDDED_IMMUTABLE_SAMPLERS_BIT_EXT;
+        samplerObjs[0]    = makeStandardSampler(vkd, device);
+        rawSamplers[0]    = *samplerObjs[0];
+        createLayoutAfter = false;
+        bindings.push_back(VkDescriptorSetLayoutBinding{2u, VK_DESCRIPTOR_TYPE_SAMPLER, 1u,
+                                                        VK_SHADER_STAGE_FRAGMENT_BIT, &rawSamplers[0]});
+        bindings.push_back(VkDescriptorSetLayoutBinding{0u, VK_DESCRIPTOR_TYPE_SAMPLER, 0u, 0u, nullptr});
+        break;
+
+    default:
+        DE_ASSERT(false);
+        break;
+    }
+
+    const void *pNextChain = nullptr;
+    if (useMutableInfo)
+    {
+        mutableInfo.pNext                          = nullptr;
+        mutableInfo.mutableDescriptorTypeListCount = de::sizeU32(mutableLists);
+        mutableInfo.pMutableDescriptorTypeLists    = de::dataOrNull(mutableLists);
+        pNextChain                                 = &mutableInfo;
+    }
+
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+        pNextChain,
+        de::sizeU32(bindingFlags),
+        de::dataOrNull(bindingFlags),
+    };
+    if (useBindingFlags)
+        pNextChain = &bindingFlagsInfo;
+
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        pNextChain,
+        createFlags,
+        de::sizeU32(bindings),
+        de::dataOrNull(bindings),
+    };
+
+    const DualSupportQueryResult res =
+        queryLayoutSupportPair(vkd, device, &layoutCreateInfo, canQueryVarCount, isVariable, varReqCount, varTp);
+
+    if (!res.supported)
+    {
+        if (variant == CreateFlagsVariant::PUSH_DESCRIPTOR_MAX_PUSH_DESCRIPTORS &&
+            bindings[0].descriptorCount > context.getMaintenance3Properties().maxPerSetDescriptors)
+        {
+            return tcu::TestStatus::pass("Pass");
+        }
+        TCU_THROW(NotSupportedError, "Descriptor set layout with createFlags not supported");
+    }
+
+    if (isVariable)
+    {
+        bindings[0].descriptorCount = 0u;
+        const DualSupportQueryResult zeroRes =
+            queryLayoutSupportPair(vkd, device, &layoutCreateInfo, canQueryVarCount, true, 0u, varTp);
+        if (!zeroRes.supported || zeroRes.maxVariableDescriptorCount != res.maxVariableDescriptorCount)
+            TCU_FAIL("Zero variable count mismatch under layout createFlags");
+        bindings[0].descriptorCount = varReqCount;
+    }
+
+    if (createLayoutAfter)
+    {
+        const Move<VkDescriptorSetLayout> layout = createDescriptorSetLayout(vkd, device, &layoutCreateInfo);
+        DE_ASSERT(*layout != VK_NULL_HANDLE);
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+#endif // CTS_USES_VULKANSC
+
+enum class EdgeCaseVariant : uint32_t
+{
+    EMPTY_LAYOUT = 0,
+    ALL_ZERO_DESCRIPTOR_COUNTS_NO_VARIABLE,
+    ZERO_COUNT_VARIABLE_BINDING_CREATE_LAYOUT,
+#ifndef CTS_USES_VULKANSC
+    ZERO_COUNT_VARIABLE_INLINE_UNIFORM_BLOCK,
+    MUTABLE_EXT_MIXED_TYPES_NO_VARIABLE,
+    MUTABLE_EXT_MIXED_TYPES_VARIABLE_COUNT,
+#endif // CTS_USES_VULKANSC
+    OVER_LIMIT_NON_VARIABLE_UINT32_MAX,
+    OVER_LIMIT_DYNAMIC_BUFFERS,
+    VARIABLE_FEATURE_DISABLED_CUSTOM_DEVICE,
+#ifndef CTS_USES_VULKANSC
+    KHR_ENTRY_POINT,
+#endif // CTS_USES_VULKANSC
+};
+
+void checkSupportEdgeCase(Context &context, EdgeCaseVariant variant)
+{
+    context.requireDeviceFunctionality("VK_KHR_maintenance3");
+
+    switch (variant)
+    {
+    case EdgeCaseVariant::EMPTY_LAYOUT:
+    case EdgeCaseVariant::ALL_ZERO_DESCRIPTOR_COUNTS_NO_VARIABLE:
+    case EdgeCaseVariant::OVER_LIMIT_NON_VARIABLE_UINT32_MAX:
+        break;
+
+    case EdgeCaseVariant::OVER_LIMIT_DYNAMIC_BUFFERS:
+        if (context.getDeviceProperties().limits.maxDescriptorSetUniformBuffersDynamic ==
+            std::numeric_limits<uint32_t>::max())
+        {
+            TCU_THROW(NotSupportedError, "maxDescriptorSetUniformBuffersDynamic is UINT32_MAX");
+        }
+        break;
+
+    case EdgeCaseVariant::ZERO_COUNT_VARIABLE_BINDING_CREATE_LAYOUT:
+        if (!hasDescriptorIndexingStructs(context) ||
+            !context.getDescriptorIndexingFeatures().descriptorBindingVariableDescriptorCount)
+        {
+            TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+        }
+        break;
+
+#ifndef CTS_USES_VULKANSC
+    case EdgeCaseVariant::ZERO_COUNT_VARIABLE_INLINE_UNIFORM_BLOCK:
+        requireDescriptorTypeSupport(context, VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
+        if (!hasDescriptorIndexingStructs(context) ||
+            !context.getDescriptorIndexingFeatures().descriptorBindingVariableDescriptorCount)
+        {
+            TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+        }
+        break;
+
+    case EdgeCaseVariant::MUTABLE_EXT_MIXED_TYPES_NO_VARIABLE:
+    case EdgeCaseVariant::MUTABLE_EXT_MIXED_TYPES_VARIABLE_COUNT:
+        if (!hasMutableDescriptorTypeSupport(context))
+            TCU_THROW(NotSupportedError, "VK_EXT_mutable_descriptor_type feature not supported");
+        if (variant == EdgeCaseVariant::MUTABLE_EXT_MIXED_TYPES_VARIABLE_COUNT &&
+            (!hasDescriptorIndexingStructs(context) ||
+             !context.getDescriptorIndexingFeatures().descriptorBindingVariableDescriptorCount))
+        {
+            TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+        }
+        break;
+#endif // CTS_USES_VULKANSC
+
+    case EdgeCaseVariant::VARIABLE_FEATURE_DISABLED_CUSTOM_DEVICE:
+        if (!hasDescriptorIndexingStructs(context))
+            TCU_THROW(NotSupportedError, "Descriptor indexing structures not supported");
+        break;
+
+#ifndef CTS_USES_VULKANSC
+    case EdgeCaseVariant::KHR_ENTRY_POINT:
+    {
+        const auto extProps =
+            enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), nullptr);
+        if (!isExtensionStructSupported(extProps, RequiredExtension("VK_KHR_maintenance3")))
+            TCU_THROW(NotSupportedError, "VK_KHR_maintenance3 extension not advertised");
+        if (!isExtensionStructSupported(extProps, RequiredExtension("VK_EXT_descriptor_indexing")))
+            TCU_THROW(NotSupportedError, "VK_EXT_descriptor_indexing extension not advertised");
+        if (!context.getDescriptorIndexingFeatures().descriptorBindingVariableDescriptorCount)
+            TCU_THROW(NotSupportedError, "descriptorBindingVariableDescriptorCount not supported");
+        break;
+    }
+#endif // CTS_USES_VULKANSC
+
+    default:
+        DE_ASSERT(false);
+        break;
+    }
+}
+
+tcu::TestStatus testEdgeCase(Context &context, EdgeCaseVariant variant)
+{
+    const auto &vkd             = context.getDeviceInterface();
+    const VkDevice device       = context.getDevice();
+    const bool canQueryVarCount = hasDescriptorIndexingStructs(context);
+
+    switch (variant)
+    {
+    case EdgeCaseVariant::EMPTY_LAYOUT:
+    {
+        const VkDescriptorSetLayoutCreateInfo emptyInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, 0u, 0u, nullptr,
+        };
+        const DualSupportQueryResult res = queryLayoutSupportPair(vkd, device, &emptyInfo, canQueryVarCount, false, 0u,
+                                                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        if (!res.supported)
+            TCU_FAIL("Empty descriptor set layout must be supported");
+
+        if (canQueryVarCount)
+        {
+            const VkDescriptorSetLayoutBindingFlagsCreateInfo emptyFlags = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+                nullptr,
+                0u,
+                nullptr,
+            };
+            const VkDescriptorSetLayoutCreateInfo emptyWithFlagsInfo = {
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, &emptyFlags, 0u, 0u, nullptr,
+            };
+            const DualSupportQueryResult flagsRes = queryLayoutSupportPair(
+                vkd, device, &emptyWithFlagsInfo, true, false, 0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            if (!flagsRes.supported)
+                TCU_FAIL("Empty descriptor set layout with empty BindingFlagsCreateInfo must be supported");
+        }
+
+        const Move<VkDescriptorSetLayout> layout = createDescriptorSetLayout(vkd, device, &emptyInfo);
+        DE_ASSERT(*layout != VK_NULL_HANDLE);
+        break;
+    }
+
+    case EdgeCaseVariant::ALL_ZERO_DESCRIPTOR_COUNTS_NO_VARIABLE:
+    {
+        const VkDescriptorSetLayoutBinding bindings[3] = {
+            {7u, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0u, 0u, nullptr},
+            {0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u, 0u, nullptr},
+            {3u, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0u, 0u, nullptr},
+        };
+        const VkDescriptorSetLayoutCreateInfo createInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, 0u, 3u, bindings,
+        };
+        const DualSupportQueryResult res = queryLayoutSupportPair(vkd, device, &createInfo, canQueryVarCount, false, 0u,
+                                                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        if (!res.supported)
+            TCU_FAIL("Descriptor set layout with all-zero descriptorCounts must be supported");
+
+        const Move<VkDescriptorSetLayout> layout = createDescriptorSetLayout(vkd, device, &createInfo);
+        DE_ASSERT(*layout != VK_NULL_HANDLE);
+        break;
+    }
+
+    case EdgeCaseVariant::ZERO_COUNT_VARIABLE_BINDING_CREATE_LAYOUT:
+    {
+        const VkDescriptorSetLayoutBinding bindings[2] = {
+            {5u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0u, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+            {1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u, 0u, nullptr},
+        };
+        const VkDescriptorBindingFlags flags[2] = {
+            VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT,
+            0u,
+        };
+        const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            nullptr,
+            2u,
+            flags,
+        };
+        const VkDescriptorSetLayoutCreateInfo createInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, &flagsInfo, 0u, 2u, bindings,
+        };
+        const DualSupportQueryResult res =
+            queryLayoutSupportPair(vkd, device, &createInfo, true, true, 0u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+        if (!res.supported)
+            TCU_FAIL("Zero-count variable SAMPLED_IMAGE binding layout must be supported");
+
+        const Move<VkDescriptorSetLayout> layout = createDescriptorSetLayout(vkd, device, &createInfo);
+        DE_ASSERT(*layout != VK_NULL_HANDLE);
+        break;
+    }
+
+#ifndef CTS_USES_VULKANSC
+    case EdgeCaseVariant::ZERO_COUNT_VARIABLE_INLINE_UNIFORM_BLOCK:
+    {
+        const VkDescriptorSetLayoutBinding bindings[2] = {
+            {6u, VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK, 0u, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+            {2u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        };
+        const VkDescriptorBindingFlags flags[2] = {
+            VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT,
+            0u,
+        };
+        const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            nullptr,
+            2u,
+            flags,
+        };
+        const VkDescriptorSetLayoutCreateInfo createInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, &flagsInfo, 0u, 2u, bindings,
+        };
+        const DualSupportQueryResult res =
+            queryLayoutSupportPair(vkd, device, &createInfo, true, true, 0u, VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK);
+        if (!res.supported)
+            TCU_THROW(NotSupportedError, "Variable inline uniform block layout not supported");
+
+        const auto &iubProps = context.getInlineUniformBlockProperties();
+        if (res.maxVariableDescriptorCount > iubProps.maxInlineUniformBlockSize ||
+            (res.maxVariableDescriptorCount % 4u) != 0u)
+        {
+            TCU_FAIL("Invalid maxVariableDescriptorCount for zero-count variable inline uniform block");
+        }
+
+        const Move<VkDescriptorSetLayout> layout = createDescriptorSetLayout(vkd, device, &createInfo);
+        DE_ASSERT(*layout != VK_NULL_HANDLE);
+        break;
+    }
+
+    case EdgeCaseVariant::MUTABLE_EXT_MIXED_TYPES_NO_VARIABLE:
+    case EdgeCaseVariant::MUTABLE_EXT_MIXED_TYPES_VARIABLE_COUNT:
+    {
+        static const VkDescriptorType kMixedMutableTypes[4] = {
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        };
+        const VkDescriptorSetLayoutBinding bindings[2] = {
+            {3u, VK_DESCRIPTOR_TYPE_MUTABLE_EXT, 1u, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+            {1u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        };
+        const VkMutableDescriptorTypeListEXT typeLists[2] = {
+            {4u, kMixedMutableTypes},
+            {0u, nullptr},
+        };
+        const VkMutableDescriptorTypeCreateInfoEXT mutableInfo = {
+            VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT,
+            nullptr,
+            2u,
+            typeLists,
+        };
+        const bool isVar                        = (variant == EdgeCaseVariant::MUTABLE_EXT_MIXED_TYPES_VARIABLE_COUNT);
+        const VkDescriptorBindingFlags flags[2] = {
+            isVar ? static_cast<VkDescriptorBindingFlags>(VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT) : 0u,
+            0u,
+        };
+        const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            &mutableInfo,
+            2u,
+            flags,
+        };
+        const VkDescriptorSetLayoutCreateInfo createInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            isVar ? static_cast<const void *>(&flagsInfo) : static_cast<const void *>(&mutableInfo),
+            0u,
+            2u,
+            bindings,
+        };
+
+        // Both supported == VK_TRUE and supported == VK_FALSE are legal for mixed mutable lists;
+        // queryLayoutSupportPair verifies deterministic pSupport->pNext == nullptr agreement without crashing.
+        (void)queryLayoutSupportPair(vkd, device, &createInfo, canQueryVarCount, isVar, isVar ? 1u : 0u,
+                                     VK_DESCRIPTOR_TYPE_MUTABLE_EXT);
+        break;
+    }
+#endif // CTS_USES_VULKANSC
+
+    case EdgeCaseVariant::OVER_LIMIT_NON_VARIABLE_UINT32_MAX:
+    {
+        const VkDescriptorSetLayoutBinding binding = {
+            0u, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0x80000000u, VK_SHADER_STAGE_COMPUTE_BIT, nullptr,
+        };
+        const VkDescriptorSetLayoutCreateInfo createInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, 0u, 1u, &binding,
+        };
+        (void)queryLayoutSupportPair(vkd, device, &createInfo, canQueryVarCount, false, 0u,
+                                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        break;
+    }
+
+    case EdgeCaseVariant::OVER_LIMIT_DYNAMIC_BUFFERS:
+    {
+        const uint32_t overLimit = context.getDeviceProperties().limits.maxDescriptorSetUniformBuffersDynamic + 1u;
+        const VkDescriptorSetLayoutBinding binding = {
+            0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, overLimit, VK_SHADER_STAGE_VERTEX_BIT, nullptr,
+        };
+        const VkDescriptorSetLayoutCreateInfo createInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, 0u, 1u, &binding,
+        };
+        (void)queryLayoutSupportPair(vkd, device, &createInfo, canQueryVarCount, false, 0u,
+                                     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+        break;
+    }
+
+    case EdgeCaseVariant::VARIABLE_FEATURE_DISABLED_CUSTOM_DEVICE:
+    {
+        const InstanceWrapper instance(context);
+        const auto &vki                       = instance.getDriver();
+        const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
+        const auto queueProps                 = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
+        DE_ASSERT(!queueProps.empty());
+
+        const auto extProps           = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+        const uint32_t usedApiVersion = context.getUsedApiVersion();
+        std::vector<const char *> enabledExts;
+
+        if (!isCoreDeviceExtension(usedApiVersion, "VK_KHR_maintenance3") &&
+            isExtensionStructSupported(extProps, RequiredExtension("VK_KHR_maintenance3")))
+        {
+            enabledExts.push_back("VK_KHR_maintenance3");
+        }
+        if (!isCoreDeviceExtension(usedApiVersion, "VK_EXT_descriptor_indexing") &&
+            isExtensionStructSupported(extProps, RequiredExtension("VK_EXT_descriptor_indexing")))
+        {
+            enabledExts.push_back("VK_EXT_descriptor_indexing");
+        }
+#ifndef CTS_USES_VULKANSC
+        if (isExtensionStructSupported(extProps, RequiredExtension("VK_KHR_portability_subset")))
+            enabledExts.push_back("VK_KHR_portability_subset");
+#endif // CTS_USES_VULKANSC
+
+        VkPhysicalDeviceDescriptorIndexingFeatures physIndexing = initVulkanStructure();
+        VkPhysicalDeviceFeatures2 physFeatures2                 = initVulkanStructure(&physIndexing);
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &physFeatures2);
+
+        VkPhysicalDeviceDescriptorIndexingFeatures enabledIndexing = initVulkanStructure();
+        enabledIndexing.descriptorBindingPartiallyBound            = physIndexing.descriptorBindingPartiallyBound;
+        enabledIndexing.descriptorBindingVariableDescriptorCount   = VK_FALSE;
+
+        VkPhysicalDeviceFeatures2 enabledFeatures2 = initVulkanStructure(&enabledIndexing);
+
+        const float queuePriority                     = 1.0f;
+        const VkDeviceQueueCreateInfo queueCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr, 0u, 0u, 1u, &queuePriority,
+        };
+        const VkDeviceCreateInfo deviceCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            &enabledFeatures2,
+            0u,
+            1u,
+            &queueCreateInfo,
+            0u,
+            nullptr,
+            de::sizeU32(enabledExts),
+            de::dataOrNull(enabledExts),
+            nullptr,
+        };
+
+        const DeviceWrapper customDevice(instance.createCustomDevice(physicalDevice, &deviceCreateInfo));
+        const auto &customVkd = customDevice.getDriver();
+
+        const VkDescriptorSetLayoutBinding bindings[2] = {
+            {2u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+            {0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        };
+        VkDescriptorBindingFlags flags[2]                           = {0u, 0u};
+        const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            nullptr,
+            2u,
+            flags,
+        };
+        const VkDescriptorSetLayoutCreateInfo createInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, &flagsInfo, 0u, 2u, bindings,
+        };
+
+        const DualSupportQueryResult resZeroFlags = queryLayoutSupportPair(
+            customVkd, *customDevice, &createInfo, true, false, 0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        if (!resZeroFlags.supported)
+            TCU_FAIL("Basic uniform buffer layout must be supported when variable count feature is disabled");
+
+        if (enabledIndexing.descriptorBindingPartiallyBound == VK_TRUE)
+        {
+            flags[0]                                = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+            flags[1]                                = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+            const DualSupportQueryResult resPartial = queryLayoutSupportPair(
+                customVkd, *customDevice, &createInfo, true, false, 0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            if (!resPartial.supported)
+                TCU_FAIL("Partially-bound uniform buffer layout must be supported on custom device");
+        }
+        break;
+    }
+
+#ifndef CTS_USES_VULKANSC
+    case EdgeCaseVariant::KHR_ENTRY_POINT:
+    {
+        const InstanceWrapper instance(context);
+        const auto &vki                       = instance.getDriver();
+        const VkPhysicalDevice physicalDevice = instance.getPhysicalDevice();
+        const auto queueProps                 = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
+        DE_ASSERT(!queueProps.empty());
+
+        const auto extProps                   = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+        std::vector<const char *> enabledExts = {
+            "VK_KHR_maintenance3",
+            "VK_EXT_descriptor_indexing",
+        };
+        if (isExtensionStructSupported(extProps, RequiredExtension("VK_KHR_portability_subset")))
+            enabledExts.push_back("VK_KHR_portability_subset");
+
+        VkPhysicalDeviceDescriptorIndexingFeatures enabledIndexing = initVulkanStructure();
+        enabledIndexing.descriptorBindingVariableDescriptorCount   = VK_TRUE;
+        VkPhysicalDeviceFeatures2 enabledFeatures2                 = initVulkanStructure(&enabledIndexing);
+
+        const float queuePriority                     = 1.0f;
+        const VkDeviceQueueCreateInfo queueCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr, 0u, 0u, 1u, &queuePriority,
+        };
+        const VkDeviceCreateInfo deviceCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            &enabledFeatures2,
+            0u,
+            1u,
+            &queueCreateInfo,
+            0u,
+            nullptr,
+            de::sizeU32(enabledExts),
+            de::dataOrNull(enabledExts),
+            nullptr,
+        };
+
+        const DeviceWrapper customDevice(instance.createCustomDevice(physicalDevice, &deviceCreateInfo));
+        const auto &customVkd       = customDevice.getDriver();
+        const auto pfnGetSupportKHR = reinterpret_cast<GetDescriptorSetLayoutSupportKHRFunc>(
+            customVkd.getDeviceProcAddr(*customDevice, "vkGetDescriptorSetLayoutSupportKHR"));
+        if (pfnGetSupportKHR == nullptr)
+            TCU_FAIL("vkGetDeviceProcAddr returned NULL for vkGetDescriptorSetLayoutSupportKHR");
+
+        VkDescriptorSetLayoutBinding bindings[2] = {
+            {3u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1u, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+            {0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX_BIT, nullptr},
+        };
+        VkDescriptorBindingFlags flags[2]                           = {0u, 0u};
+        const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            nullptr,
+            2u,
+            flags,
+        };
+        const VkDescriptorSetLayoutCreateInfo createInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, &flagsInfo, 0u, 2u, bindings,
+        };
+
+        const DualSupportQueryResult nonVarKhr = queryLayoutSupportPairWithFn(
+            pfnGetSupportKHR, *customDevice, &createInfo, true, false, 0u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+        const DualSupportQueryResult nonVarCore = queryLayoutSupportPair(customVkd, *customDevice, &createInfo, true,
+                                                                         false, 0u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+        if (nonVarKhr.supported != nonVarCore.supported ||
+            nonVarKhr.maxVariableDescriptorCount != nonVarCore.maxVariableDescriptorCount)
+        {
+            TCU_FAIL("Mismatch between vkGetDescriptorSetLayoutSupportKHR and core entry point on non-variable layout");
+        }
+
+        flags[0]                            = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+        const DualSupportQueryResult varKhr = queryLayoutSupportPairWithFn(
+            pfnGetSupportKHR, *customDevice, &createInfo, true, true, 1u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+        const DualSupportQueryResult varCore = queryLayoutSupportPair(customVkd, *customDevice, &createInfo, true, true,
+                                                                      1u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+        if (!varKhr.supported || varKhr.supported != varCore.supported ||
+            varKhr.maxVariableDescriptorCount != varCore.maxVariableDescriptorCount)
+        {
+            TCU_FAIL("Mismatch between vkGetDescriptorSetLayoutSupportKHR and core entry point on variable layout");
+        }
+
+        bindings[0].descriptorCount          = 0u;
+        const DualSupportQueryResult zeroKhr = queryLayoutSupportPairWithFn(
+            pfnGetSupportKHR, *customDevice, &createInfo, true, true, 0u, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+        if (!zeroKhr.supported || zeroKhr.maxVariableDescriptorCount != varKhr.maxVariableDescriptorCount)
+            TCU_FAIL("Zero-count variable mismatch via vkGetDescriptorSetLayoutSupportKHR");
+        break;
+    }
+#endif // CTS_USES_VULKANSC
+
+    default:
+        DE_ASSERT(false);
+        break;
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createMaintenance3Tests(tcu::TestContext &testCtx)
@@ -912,6 +2465,173 @@ tcu::TestCaseGroup *createMaintenance3Tests(tcu::TestContext &testCtx)
                             addFunctionCase(main3Tests.get(), caseName.c_str(), checkSupportCountLayoutSupport,
                                             testCountLayoutSupport, params);
                         }
+    }
+
+    // Sub-Family A: Combinatorial descriptorType x topology x bindingFlagsMode [x immutableSamplers]
+    {
+        const VkDescriptorType matrixDescriptorTypes[] = {
+            VK_DESCRIPTOR_TYPE_SAMPLER,
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+            VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
+            VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+#ifndef CTS_USES_VULKANSC
+            VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
+            VK_DESCRIPTOR_TYPE_MUTABLE_EXT,
+            VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+#endif // CTS_USES_VULKANSC
+        };
+
+        const LayoutTopology topologies[] = {
+            LayoutTopology::SINGLE,
+            LayoutTopology::ASCENDING_SPARSE,
+            LayoutTopology::DESCENDING,
+            LayoutTopology::UNORDERED_SPARSE,
+        };
+
+        const BindingFlagsMode flagsModes[] = {
+            BindingFlagsMode::NO_FLAGS_STRUCT,    BindingFlagsMode::ZERO_BINDING_FLAGS,
+            BindingFlagsMode::NON_VARIABLE_FLAGS, BindingFlagsMode::VARIABLE_COUNT,
+            BindingFlagsMode::VARIABLE_COUNT_UAB,
+        };
+
+        for (const auto &descriptorType : matrixDescriptorTypes)
+        {
+            const bool canUseImmutableSamplers = (descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER ||
+                                                  descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+            for (const bool useImmutableSamplers : {false, true})
+            {
+                if (useImmutableSamplers && !canUseImmutableSamplers)
+                    continue;
+
+                for (const auto &topology : topologies)
+                {
+                    for (const auto &flagsMode : flagsModes)
+                    {
+                        const bool isDynamic = (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
+                                                descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC);
+
+                        if ((flagsMode == BindingFlagsMode::VARIABLE_COUNT ||
+                             flagsMode == BindingFlagsMode::VARIABLE_COUNT_UAB) &&
+                            isDynamic)
+                        {
+                            continue;
+                        }
+
+                        if (flagsMode == BindingFlagsMode::VARIABLE_COUNT_UAB &&
+                            !isUpdateAfterBindCapableType(descriptorType))
+                        {
+                            continue;
+                        }
+
+                        const std::string immutableSuffix = (useImmutableSamplers ? "_immutable_samplers" : "");
+                        const std::string caseName = "layout_support_" + getDescriptorTypeShortName(descriptorType) +
+                                                     "_" + getLayoutTopologyName(topology) + "_" +
+                                                     getBindingFlagsModeName(flagsMode) + immutableSuffix;
+                        const LayoutSupportMatrixParams params{descriptorType, topology, flagsMode,
+                                                               useImmutableSamplers};
+
+                        addFunctionCase(main3Tests.get(), caseName.c_str(), checkSupportLayoutSupportMatrix,
+                                        testLayoutSupportMatrix, params);
+                    }
+                }
+            }
+        }
+    }
+
+#ifndef CTS_USES_VULKANSC
+    // Sub-Family B: VkDescriptorSetLayoutCreateFlags interactions
+    {
+        struct NamedCreateFlagsVariant
+        {
+            const char *name;
+            CreateFlagsVariant variant;
+        };
+
+        const NamedCreateFlagsVariant createFlagsCases[] = {
+            {"layout_support_create_flags_push_descriptor_empty", CreateFlagsVariant::PUSH_DESCRIPTOR_EMPTY},
+            {"layout_support_create_flags_push_descriptor_uniform_buffer",
+             CreateFlagsVariant::PUSH_DESCRIPTOR_UNIFORM_BUFFER},
+            {"layout_support_create_flags_push_descriptor_combined_image_sampler_immutable",
+             CreateFlagsVariant::PUSH_DESCRIPTOR_COMBINED_IMAGE_SAMPLER_IMMUTABLE},
+            {"layout_support_create_flags_push_descriptor_descending_partially_bound",
+             CreateFlagsVariant::PUSH_DESCRIPTOR_DESCENDING_PARTIALLY_BOUND},
+            {"layout_support_create_flags_push_descriptor_max_push_descriptors",
+             CreateFlagsVariant::PUSH_DESCRIPTOR_MAX_PUSH_DESCRIPTORS},
+            {"layout_support_create_flags_host_only_pool_uniform_buffer_no_variable",
+             CreateFlagsVariant::HOST_ONLY_POOL_UNIFORM_BUFFER_NO_VARIABLE},
+            {"layout_support_create_flags_host_only_pool_uniform_buffer_variable_count",
+             CreateFlagsVariant::HOST_ONLY_POOL_UNIFORM_BUFFER_VARIABLE_COUNT},
+            {"layout_support_create_flags_host_only_pool_mutable_ext_no_variable",
+             CreateFlagsVariant::HOST_ONLY_POOL_MUTABLE_EXT_NO_VARIABLE},
+            {"layout_support_create_flags_host_only_pool_mutable_ext_variable_count",
+             CreateFlagsVariant::HOST_ONLY_POOL_MUTABLE_EXT_VARIABLE_COUNT},
+            {"layout_support_create_flags_descriptor_buffer_empty", CreateFlagsVariant::DESCRIPTOR_BUFFER_EMPTY},
+            {"layout_support_create_flags_descriptor_buffer_uniform_buffer_no_variable",
+             CreateFlagsVariant::DESCRIPTOR_BUFFER_UNIFORM_BUFFER_NO_VARIABLE},
+            {"layout_support_create_flags_descriptor_buffer_uniform_buffer_variable_count",
+             CreateFlagsVariant::DESCRIPTOR_BUFFER_UNIFORM_BUFFER_VARIABLE_COUNT},
+            {"layout_support_create_flags_descriptor_buffer_sampled_image_variable_count",
+             CreateFlagsVariant::DESCRIPTOR_BUFFER_SAMPLED_IMAGE_VARIABLE_COUNT},
+            {"layout_support_create_flags_descriptor_buffer_inline_uniform_block_variable_count",
+             CreateFlagsVariant::DESCRIPTOR_BUFFER_INLINE_UNIFORM_BLOCK_VARIABLE_COUNT},
+            {"layout_support_create_flags_descriptor_buffer_embedded_immutable_samplers",
+             CreateFlagsVariant::DESCRIPTOR_BUFFER_EMBEDDED_IMMUTABLE_SAMPLERS},
+            {"layout_support_create_flags_descriptor_buffer_embedded_immutable_samplers_sparse_zero_count",
+             CreateFlagsVariant::DESCRIPTOR_BUFFER_EMBEDDED_IMMUTABLE_SAMPLERS_SPARSE_ZERO_COUNT},
+        };
+
+        for (const auto &entry : createFlagsCases)
+        {
+            addFunctionCase(main3Tests.get(), entry.name, checkSupportCreateFlagsVariant, testCreateFlagsVariant,
+                            entry.variant);
+        }
+    }
+#endif // CTS_USES_VULKANSC
+
+    // Sub-Family C: Edge, boundary, custom-device, and KHR entry-point cases
+    {
+        struct NamedEdgeCase
+        {
+            const char *name;
+            EdgeCaseVariant variant;
+        };
+
+        const NamedEdgeCase edgeCases[] = {
+            {"layout_support_edge_empty_layout", EdgeCaseVariant::EMPTY_LAYOUT},
+            {"layout_support_edge_all_zero_descriptor_counts_no_variable",
+             EdgeCaseVariant::ALL_ZERO_DESCRIPTOR_COUNTS_NO_VARIABLE},
+            {"layout_support_edge_zero_count_variable_binding_create_layout",
+             EdgeCaseVariant::ZERO_COUNT_VARIABLE_BINDING_CREATE_LAYOUT},
+#ifndef CTS_USES_VULKANSC
+            {"layout_support_edge_zero_count_variable_inline_uniform_block",
+             EdgeCaseVariant::ZERO_COUNT_VARIABLE_INLINE_UNIFORM_BLOCK},
+            {"layout_support_edge_mutable_ext_mixed_types_no_variable",
+             EdgeCaseVariant::MUTABLE_EXT_MIXED_TYPES_NO_VARIABLE},
+            {"layout_support_edge_mutable_ext_mixed_types_variable_count",
+             EdgeCaseVariant::MUTABLE_EXT_MIXED_TYPES_VARIABLE_COUNT},
+#endif // CTS_USES_VULKANSC
+            {"layout_support_edge_over_limit_non_variable_uint32_max",
+             EdgeCaseVariant::OVER_LIMIT_NON_VARIABLE_UINT32_MAX},
+            {"layout_support_edge_over_limit_dynamic_buffers", EdgeCaseVariant::OVER_LIMIT_DYNAMIC_BUFFERS},
+            {"layout_support_edge_variable_feature_disabled_custom_device",
+             EdgeCaseVariant::VARIABLE_FEATURE_DISABLED_CUSTOM_DEVICE},
+#ifndef CTS_USES_VULKANSC
+            {"layout_support_edge_khr_entry_point", EdgeCaseVariant::KHR_ENTRY_POINT},
+#endif // CTS_USES_VULKANSC
+        };
+
+        for (const auto &entry : edgeCases)
+        {
+            addFunctionCase(main3Tests.get(), entry.name, checkSupportEdgeCase, testEdgeCase, entry.variant);
+        }
     }
 
     return main3Tests.release();
