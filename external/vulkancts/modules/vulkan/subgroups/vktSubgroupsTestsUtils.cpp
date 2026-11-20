@@ -35,6 +35,8 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 
+#include <algorithm>
+
 using namespace tcu;
 using namespace std;
 using namespace vk;
@@ -3749,7 +3751,9 @@ Move<VkPipeline> makeMeshPipeline(Context &context, const VkPipelineLayout pipel
     {
         pipelineShaderStageParams.module = meshModule;
         pipelineShaderStageParams.pNext  = ((taskModule == VK_NULL_HANDLE) ? pSubgroupSizeCreateInfo : nullptr);
-        pipelineShaderStageParams.stage  = VK_SHADER_STAGE_MESH_BIT_EXT;
+        pipelineShaderStageParams.flags  = ((taskModule == VK_NULL_HANDLE) ? pipelineShaderStageFlags : 0u);
+        pipelineShaderStageParams.pSpecializationInfo = ((taskModule == VK_NULL_HANDLE) ? &info : nullptr);
+        pipelineShaderStageParams.stage               = VK_SHADER_STAGE_MESH_BIT_EXT;
         shaderStageParams.push_back(pipelineShaderStageParams);
     }
 
@@ -3772,7 +3776,92 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
     const VkQueue queue                       = context.getUniversalQueue();
     const uint32_t queueFamilyIndex           = context.getUniversalQueueFamilyIndex();
     const auto &subgroupSizeControlProperties = context.getSubgroupSizeControlProperties();
-    const VkDeviceSize elementSize            = getFormatSizeInBytes(format);
+    const auto &binaries                      = context.getBinaryCollection();
+    const uint32_t reqSubgroupSize            = (isRequiredSubgroupSize ? subgroupSize : 0u);
+
+    uint32_t maxWorkGroupSize[3]     = {0u, 0u, 0u};
+    uint64_t maxWorkGroupInvocations = 0ull;
+
+    if (testType == ComputeLike::COMPUTE)
+    {
+        const auto &limits      = context.getDeviceProperties().limits;
+        maxWorkGroupSize[0]     = limits.maxComputeWorkGroupSize[0];
+        maxWorkGroupSize[1]     = limits.maxComputeWorkGroupSize[1];
+        maxWorkGroupSize[2]     = limits.maxComputeWorkGroupSize[2];
+        maxWorkGroupInvocations = limits.maxComputeWorkGroupInvocations;
+    }
+#ifndef CTS_USES_VULKANSC
+    else if (testType == ComputeLike::MESH)
+    {
+        const auto &meshProperties = context.getMeshShaderPropertiesEXT();
+        const bool hasTaskShader   = binaries.contains("task");
+        const auto &wgSize =
+            (hasTaskShader ? meshProperties.maxTaskWorkGroupSize : meshProperties.maxMeshWorkGroupSize);
+        maxWorkGroupSize[0] = wgSize[0];
+        maxWorkGroupSize[1] = wgSize[1];
+        maxWorkGroupSize[2] = wgSize[2];
+        maxWorkGroupInvocations =
+            (hasTaskShader ? meshProperties.maxTaskWorkGroupInvocations : meshProperties.maxMeshWorkGroupInvocations);
+    }
+#endif // CTS_USES_VULKANSC
+    else
+    {
+        DE_ASSERT(false);
+    }
+
+    // VUID-VkPipelineShaderStageCreateInfo-pNext-02756
+    if (reqSubgroupSize != 0u)
+    {
+        const uint64_t maxSubgroupInvocations =
+            static_cast<uint64_t>(reqSubgroupSize) *
+            static_cast<uint64_t>(subgroupSizeControlProperties.maxComputeWorkgroupSubgroups);
+        maxWorkGroupInvocations = std::min(maxWorkGroupInvocations, maxSubgroupInvocations);
+    }
+
+    // VUID-VkPipelineShaderStageCreateInfo-pNext-02757, flags-02758, flags-02759
+    uint32_t requiredLocalSizeXMultiple = 1u;
+    if ((pipelineShaderStageCreateFlags & VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT) != 0u)
+    {
+        if (reqSubgroupSize != 0u)
+            requiredLocalSizeXMultiple = reqSubgroupSize;
+        else if ((pipelineShaderStageCreateFlags &
+                  VK_PIPELINE_SHADER_STAGE_CREATE_ALLOW_VARYING_SUBGROUP_SIZE_BIT_EXT) != 0u)
+            requiredLocalSizeXMultiple = subgroupSizeControlProperties.maxSubgroupSize;
+        else
+            requiredLocalSizeXMultiple = vkt::subgroups::getSubgroupSize(context);
+    }
+
+    // Active entries are [0, localSizesToTestCount - 1); the trailing entry is an unused sentinel.
+    const uint32_t activeLocalSizesCount = (localSizesToTestCount > 0u) ? (localSizesToTestCount - 1u) : 0u;
+    std::vector<tcu::UVec3> usedLocalSizes;
+    for (uint32_t i = 0u; i < activeLocalSizesCount; ++i)
+    {
+        const uint32_t x = localSizesToTest[i][0];
+        const uint32_t y = localSizesToTest[i][1];
+        const uint32_t z = localSizesToTest[i][2];
+
+        if (x == 0u || y == 0u || z == 0u)
+            continue;
+
+        if (x > maxWorkGroupSize[0] || y > maxWorkGroupSize[1] || z > maxWorkGroupSize[2])
+            continue;
+
+        const uint64_t xy = static_cast<uint64_t>(x) * static_cast<uint64_t>(y);
+        if (xy > maxWorkGroupInvocations || static_cast<uint64_t>(z) > maxWorkGroupInvocations / xy)
+            continue;
+
+        if (requiredLocalSizeXMultiple == 0u || (x % requiredLocalSizeXMultiple) != 0u)
+            continue;
+
+        usedLocalSizes.push_back(tcu::UVec3(x, y, z));
+    }
+
+    if (usedLocalSizes.empty())
+        TCU_THROW(NotSupportedError, "No supported local workgroup size for device limits");
+
+    const uint32_t usedLocalSizesCount = static_cast<uint32_t>(usedLocalSizes.size());
+
+    const VkDeviceSize elementSize     = getFormatSizeInBytes(format);
     const VkDeviceSize maxSubgroupSize = isRequiredSubgroupSize ? deMax32(subgroupSizeControlProperties.maxSubgroupSize,
                                                                           vkt::subgroups::maxSupportedSubgroupSize()) :
                                                                   vkt::subgroups::maxSupportedSubgroupSize();
@@ -3801,12 +3890,6 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
                                     0);
 #endif // CTS_USES_VULKANSC
     const auto renderArea = makeRect2D(1u, 1u);
-
-    std::vector<tcu::UVec3> usedLocalSizes;
-    for (uint32_t i = 0; i < localSizesToTestCount; ++i)
-    {
-        usedLocalSizes.push_back(tcu::UVec3(localSizesToTest[i][0], localSizesToTest[i][1], localSizesToTest[i][2]));
-    }
 
     for (uint32_t i = 0; i < inputsCount; i++)
     {
@@ -3841,7 +3924,6 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
     Move<VkShaderModule> compShader;
     Move<VkShaderModule> meshShader;
     Move<VkShaderModule> taskShader;
-    const auto &binaries = context.getBinaryCollection();
 
     if (testType == ComputeLike::COMPUTE)
     {
@@ -3907,8 +3989,7 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
     unsigned totalIterations  = 0;
     unsigned failedIterations = 0;
     const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(context, *cmdPool));
-    std::vector<de::SharedPtr<Move<VkPipeline>>> pipelines(localSizesToTestCount);
-    const auto reqSubgroupSize = (isRequiredSubgroupSize ? subgroupSize : 0u);
+    std::vector<de::SharedPtr<Move<VkPipeline>>> pipelines(usedLocalSizesCount);
     Move<VkRenderPass> renderPass;
     Move<VkFramebuffer> framebuffer;
 
@@ -3948,7 +4029,7 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
     }
     context.getTestContext().touchWatchdog();
 
-    for (uint32_t index = 1; index < (localSizesToTestCount - 1); index++)
+    for (uint32_t index = 1u; index < usedLocalSizesCount; index++)
     {
         const uint32_t nextX = usedLocalSizes[index][0];
         const uint32_t nextY = usedLocalSizes[index][1];
@@ -3984,7 +4065,7 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
         context.getTestContext().touchWatchdog();
     }
 
-    for (uint32_t index = 0; index < (localSizesToTestCount - 1); index++)
+    for (uint32_t index = 0u; index < usedLocalSizesCount; index++)
     {
         context.getTestContext().touchWatchdog();
 
@@ -4006,7 +4087,7 @@ tcu::TestStatus makeComputeOrMeshTestRequiredSubgroupSize(
 #ifndef CTS_USES_VULKANSC
             else if (testType == ComputeLike::MESH)
                 vk.cmdDrawMeshTasksEXT(*cmdBuffer, numWorkgroups[0], numWorkgroups[1], numWorkgroups[2]);
-                //vk.cmdDrawMeshTasksNV(*cmdBuffer, numWorkgroups[0], 0);
+            //vk.cmdDrawMeshTasksNV(*cmdBuffer, numWorkgroups[0], 0);
 #endif // CTS_USES_VULKANSC
             else
                 DE_ASSERT(false);

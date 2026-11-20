@@ -91,14 +91,33 @@ inline bool makeDeBool(bool value)
 }
 
 UVec3 getLocalSizes(const uint32_t maxWorkGroupSize[3], uint32_t maxWorkGroupInvocations,
-                    uint32_t numWorkGroupInvocations)
+                    uint32_t numWorkGroupInvocations, uint32_t localSizeXAlignment = 1u)
 {
     DE_ASSERT(numWorkGroupInvocations <= maxWorkGroupInvocations);
     DE_UNREF(maxWorkGroupInvocations); // For release builds.
 
-    const uint32_t localSizeX = de::gcd(numWorkGroupInvocations, maxWorkGroupSize[0]);
-    const uint32_t localSizeY = de::gcd(std::max(numWorkGroupInvocations / localSizeX, 1u), maxWorkGroupSize[1]);
-    const uint32_t localSizeZ = std::max(numWorkGroupInvocations / (localSizeX * localSizeY), 1u);
+    if (numWorkGroupInvocations == 0u || localSizeXAlignment == 0u || maxWorkGroupSize[0] == 0u ||
+        maxWorkGroupSize[1] == 0u || maxWorkGroupSize[2] == 0u)
+        return UVec3(0u, 0u, 0u);
+
+    const uint32_t gcdX = de::gcd(numWorkGroupInvocations, maxWorkGroupSize[0]);
+    const uint32_t gcdY = de::gcd(std::max(numWorkGroupInvocations / gcdX, 1u), maxWorkGroupSize[1]);
+    const uint32_t gcdZ = std::max(numWorkGroupInvocations / (gcdX * gcdY), 1u);
+
+    if (gcdX <= maxWorkGroupSize[0] && gcdY <= maxWorkGroupSize[1] && gcdZ <= maxWorkGroupSize[2] &&
+        (gcdX % localSizeXAlignment) == 0u)
+    {
+        return UVec3(gcdX, gcdY, gcdZ);
+    }
+
+    const uint32_t maxX       = std::min(maxWorkGroupSize[0], numWorkGroupInvocations);
+    const uint32_t localSizeX = (maxX / localSizeXAlignment) * localSizeXAlignment;
+    if (localSizeX == 0u)
+        return UVec3(0u, 0u, 0u);
+
+    const uint32_t localSizeY = std::min(maxWorkGroupSize[1], std::max(numWorkGroupInvocations / localSizeX, 1u));
+    const uint32_t localSizeZ =
+        std::min(maxWorkGroupSize[2], std::max(numWorkGroupInvocations / (localSizeX * localSizeY), 1u));
 
     return UVec3(localSizeX, localSizeY, localSizeZ);
 }
@@ -759,8 +778,9 @@ TestStatus testRequireFullSubgroups(Context &context, const CaseDefinition caseD
     // Calculate the local workgroup sizes to exercise the maximum supported by the driver
     const auto &maxWorkGroupSize = physicalDeviceProperties.limits.maxComputeWorkGroupSize;
     const auto &maxInvocations   = physicalDeviceProperties.limits.maxComputeWorkGroupInvocations;
-    const UVec3 localSize        = getLocalSizes(maxWorkGroupSize, maxInvocations, maxInvocations);
-    const uint32_t subgroupSize  = subgroups::getSubgroupSize(context);
+    const UVec3 localSize =
+        getLocalSizes(maxWorkGroupSize, maxInvocations, maxInvocations, subgroupSizeControlProperties.maxSubgroupSize);
+    const uint32_t subgroupSize = subgroups::getSubgroupSize(context);
     // For full subgroups and allow varying subgroup size, localsize X must be a multiple of maxSubgroupSize.
     // We set local size X for this test to the maximum, regardless if allow varying subgroup size is enabled or not.
     const uint32_t localSizesToTestCount                      = 7;
@@ -803,8 +823,9 @@ TestStatus testRequireSubgroupSize(Context &context, const CaseDefinition caseDe
             maxSubgroupLimitSize, physicalDeviceProperties.limits.maxComputeWorkGroupInvocations);
         const auto &maxWorkGroupSize          = physicalDeviceProperties.limits.maxComputeWorkGroupSize;
         const auto &maxInvocations            = physicalDeviceProperties.limits.maxComputeWorkGroupInvocations;
-        const UVec3 localSize                 = getLocalSizes(maxWorkGroupSize, maxInvocations, maxTotalLocalSize);
         const bool shaderUsesFullSubgroups    = caseDef.shaderUsesFullSubgroups();
+        const UVec3 localSize                 = getLocalSizes(maxWorkGroupSize, maxInvocations, maxTotalLocalSize,
+                                              shaderUsesFullSubgroups ? requiredSubgroupSize : 1u);
         const uint32_t localSizesToTest[5][3] = {
             {localSize.x(), localSize.y(), localSize.z()},
             {requiredSubgroupSize, 1, 1},
@@ -848,17 +869,21 @@ TestStatus testRequireSubgroupSize(Context &context, const CaseDefinition caseDe
         const auto &meshProperties                = context.getMeshShaderPropertiesEXT();
         const uint32_t requiredSubgroupSize =
             getRequiredSubgroupSizeFromMode(context, caseDef, subgroupSizeControlProperties);
+        const uint64_t maxSubgroupLimitSize =
+            static_cast<uint64_t>(requiredSubgroupSize) * subgroupSizeControlProperties.maxComputeWorkgroupSubgroups;
         const auto &maxWorkGroupSize =
             (isMesh ? meshProperties.maxMeshWorkGroupSize : meshProperties.maxTaskWorkGroupSize);
         const auto &maxInvocations =
             (isMesh ? meshProperties.maxMeshWorkGroupInvocations : meshProperties.maxTaskWorkGroupInvocations);
-        const UVec3 localSize                 = getLocalSizes(maxWorkGroupSize, maxInvocations, maxInvocations);
-        const bool shaderUsesFullSubgroups    = caseDef.shaderUsesFullSubgroups();
+        const uint32_t maxTotalLocalSize   = static_cast<uint32_t>(min<uint64_t>(maxSubgroupLimitSize, maxInvocations));
+        const bool shaderUsesFullSubgroups = caseDef.shaderUsesFullSubgroups();
+        const UVec3 localSize              = getLocalSizes(maxWorkGroupSize, maxInvocations, maxTotalLocalSize,
+                                              shaderUsesFullSubgroups ? requiredSubgroupSize : 1u);
         const uint32_t localSizesToTest[5][3] = {
+            {localSize.x(), localSize.y(), localSize.z()},
             {requiredSubgroupSize, 1, 1},
             {1, requiredSubgroupSize, 1},
             {1, 1, requiredSubgroupSize},
-            {localSize.x(), localSize.y(), localSize.z()},
             {1, 1, 1} // Isn't used, just here to make double buffering checks easier
         };
 
