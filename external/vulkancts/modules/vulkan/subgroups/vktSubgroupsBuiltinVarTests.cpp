@@ -1763,10 +1763,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
                 if (isCompute)
-                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
+                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                         checkComputeSubgroupSize, size);
                 else
-                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
+                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                      checkComputeSubgroupSize, size);
 
                 if (result.getCode() != QP_TEST_RESULT_PASS)
@@ -1803,10 +1803,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
                 if (isCompute)
-                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
+                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                         checkComputeSubgroupInvocationID, size);
                 else
-                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
+                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                      checkComputeSubgroupInvocationID, size);
 
                 if (result.getCode() != QP_TEST_RESULT_PASS)
@@ -1843,10 +1843,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
                 if (isCompute)
-                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
+                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                         checkComputeNumSubgroups, size);
                 else
-                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
+                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                      checkComputeNumSubgroups, size);
 
                 if (result.getCode() != QP_TEST_RESULT_PASS)
@@ -1883,10 +1883,10 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
                 TestStatus result(QP_TEST_RESULT_INTERNAL_ERROR, "Internal Error");
 
                 if (isCompute)
-                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
+                    result = subgroups::makeComputeTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                         checkComputeSubgroupID, size);
                 else
-                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32_UINT, nullptr, 0, nullptr,
+                    result = subgroups::makeMeshTest(context, VK_FORMAT_R32G32B32A32_UINT, nullptr, 0, nullptr,
                                                      checkComputeSubgroupID, size);
 
                 if (result.getCode() != QP_TEST_RESULT_PASS)
