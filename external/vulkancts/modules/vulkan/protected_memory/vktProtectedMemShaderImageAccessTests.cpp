@@ -654,8 +654,8 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest(void)
     }
 
     // Clear dst image
-    if (m_params.accessType != ACCESS_TYPE_IMAGE_ATOMICS && m_params.protectionMode == PROTECTION_ENABLED)
-        clearImage(m_protectedContext, **imageDst);
+    if (m_params.accessType != ACCESS_TYPE_IMAGE_ATOMICS)
+        clearImage(m_protectedContext, **imageDst, m_params.protectionMode);
 
     // Create descriptors
     {
@@ -931,8 +931,8 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest(void)
     }
 
     // Clear dst image
-    if (m_params.accessType == ACCESS_TYPE_IMAGE_STORE && m_params.protectionMode == PROTECTION_ENABLED)
-        clearImage(m_protectedContext, **imageDst);
+    if (m_params.accessType == ACCESS_TYPE_IMAGE_STORE)
+        clearImage(m_protectedContext, **imageDst, m_params.protectionMode);
 
     // Create descriptors
     {

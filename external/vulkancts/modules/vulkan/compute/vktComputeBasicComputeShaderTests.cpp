@@ -3139,7 +3139,7 @@ void ComputeTestInstance::createDeviceGroup(void)
 {
     const tcu::CommandLine &cmdLine = m_context.getTestContext().getCommandLine();
     const uint32_t devGroupIdx      = cmdLine.getVKDeviceGroupId() - 1;
-    const uint32_t physDeviceIdx    = cmdLine.getVKDeviceId() - 1;
+    const uint32_t physDeviceIdx    = cmdLine.getVKDeviceIndex();
     const float queuePriority       = 1.0f;
     const std::vector<std::string> requiredExtensions(1, "VK_KHR_device_group_creation");
     m_deviceGroupInstance = createCustomInstanceWithExtensions(m_context, requiredExtensions);

@@ -295,7 +295,7 @@ void BaseAllocateTestInstance::createDeviceGroup(void)
 {
     const tcu::CommandLine &cmdLine         = m_context.getTestContext().getCommandLine();
     const uint32_t devGroupIdx              = cmdLine.getVKDeviceGroupId() - 1;
-    const uint32_t physDeviceIdx            = cmdLine.getVKDeviceId() - 1;
+    const uint32_t physDeviceIdx            = cmdLine.getVKDeviceIndex();
     const float queuePriority               = 1.0f;
     uint32_t queueFamilyIndex               = 0;
     const InstanceInterface &instanceDriver = m_context.getInstanceInterface();
