@@ -615,7 +615,7 @@ TestInstance *MaxViewIndexCase::createInstance(Context &context) const
 Move<VkRenderPass> MaxViewIndexInstance::makeCustomRenderPass(const DeviceInterface &vkd, VkDevice device,
                                                               uint32_t layerCount, VkFormat format)
 {
-    DE_ASSERT(layerCount > 0u);
+    DE_ASSERT(layerCount > 0u && layerCount <= 32u);
 
     const VkAttachmentDescription colorAttachmentDescription = {
         0u,                                       // VkAttachmentDescriptionFlags    flags
@@ -645,7 +645,7 @@ Move<VkRenderPass> MaxViewIndexInstance::makeCustomRenderPass(const DeviceInterf
         nullptr                          // const uint32_t*                 pPreserveAttachments
     };
 
-    const uint32_t viewMask                                   = ((1u << layerCount) - 1u);
+    const uint32_t viewMask                                   = static_cast<uint32_t>((1ull << layerCount) - 1ull);
     const VkRenderPassMultiviewCreateInfo multiviewCreateInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO, // VkStructureType sType;
         nullptr,                                             // const void* pNext;
@@ -2122,7 +2122,7 @@ void MaxMeshOutputSizeCase::initPrograms(vk::SourceCollections &programCollectio
 Move<VkRenderPass> MaxMeshOutputSizeInstance::makeCustomRenderPass(const DeviceInterface &vkd, VkDevice device,
                                                                    uint32_t layerCount, VkFormat format)
 {
-    DE_ASSERT(layerCount > 0u);
+    DE_ASSERT(layerCount > 0u && layerCount <= 32u);
 
     const VkAttachmentDescription colorAttachmentDescription = {
         0u,                                       // VkAttachmentDescriptionFlags    flags
@@ -2152,7 +2152,7 @@ Move<VkRenderPass> MaxMeshOutputSizeInstance::makeCustomRenderPass(const DeviceI
         nullptr                          // const uint32_t*                 pPreserveAttachments
     };
 
-    const uint32_t viewMask                                   = ((1u << layerCount) - 1u);
+    const uint32_t viewMask                                   = static_cast<uint32_t>((1ull << layerCount) - 1ull);
     const VkRenderPassMultiviewCreateInfo multiviewCreateInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO, // VkStructureType sType;
         nullptr,                                             // const void* pNext;
