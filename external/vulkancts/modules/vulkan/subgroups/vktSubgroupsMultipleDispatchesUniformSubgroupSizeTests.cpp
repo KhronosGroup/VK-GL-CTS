@@ -35,6 +35,7 @@
 #include "vkBarrierUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "tcuTestLog.hpp"
+#include <algorithm>
 #include <sstream>
 
 using namespace vk;
@@ -74,12 +75,14 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
     Move<VkShaderModule> computeShader =
         createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u);
 
-    // The maximum number of invocations in a workgroup.
-    const uint32_t maxLocalSize    = m_context.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
+    // The maximum number of invocations in a 1D X workgroup.
+    const auto &limits             = m_context.getDeviceProperties().limits;
+    const uint32_t maxLocalSize    = std::min(limits.maxComputeWorkGroupSize[0], limits.maxComputeWorkGroupInvocations);
     const uint32_t minSubgroupSize = m_context.getSubgroupSizeControlProperties().minSubgroupSize;
 
     // Create a storage buffer to hold the sizes of subgroups.
-    const VkDeviceSize bufferSize = (maxLocalSize / minSubgroupSize + 1u) * sizeof(uint32_t);
+    const VkDeviceSize bufferSize =
+        (static_cast<VkDeviceSize>(maxLocalSize / minSubgroupSize) + 1ull) * sizeof(uint32_t);
 
     const VkBufferCreateInfo resultBufferCreateInfo =
         makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -117,8 +120,9 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
 
     std::vector<uint32_t> localSizes;
     std::vector<Move<VkPipeline>> pipelineVariants;
-    for (uint32_t localSize = 1u; localSize <= maxLocalSize; localSize *= 2u)
+    for (uint64_t localSize64 = 1ull; localSize64 <= maxLocalSize; localSize64 *= 2ull)
     {
+        const uint32_t localSize               = static_cast<uint32_t>(localSize64);
         const VkSpecializationMapEntry entries = {
             0u,               // constantID
             0u,               // offset
@@ -157,8 +161,9 @@ tcu::TestStatus MultipleDispatchesUniformSubgroupSizeInstance::iterate(void)
         pipelineVariants.push_back(std::move(pipeline));
     }
 
-    for (uint32_t localSize = 1u; localSize <= maxLocalSize; localSize *= 2u)
+    for (uint64_t localSize64 = 1ull; localSize64 <= maxLocalSize; localSize64 *= 2ull)
     {
+        const uint32_t localSize = static_cast<uint32_t>(localSize64);
         beginCommandBuffer(vk, *cmdBuffer);
 
         // Clears the values in the buffer.
