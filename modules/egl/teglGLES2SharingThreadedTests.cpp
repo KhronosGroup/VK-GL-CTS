@@ -1755,6 +1755,14 @@ LinkProgram::LinkProgram(SharedPtr<Program> program, bool useSync, bool serverSy
     , m_program(program)
 {
     modifyGLObject(SharedPtr<Object>(m_program));
+
+    // The link reads the attached shaders, so it must not run concurrently with their modification
+    if (m_program->vertexShader)
+        readGLObject(SharedPtr<Object>(m_program->vertexShader));
+
+    if (m_program->fragmentShader)
+        readGLObject(SharedPtr<Object>(m_program->fragmentShader));
+
     program->linked = true;
 }
 
