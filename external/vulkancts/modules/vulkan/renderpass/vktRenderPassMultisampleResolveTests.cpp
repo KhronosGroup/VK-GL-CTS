@@ -4088,6 +4088,8 @@ public:
                                               m_groupParams->pipelineConstructionType);
         if (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
             TCU_THROW(NotSupportedError, "Dynamic rendering is not supported in this test");
+        if (m_groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+            context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
         // Check format properties to verify 4x MSAA is supported for optimal tiling color attachments
         VkImageFormatProperties properties;
