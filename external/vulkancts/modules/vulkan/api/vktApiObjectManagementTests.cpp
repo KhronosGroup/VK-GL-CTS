@@ -615,20 +615,21 @@ struct Device
         VkPhysicalDevicePipelineCreationCacheControlFeatures pipelineCreationCacheControlFeatures =
             vk::initVulkanStructure();
         VkPhysicalDeviceVulkan13Features vulkan13Features = vk::initVulkanStructure();
-        if (env.apiVersion < VK_API_VERSION_1_3)
+        if (env.apiVersion >= VK_API_VERSION_1_3)
+        {
+            VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&vulkan13Features);
+            res.vki.getPhysicalDeviceFeatures2(res.physicalDevice, &features2);
+            vulkan13Features.pNext = pNext;
+            pNext                  = &vulkan13Features;
+        }
+        else if (isExtensionStructSupported(enumerateDeviceExtensionProperties(res.vki, res.physicalDevice, nullptr),
+                                            RequiredExtension("VK_EXT_pipeline_creation_cache_control")))
         {
             VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&pipelineCreationCacheControlFeatures);
             res.vki.getPhysicalDeviceFeatures2(res.physicalDevice, &features2);
             pipelineCreationCacheControlFeatures.pNext = pNext;
             pNext                                      = &pipelineCreationCacheControlFeatures;
             extensions.push_back("VK_EXT_pipeline_creation_cache_control");
-        }
-        else
-        {
-            VkPhysicalDeviceFeatures2 features2 = vk::initVulkanStructure(&vulkan13Features);
-            res.vki.getPhysicalDeviceFeatures2(res.physicalDevice, &features2);
-            vulkan13Features.pNext = pNext;
-            pNext                  = &vulkan13Features;
         }
 #endif // CTS_USES_VULKANSC
 
